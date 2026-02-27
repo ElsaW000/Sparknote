@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.pytest_cache/
+.venv/
+.env
+.env.*
+
+# Node / Flutter / Dart
+node_modules/
+.dart_tool/
+build/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+
+# Databases (local)
+*.db
+
+# Logs
+*.log
+
+# IDE user files
+.idea/

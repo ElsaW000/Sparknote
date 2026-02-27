@@ -1,0 +1,26 @@
+name: sparknote_mobile
+
+description: "Sparknote mobile/desktop Flutter client prototype"
+
+publish_to: 'none'
+
+version: 0.1.0
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  http: ^0.13.6
+  shared_preferences: ^2.2.2
+  flutter_sound: ^9.2.13
+  image_picker: ^0.8.7+3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
