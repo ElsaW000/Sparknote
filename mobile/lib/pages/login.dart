@@ -59,6 +59,44 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> _registerAndLogin() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final email = _emailCtrl.text.trim();
+      final password = _passwordCtrl.text;
+      if (email.isEmpty || password.isEmpty) {
+        setState(() {
+          _error = 'Email 和密码不能为空';
+        });
+        return;
+      }
+
+      final registerUri = Uri.parse('$backendUrl/auth/register');
+      final registerResp = await http.post(
+        registerUri,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': email, 'password': password}),
+      );
+
+      // If user already exists, continue to login.
+      if (registerResp.statusCode != 201 && registerResp.statusCode != 400) {
+        setState(() => _error = '注册失败：${registerResp.statusCode}');
+        return;
+      }
+
+      await _login();
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,9 +116,28 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 20),
             if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
-            ElevatedButton(
-              onPressed: _loading ? null : _login,
-              child: _loading ? const CircularProgressIndicator() : const Text('Login'),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _login,
+                    child: _loading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Login'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _loading ? null : _registerAndLogin,
+                    child: const Text('Register'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

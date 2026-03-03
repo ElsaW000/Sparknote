@@ -23,8 +23,8 @@ def _get_engine():
     )
 
 
-def enqueue_job(conversation_id: int, user_text: str) -> None:
-    _JOB_QUEUE.put({"conversation_id": conversation_id, "text": user_text})
+def enqueue_job(conversation_id: int, user_text: str, user_id: int) -> None:
+    _JOB_QUEUE.put({"conversation_id": conversation_id, "text": user_text, "user_id": user_id})
 
 
 def _worker_loop():
@@ -40,13 +40,14 @@ def _worker_loop():
         try:
             cid = job["conversation_id"]
             prompt = job["text"]
+            uid = job["user_id"]
             # call provider
             reply = provider.get_reply(prompt)
             # persist reply as Message
             from backend.main import Message  # local import to avoid circular issues
 
             with Session(engine) as session:
-                ai_msg = Message(conversation_id=cid, sender="ai", text=reply)
+                ai_msg = Message(conversation_id=cid, sender="ai", text=reply, user_id=uid)
                 session.add(ai_msg)
                 session.commit()
         except Exception:
@@ -58,7 +59,12 @@ def _worker_loop():
                 from backend.main import Message
 
                 with Session(engine) as session:
-                    err_msg = Message(conversation_id=job.get("conversation_id"), sender="ai", text=f"[AI worker error] {tb}")
+                    err_msg = Message(
+                        conversation_id=job.get("conversation_id"),
+                        sender="ai",
+                        text=f"[AI worker error] {tb}",
+                        user_id=job.get("user_id"),
+                    )
                     session.add(err_msg)
                     session.commit()
             except Exception:

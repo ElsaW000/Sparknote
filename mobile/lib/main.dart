@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'pages/chat.dart';
 import 'pages/login.dart';
 import 'pages/notes.dart';
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
@@ -18,12 +18,12 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController _ctrl = TextEditingController();
   Timer? _poller;
   bool _sending = false;
+  bool _closing = false;
   int? _conversationId;
 
   @override
   void initState() {
     super.initState();
-    // conversation id may be provided via Navigator arguments; delay fetching until build
   }
 
   @override
@@ -54,9 +54,7 @@ class _ChatPageState extends State<ChatPage> {
         final list = json.decode(r.body) as List<dynamic>;
         setState(() => _messages = list);
       }
-    } catch (e) {
-      // ignore
-    }
+    } catch (_) {}
   }
 
   Future<void> _sendMessage() async {
@@ -79,13 +77,58 @@ class _ChatPageState extends State<ChatPage> {
         _ctrl.clear();
         await _fetchMessages();
       }
-    } catch (e) {}
-    setState(() => _sending = false);
+    } catch (_) {}
+    if (mounted) setState(() => _sending = false);
+  }
+
+  Future<void> _closeAndSummarize() async {
+    final cid = _conversationId;
+    if (cid == null || _closing) return;
+    setState(() => _closing = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('access_token');
+      final r = await http.post(
+        Uri.parse('$backendUrl/conversations/$cid/close'),
+        headers: {
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+      if (r.statusCode == 200) {
+        final data = json.decode(r.body) as Map<String, dynamic>;
+        final summary = (data['summary'] ?? '').toString();
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('AI Summary'),
+            content: SingleChildScrollView(
+              child: Text(summary.isEmpty ? '(empty summary)' : summary),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+            ],
+          ),
+        );
+        await _fetchMessages();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Summary failed: ${r.statusCode}')),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Summary request failed')),
+      );
+    } finally {
+      if (mounted) setState(() => _closing = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // try to read conversation id from arguments on first build
     if (_conversationId == null) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is int) {
@@ -96,7 +139,22 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text('Chat — ${_conversationId ?? ''}')),
+      appBar: AppBar(
+        title: Text('Chat - ${_conversationId ?? ''}'),
+        actions: [
+          IconButton(
+            onPressed: _closing ? null : _closeAndSummarize,
+            icon: _closing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.summarize),
+            tooltip: 'Generate summary',
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
@@ -115,7 +173,7 @@ class _ChatPageState extends State<ChatPage> {
                       color: isUser ? Colors.blue.shade200 : Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(m['text'] ?? ''),
+                    child: Text((m['text'] ?? '').toString()),
                   ),
                 );
               },
@@ -127,11 +185,17 @@ class _ChatPageState extends State<ChatPage> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: TextField(controller: _ctrl, decoration: const InputDecoration(hintText: 'Type a message')),
+                    child: TextField(
+                      controller: _ctrl,
+                      decoration: const InputDecoration(hintText: 'Type a message'),
+                    ),
                   ),
                 ),
                 _sending
-                    ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator()))
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator()),
+                      )
                     : IconButton(onPressed: _sendMessage, icon: const Icon(Icons.send)),
               ],
             ),

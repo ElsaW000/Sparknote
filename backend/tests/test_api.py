@@ -3,8 +3,11 @@ import tempfile
 
 from fastapi.testclient import TestClient
 
-# ensure tests use a file-based sqlite database so tables persist across connections
-os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
+# Ensure tests use an isolated file-based sqlite database so tables persist
+# across connections and are not polluted by stale local test.db schemas.
+_tmp_db_fd, _tmp_db_path = tempfile.mkstemp(prefix="sparknote_test_", suffix=".db")
+os.close(_tmp_db_fd)
+os.environ["DATABASE_URL"] = f"sqlite:///{_tmp_db_path}"
 
 from backend import main
 
@@ -14,6 +17,15 @@ main.init_db()
 client = TestClient(main.app)
 
 
+def _auth_headers(email: str = "tester@example.com", password: str = "pass1234") -> dict:
+    # Keep tests idempotent: user may already exist in local db.
+    client.post("/auth/register", json={"email": email, "password": password})
+    r = client.post("/auth/login", json={"email": email, "password": password})
+    assert r.status_code == 200
+    token = r.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 def test_health():
     r = client.get("/health")
     assert r.status_code == 200
@@ -21,14 +33,16 @@ def test_health():
 
 
 def test_notes_and_conversation_flow():
+    headers = _auth_headers()
+
     # create note
-    r = client.post("/notes", json={"title": "Hello", "content": "first note"})
+    r = client.post("/notes", json={"title": "Hello", "content": "first note"}, headers=headers)
     assert r.status_code == 200
     note = r.json()
     assert note["title"] == "Hello"
 
     # create conversation
-    r = client.post("/conversations", json={"title": "chat1"})
+    r = client.post("/conversations", json={"title": "chat1"}, headers=headers)
     assert r.status_code == 200
     conv = r.json()
     cid = conv["id"]
@@ -37,6 +51,7 @@ def test_notes_and_conversation_flow():
     r = client.post(
         f"/conversations/{cid}/message",
         json={"sender": "user", "text": "This is an idea"},
+        headers=headers,
     )
     assert r.status_code == 200
     j = r.json()
@@ -45,14 +60,14 @@ def test_notes_and_conversation_flow():
     import time
 
     time.sleep(1.0)
-    r = client.get(f"/conversations/{cid}/messages")
+    r = client.get(f"/conversations/{cid}/messages", headers=headers)
     assert r.status_code == 200
     msgs = r.json()
     # should include at least 2 messages (user + ai)
     assert any(m["sender"] == "ai" for m in msgs)
 
     # close conversation -> creates a note
-    r = client.post(f"/conversations/{cid}/close")
+    r = client.post(f"/conversations/{cid}/close", headers=headers)
     assert r.status_code == 200
     j = r.json()
     assert "note_id" in j and "summary" in j

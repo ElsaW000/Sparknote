@@ -25,6 +25,25 @@ def get_session() -> Generator[Session, None, None]:
 def init_db() -> None:
     """Create all database tables. Can be called manually by tests or startup."""
     SQLModel.metadata.create_all(engine)
+    _ensure_legacy_schema()
+
+
+def _ensure_legacy_schema() -> None:
+    # Keep local legacy sqlite DB compatible after adding new columns.
+    if not DATABASE_URL.startswith("sqlite"):
+        return
+    try:
+        with engine.begin() as conn:
+            rows = conn.exec_driver_sql("PRAGMA table_info(note)").fetchall()
+            cols = {str(r[1]) for r in rows}
+            if "created_at" not in cols:
+                conn.exec_driver_sql("ALTER TABLE note ADD COLUMN created_at TEXT")
+                conn.exec_driver_sql(
+                    "UPDATE note SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"
+                )
+    except Exception:
+        # Schema compatibility patch should not block app startup.
+        pass
 
 
 # ---------- models ----------
@@ -41,6 +60,14 @@ class Note(SQLModel, table=True):
     title: Optional[str] = None
     content: str
     user_id: int = Field(foreign_key="user.id")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class NoteTag(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    note_id: int = Field(foreign_key="note.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    tag: str = Field(index=True)
 
 
 class Conversation(SQLModel, table=True):
@@ -71,6 +98,22 @@ class MessageCreate(SQLModel):
 class NoteCreate(SQLModel):
     title: Optional[str] = None
     content: str
+    tags: Optional[List[str]] = None
+
+
+class NoteUpdate(SQLModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    tags: Optional[List[str]] = None
+
+
+class NoteRead(SQLModel):
+    id: int
+    title: Optional[str] = None
+    content: str
+    user_id: int
+    created_at: datetime
+    tags: List[str] = Field(default_factory=list)
 
 
 class UserCreate(SQLModel):
@@ -94,7 +137,9 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-change-me")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Prefer pbkdf2_sha256 for broad compatibility in local/dev environments.
+# Some passlib+bcrypt version combos can fail during backend self-check.
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
@@ -153,6 +198,7 @@ app = FastAPI(title="Sparknote Backend")
 def on_startup():
     """Create database tables if they don't exist."""
     SQLModel.metadata.create_all(engine)
+    _ensure_legacy_schema()
     # start background AI worker
     try:
         from backend.ai_worker import start_worker
@@ -174,6 +220,50 @@ def _ai_reply(prompt: str) -> str:
         return _AI_PROVIDER.get_reply(prompt)
     except Exception as e:
         return f"[AI provider error: {e}]"
+
+
+def _normalize_tags(tags: Optional[List[str]]) -> List[str]:
+    if not tags:
+        return []
+    seen = set()
+    normalized: List[str] = []
+    for t in tags:
+        if not t:
+            continue
+        tag = t.strip()
+        if not tag or tag in seen:
+            continue
+        seen.add(tag)
+        normalized.append(tag)
+    return normalized
+
+
+def _get_note_tags(session: Session, note_id: int, user_id: int) -> List[str]:
+    rows = session.exec(
+        select(NoteTag).where((NoteTag.note_id == note_id) & (NoteTag.user_id == user_id))
+    ).all()
+    return [r.tag for r in rows]
+
+
+def _set_note_tags(session: Session, note_id: int, user_id: int, tags: Optional[List[str]]) -> None:
+    existing = session.exec(
+        select(NoteTag).where((NoteTag.note_id == note_id) & (NoteTag.user_id == user_id))
+    ).all()
+    for row in existing:
+        session.delete(row)
+    for tag in _normalize_tags(tags):
+        session.add(NoteTag(note_id=note_id, user_id=user_id, tag=tag))
+
+
+def _to_note_read(session: Session, note: Note) -> NoteRead:
+    return NoteRead(
+        id=note.id,
+        title=note.title,
+        content=note.content,
+        user_id=note.user_id,
+        created_at=note.created_at,
+        tags=_get_note_tags(session, note.id, note.user_id),
+    )
 
 
 # Ensure background worker starts when module imported (helps tests and dev)
@@ -228,7 +318,7 @@ def read_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@app.post("/notes", response_model=Note)
+@app.post("/notes", response_model=NoteRead)
 def create_note(
     payload: NoteCreate,
     session: Session = Depends(get_session),
@@ -238,15 +328,70 @@ def create_note(
     session.add(note)
     session.commit()
     session.refresh(note)
-    return note
+    _set_note_tags(session, note.id, current_user.id, payload.tags)
+    session.commit()
+    return _to_note_read(session, note)
 
 
-@app.get("/notes", response_model=List[Note])
+@app.get("/notes", response_model=List[NoteRead])
 def list_notes(
     session: Session = Depends(get_session), current_user: User = Depends(get_current_user)
 ):
     notes = session.exec(select(Note).where(Note.user_id == current_user.id)).all()
-    return notes
+    return [_to_note_read(session, n) for n in notes]
+
+
+@app.get("/notes/{note_id}", response_model=NoteRead)
+def get_note(
+    note_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    note = session.get(Note, note_id)
+    if not note or note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="note not found")
+    return _to_note_read(session, note)
+
+
+@app.patch("/notes/{note_id}", response_model=NoteRead)
+def update_note(
+    note_id: int,
+    payload: NoteUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    note = session.get(Note, note_id)
+    if not note or note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="note not found")
+    if payload.title is not None:
+        note.title = payload.title
+    if payload.content is not None:
+        note.content = payload.content
+    if payload.tags is not None:
+        _set_note_tags(session, note.id, current_user.id, payload.tags)
+    session.add(note)
+    session.commit()
+    session.refresh(note)
+    return _to_note_read(session, note)
+
+
+@app.delete("/notes/{note_id}")
+def delete_note(
+    note_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    note = session.get(Note, note_id)
+    if not note or note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="note not found")
+    tags = session.exec(
+        select(NoteTag).where((NoteTag.note_id == note_id) & (NoteTag.user_id == current_user.id))
+    ).all()
+    for row in tags:
+        session.delete(row)
+    session.delete(note)
+    session.commit()
+    return {"ok": True, "deleted_note_id": note_id}
 
 
 @app.post("/conversations", response_model=Conversation)
@@ -289,12 +434,17 @@ def add_message(
         try:
             from backend.ai_worker import enqueue_job
 
-            enqueue_job(cid, payload.text)
+            enqueue_job(cid, payload.text, current_user.id)
             return {"user_message": msg, "status": "queued"}
         except Exception:
             # fallback to synchronous reply if enqueue fails
             ai_text = _ai_reply(payload.text)
-            ai_msg = Message(conversation_id=cid, sender="ai", text=ai_text)
+            ai_msg = Message(
+                conversation_id=cid,
+                sender="ai",
+                text=ai_text,
+                user_id=current_user.id,
+            )
             session.add(ai_msg)
             session.commit()
             session.refresh(ai_msg)
