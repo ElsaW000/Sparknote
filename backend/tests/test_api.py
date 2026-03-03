@@ -81,3 +81,31 @@ def test_debug_ai():
     assert "reply" in d
     assert isinstance(d["reply"], str)
     assert d["reply"] != ""  # mock or real reply
+
+
+def test_note_auto_extract_hashtags():
+    headers = _auth_headers("tagger@example.com", "pass1234")
+
+    r = client.post(
+        "/notes",
+        json={
+            "title": "Tag Test",
+            "content": "capture #idea and #工作 and keep #work-log",
+            "tags": ["manual", "#idea"],
+        },
+        headers=headers,
+    )
+    assert r.status_code == 200
+    note = r.json()
+    assert set(note["tags"]) == {"manual", "idea", "工作", "work-log"}
+
+    note_id = note["id"]
+    r = client.patch(
+        f"/notes/{note_id}",
+        json={"content": "updated content with #newtag and #工作"},
+        headers=headers,
+    )
+    assert r.status_code == 200
+    updated = r.json()
+    assert "newtag" in updated["tags"]
+    assert "工作" in updated["tags"]

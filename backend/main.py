@@ -4,6 +4,7 @@ from sqlmodel import SQLModel, Field, create_engine, Session, select
 from typing import Optional, List, Generator
 from datetime import datetime, timedelta
 import os
+import re
 import requests
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -231,11 +232,25 @@ def _normalize_tags(tags: Optional[List[str]]) -> List[str]:
         if not t:
             continue
         tag = t.strip()
+        if tag.startswith("#"):
+            tag = tag[1:].strip()
         if not tag or tag in seen:
             continue
         seen.add(tag)
         normalized.append(tag)
     return normalized
+
+
+def _extract_tags_from_content(content: Optional[str]) -> List[str]:
+    if not content:
+        return []
+    # Accept tags like #idea, #work-log, #中文标签 and ignore bare '#'.
+    found = re.findall(r"(?<!\w)#([\w\-]+)", content, flags=re.UNICODE)
+    return _normalize_tags(found)
+
+
+def _merge_tags(manual_tags: Optional[List[str]], content: Optional[str]) -> List[str]:
+    return _normalize_tags((manual_tags or []) + _extract_tags_from_content(content))
 
 
 def _get_note_tags(session: Session, note_id: int, user_id: int) -> List[str]:
@@ -328,7 +343,8 @@ def create_note(
     session.add(note)
     session.commit()
     session.refresh(note)
-    _set_note_tags(session, note.id, current_user.id, payload.tags)
+    merged_tags = _merge_tags(payload.tags, payload.content)
+    _set_note_tags(session, note.id, current_user.id, merged_tags)
     session.commit()
     return _to_note_read(session, note)
 
@@ -367,8 +383,12 @@ def update_note(
         note.title = payload.title
     if payload.content is not None:
         note.content = payload.content
-    if payload.tags is not None:
-        _set_note_tags(session, note.id, current_user.id, payload.tags)
+    if payload.tags is not None or payload.content is not None:
+        current_tags = payload.tags
+        if current_tags is None:
+            current_tags = _get_note_tags(session, note.id, current_user.id)
+        merged_tags = _merge_tags(current_tags, note.content)
+        _set_note_tags(session, note.id, current_user.id, merged_tags)
     session.add(note)
     session.commit()
     session.refresh(note)

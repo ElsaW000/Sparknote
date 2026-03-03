@@ -86,9 +86,40 @@ class _NotesListState extends State<NotesList> {
   List<String> _parseTags(String raw) {
     return raw
         .split(',')
-        .map((e) => e.trim())
+        .map((e) => _normalizeTagValue(e))
         .where((e) => e.isNotEmpty)
         .toList();
+  }
+
+  String _normalizeTagValue(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.startsWith('#')) {
+      return trimmed.substring(1).trim();
+    }
+    return trimmed;
+  }
+
+  List<String> _extractHashtagTags(String content) {
+    final reg = RegExp(r'(?<!\w)#([\w-]+)', unicode: true);
+    final tags = <String>[];
+    for (final m in reg.allMatches(content)) {
+      final tag = _normalizeTagValue(m.group(1) ?? '');
+      if (tag.isNotEmpty) {
+        tags.add(tag);
+      }
+    }
+    return tags;
+  }
+
+  List<String> _mergeTags({required String manualRaw, required String content}) {
+    final merged = <String>[];
+    final seen = <String>{};
+    for (final t in [..._parseTags(manualRaw), ..._extractHashtagTags(content)]) {
+      if (seen.add(t)) {
+        merged.add(t);
+      }
+    }
+    return merged;
   }
 
   Future<void> openCreateDialog() async {
@@ -229,7 +260,10 @@ class _NotesListState extends State<NotesList> {
     final body = json.encode({
       'title': titleCtrl.text.trim().isEmpty ? null : titleCtrl.text.trim(),
       'content': contentCtrl.text.trim(),
-      'tags': _parseTags(tagsCtrl.text),
+      'tags': _mergeTags(
+        manualRaw: tagsCtrl.text,
+        content: contentCtrl.text,
+      ),
     });
 
     try {
