@@ -1,13 +1,32 @@
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import SQLModel, Field, create_engine, Session, select
 from typing import Optional, List, Generator
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from sqlalchemy import func
+import json
 import os
 import re
+import random
+import threading
+import uuid
 import requests
+import logging
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv()
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # ---------- database setup ----------
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sparknote.db")
@@ -52,6 +71,7 @@ class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(index=True)
     password_hash: str
+    identity: Optional[str] = Field(default=None)  # 小说作者/产品经理/内容创作者/全部
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -117,15 +137,38 @@ class NoteRead(SQLModel):
     tags: List[str] = Field(default_factory=list)
 
 
+class NoteRelationCreate(SQLModel):
+    to_note_id: int
+    relation_type: str  # "related", "parent", "child", "reference"
+
+
+class NoteRelationRead(SQLModel):
+    id: int
+    from_note_id: int
+    to_note_id: int
+    relation_type: str
+    created_at: datetime
+
+
 class UserCreate(SQLModel):
     email: str
     password: str
 
 
+class UserRegister(SQLModel):
+    email: str
+    password: str
+    identity: Optional[str] = None  # 小说作者/产品经理/内容创作者/全部
+    captcha_id: Optional[str] = None
+    captcha_answer: Optional[str] = None
+
+
 class UserRead(SQLModel):
     id: int
     email: str
+    identity: Optional[str] = None
     is_active: bool
+    created_at: datetime
 
 
 class Token(SQLModel):
@@ -133,15 +176,60 @@ class Token(SQLModel):
     token_type: str = "bearer"
 
 
+class CaptchaChallenge(SQLModel):
+    captcha_id: str
+    question: str
+    expires_in: int
+
+
+# --- AI insight models ---
+class InsightPerspective(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    category: Optional[str] = None
+    prompt_template: str
+    is_default: bool = False
+
+
+class InsightRun(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
+    perspective_id: int = Field(foreign_key="insightperspective.id")
+    # stored as comma-separated list of IDs
+    note_ids: str
+    result: Optional[str] = None
+    status: str = "pending"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# --- Knowledge linking models ---
+class NoteRelation(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    from_note_id: int = Field(foreign_key="note.id")
+    to_note_id: int = Field(foreign_key="note.id")
+    relation_type: str  # e.g., "related", "parent", "child", "reference"
+    user_id: int = Field(foreign_key="user.id")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 # ---------- security & auth helpers ----------
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-change-me")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
+REQUIRE_REGISTER_CAPTCHA = os.getenv("REQUIRE_REGISTER_CAPTCHA", "1").lower() in (
+    "1",
+    "true",
+    "yes",
+)
+REGISTER_CAPTCHA_TTL_SECONDS = int(os.getenv("REGISTER_CAPTCHA_TTL_SECONDS", "300"))
 
 # Prefer pbkdf2_sha256 for broad compatibility in local/dev environments.
 # Some passlib+bcrypt version combos can fail during backend self-check.
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+_CAPTCHA_STORE_LOCK = threading.Lock()
+_CAPTCHA_STORE = {}
 
 
 def hash_password(password: str) -> str:
@@ -192,7 +280,46 @@ def get_current_user(
 
 
 # ---------- application & startup ----------
-app = FastAPI(title="Sparknote Backend")
+class ChineseJSONResponse(JSONResponse):
+    def render(self, content) -> bytes:
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=None,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+app = FastAPI(title="Sparknote Backend", default_response_class=ChineseJSONResponse)
+# during local development we allow all origins to avoid CORS issues
+# (in production this should be locked down to the real frontend URL)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """全局异常处理中间件"""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal server error", "error": str(exc)}
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """HTTP异常处理中间件"""
+    logger.info(f"HTTP exception: {exc.detail}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
 
 
 @app.on_event("startup")
@@ -281,6 +408,45 @@ def _to_note_read(session: Session, note: Note) -> NoteRead:
     )
 
 
+def _prune_expired_captcha() -> None:
+    now = datetime.utcnow()
+    expired = [k for k, v in _CAPTCHA_STORE.items() if v["expires_at"] <= now]
+    for key in expired:
+        _CAPTCHA_STORE.pop(key, None)
+
+
+def _create_captcha() -> CaptchaChallenge:
+    left = random.randint(1, 9)
+    right = random.randint(1, 9)
+    captcha_id = str(uuid.uuid4())
+    answer = str(left + right)
+    expires_at = datetime.utcnow() + timedelta(seconds=REGISTER_CAPTCHA_TTL_SECONDS)
+    with _CAPTCHA_STORE_LOCK:
+        _prune_expired_captcha()
+        _CAPTCHA_STORE[captcha_id] = {"answer": answer, "expires_at": expires_at}
+    return CaptchaChallenge(
+        captcha_id=captcha_id,
+        question=f"请计算：{left} + {right} = ?",
+        expires_in=REGISTER_CAPTCHA_TTL_SECONDS,
+    )
+
+
+def _verify_and_consume_captcha(captcha_id: Optional[str], captcha_answer: Optional[str]) -> bool:
+    if not captcha_id or not captcha_answer:
+        return False
+    with _CAPTCHA_STORE_LOCK:
+        _prune_expired_captcha()
+        row = _CAPTCHA_STORE.get(captcha_id)
+        if not row:
+            return False
+        expected = str(row["answer"]).strip()
+        provided = str(captcha_answer).strip()
+        if expected != provided:
+            return False
+        _CAPTCHA_STORE.pop(captcha_id, None)
+        return True
+
+
 # Ensure background worker starts when module imported (helps tests and dev)
 try:
     from backend.ai_worker import start_worker
@@ -307,12 +473,24 @@ def debug_ai(prompt: str):
     return {"reply": _ai_reply(prompt)}
 
 
+@app.get("/auth/captcha", response_model=CaptchaChallenge)
+def get_register_captcha():
+    return _create_captcha()
+
+
 @app.post("/auth/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-def register_user(payload: UserCreate, session: Session = Depends(get_session)):
+def register_user(payload: UserRegister, session: Session = Depends(get_session)):
+    if REQUIRE_REGISTER_CAPTCHA:
+        ok = _verify_and_consume_captcha(payload.captcha_id, payload.captcha_answer)
+        if not ok:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired captcha",
+            )
     existing = get_user_by_email(session, payload.email)
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
-    user = User(email=payload.email, password_hash=hash_password(payload.password))
+    user = User(email=payload.email, password_hash=hash_password(payload.password), identity=payload.identity)
     session.add(user)
     session.commit()
     session.refresh(user)
@@ -351,9 +529,22 @@ def create_note(
 
 @app.get("/notes", response_model=List[NoteRead])
 def list_notes(
-    session: Session = Depends(get_session), current_user: User = Depends(get_current_user)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+    since: Optional[datetime] = None,
+    tag: Optional[str] = None,
 ):
-    notes = session.exec(select(Note).where(Note.user_id == current_user.id)).all()
+    """List notes for the current user.
+    Optional `since` query param (ISO datetime) filters notes created after the given time.
+    Optional `tag` query param filters notes containing the exact tag (TAG-04).
+    """
+    query = select(Note).where(Note.user_id == current_user.id)
+    if since is not None:
+        query = query.where(Note.created_at > since)
+    if tag is not None:
+        # Join with NoteTag to filter notes that have the tag
+        query = query.join(NoteTag, (NoteTag.note_id == Note.id) & (NoteTag.user_id == current_user.id) & (NoteTag.tag == tag))
+    notes = session.exec(query).all()
     return [_to_note_read(session, n) for n in notes]
 
 
@@ -367,6 +558,298 @@ def get_note(
     if not note or note.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="note not found")
     return _to_note_read(session, note)
+
+
+@app.get("/tags/suggest")
+def suggest_tags(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Return top-used tags by frequency, limited to 20 (TAG-03)."""
+    # Aggregate tag usage count
+    rows = session.exec(
+        select(NoteTag.tag, func.count().label("cnt"))
+        .where(NoteTag.user_id == current_user.id)
+        .group_by(NoteTag.tag)
+        .order_by(func.count().desc())
+        .limit(20)
+    ).all()
+    return [{"tag": r.tag, "count": r.cnt} for r in rows]
+
+
+@app.get("/notes/{note_id}/related")
+def related_notes(
+    note_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Return related notes based on explicit relations and tag similarity."""
+    note = session.get(Note, note_id)
+    if not note or note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="note not found")
+    
+    # Get current note's tags
+    current_tags = set(_get_note_tags(session, note_id, current_user.id))
+    
+    # Find directly related notes via NoteRelation
+    direct_relations = session.exec(
+        select(NoteRelation).where(
+            (NoteRelation.user_id == current_user.id) &
+            ((NoteRelation.from_note_id == note_id) | (NoteRelation.to_note_id == note_id))
+        )
+    ).all()
+    
+    related_scores = {}
+    
+    # Process direct relations
+    for rel in direct_relations:
+        other_id = rel.to_note_id if rel.from_note_id == note_id else rel.from_note_id
+        # Higher score for direct relations
+        score = 10 if rel.relation_type == "parent" or rel.relation_type == "child" else 5
+        related_scores[other_id] = score
+    
+    # Find notes with shared tags
+    if current_tags:
+        tag_related = session.exec(
+            select(NoteTag.note_id, func.count().label("shared_count"))
+            .where(
+                (NoteTag.user_id == current_user.id) &
+                (NoteTag.tag.in_(current_tags)) &
+                (NoteTag.note_id != note_id)
+            )
+            .group_by(NoteTag.note_id)
+        ).all()
+        
+        for row in tag_related:
+            score = min(row.shared_count, 5)  # Cap at 5 for tag similarity
+            if row.note_id in related_scores:
+                related_scores[row.note_id] += score
+            else:
+                related_scores[row.note_id] = score
+    
+    if not related_scores:
+        return []
+    
+    # Get the actual notes
+    related_ids = list(related_scores.keys())
+    notes = session.exec(select(Note).where(Note.id.in_(related_ids))).all()
+    
+    # Get relation details for direct relations
+    direct_relation_map = {}
+    for rel in direct_relations:
+        other_id = rel.to_note_id if rel.from_note_id == note_id else rel.from_note_id
+        direct_relation_map[other_id] = {
+            'relation_id': rel.id,
+            'relation_type': rel.relation_type
+        }
+    
+    # Build response with scores and relation details
+    result = []
+    for n in notes:
+        item = {
+            "id": n.id,
+            "title": n.title,
+            "score": related_scores[n.id],
+            "relation_type": direct_relation_map.get(n.id, {}).get('relation_type'),
+            "relation_id": direct_relation_map.get(n.id, {}).get('relation_id')
+        }
+        result.append(item)
+    
+    # Sort by score descending
+    result.sort(key=lambda x: x["score"], reverse=True)
+    return result
+
+
+@app.post("/notes/{note_id}/relations", status_code=201)
+def create_note_relation(
+    note_id: int,
+    relation: NoteRelationCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Create a relation between two notes."""
+    # Verify both notes exist and belong to user
+    from_note = session.get(Note, note_id)
+    to_note = session.get(Note, relation.to_note_id)
+    if not from_note or from_note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="source note not found")
+    if not to_note or to_note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="target note not found")
+    if note_id == relation.to_note_id:
+        raise HTTPException(status_code=400, detail="cannot relate note to itself")
+    
+    # Check if relation already exists
+    existing = session.exec(
+        select(NoteRelation).where(
+            (NoteRelation.user_id == current_user.id) &
+            (NoteRelation.from_note_id == note_id) &
+            (NoteRelation.to_note_id == relation.to_note_id) &
+            (NoteRelation.relation_type == relation.relation_type)
+        )
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="relation already exists")
+    
+    # Create the relation
+    new_relation = NoteRelation(
+        from_note_id=note_id,
+        to_note_id=relation.to_note_id,
+        relation_type=relation.relation_type,
+        user_id=current_user.id
+    )
+    session.add(new_relation)
+    session.commit()
+    session.refresh(new_relation)
+    return NoteRelationRead(
+        id=new_relation.id,
+        from_note_id=new_relation.from_note_id,
+        to_note_id=new_relation.to_note_id,
+        relation_type=new_relation.relation_type,
+        created_at=new_relation.created_at
+    )
+
+
+@app.delete("/notes/{note_id}/relations/{relation_id}")
+def delete_note_relation(
+    note_id: int,
+    relation_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a relation between notes."""
+    relation = session.get(NoteRelation, relation_id)
+    if not relation or relation.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="relation not found")
+    if relation.from_note_id != note_id and relation.to_note_id != note_id:
+        raise HTTPException(status_code=404, detail="relation not associated with this note")
+    
+    session.delete(relation)
+    session.commit()
+    return {"message": "relation deleted"}
+
+
+@app.get("/stats/heatmap")
+def stats_heatmap(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+    start: Optional[date] = None,
+    end: Optional[date] = None,
+):
+    """Aggregate daily note counts for the current user.
+
+    Optional `start`/`end` date parameters narrow the range. Results are sorted by date.
+    """
+    query = select(func.date(Note.created_at).label("day"), func.count().label("cnt")).where(
+        Note.user_id == current_user.id
+    )
+    if start is not None:
+        query = query.where(func.date(Note.created_at) >= start.isoformat())
+    if end is not None:
+        query = query.where(func.date(Note.created_at) <= end.isoformat())
+    query = query.group_by(func.date(Note.created_at)).order_by(func.date(Note.created_at))
+    rows = session.exec(query).all()
+    return [{"date": r.day, "count": r.cnt} for r in rows]
+
+
+@app.get("/review/daily")
+def review_daily(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Return notes created today to support a simple daily review.
+
+    Future versions can randomize or pick same-day last week.
+    """
+    today = date.today().isoformat()
+    notes = session.exec(
+        select(Note).where(
+            (Note.user_id == current_user.id)
+            & (func.date(Note.created_at) == today)
+        )
+    ).all()
+    return [{"id": n.id, "title": n.title} for n in notes]
+
+
+# ---- AI insight endpoints ----
+@app.get("/insights/perspectives")
+def list_perspectives(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    # For now return hardcoded default views if none exist in DB
+    rows = session.exec(select(InsightPerspective).where(InsightPerspective.is_default == True)).all()
+    if not rows:
+        rows = [
+            InsightPerspective(id=1, name="Default Analysis", prompt_template="Analyze: {notes}", is_default=True),
+        ]
+    return rows
+
+
+class InsightRunRequest(SQLModel):
+    perspective_id: int
+    note_ids: List[int]
+
+
+@app.post("/insights/run")
+def run_insight(
+    payload: InsightRunRequest,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    # simple synchronous stub: concatenate note contents
+    notes = session.exec(select(Note).where((Note.user_id == current_user.id) & (Note.id.in_(payload.note_ids)))).all()
+    text = "\n".join(n.content for n in notes)
+    result = f"Stub insight for perspective {payload.perspective_id} on \n{text}"
+    insight = InsightRun(
+        user_id=current_user.id,
+        perspective_id=payload.perspective_id,
+        note_ids=",".join(str(i) for i in payload.note_ids),
+        result=result,
+        status="complete",
+    )
+    session.add(insight)
+    session.commit()
+    session.refresh(insight)
+    return {"id": insight.id, "result": insight.result}
+
+
+@app.get("/insights/history")
+def insight_history(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    rows = session.exec(select(InsightRun).where(InsightRun.user_id == current_user.id)).all()
+    return rows
+
+
+# --- monetization endpoints ---
+class SubscriptionInfo(SQLModel):
+    plan: str
+    status: str
+    expire_at: Optional[datetime] = None
+
+
+@app.get("/me/subscription", response_model=SubscriptionInfo)
+def get_subscription(current_user: User = Depends(get_current_user)):
+    # stub return free tier
+    return SubscriptionInfo(plan="Free", status="active", expire_at=None)
+
+
+class CheckoutRequest(SQLModel):
+    plan: str
+
+
+class CheckoutResponse(SQLModel):
+    checkout_url: str
+
+
+@app.post("/billing/checkout", response_model=CheckoutResponse)
+def billing_checkout(
+    payload: CheckoutRequest,
+    current_user: User = Depends(get_current_user),
+):
+    # return fake url
+    return CheckoutResponse(checkout_url=f"https://pay.example.com/{payload.plan}")
 
 
 @app.patch("/notes/{note_id}", response_model=NoteRead)

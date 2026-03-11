@@ -1,0 +1,30 @@
+flowchart TD
+    Start([打开 App]) --> IsLoggedIn{已登录?}
+    
+    IsLoggedIn -->|否| Auth{首次使用?}
+    Auth -->|是| Identity[选择身份定位<br/>小说📖/产品📊/内容📝/技术💻]
+    Auth -->|否| Login[登录/注册]
+    
+    Identity --> Home
+    Login --> Home
+    
+    IsLoggedIn -->|是| Home
+    
+    Home[首页<br/>灵感流 + 快速输入框] --> Input[输入灵感]
+    Input --> Tag[#选择标签] --> Save[保存笔记]
+    Save --> Home
+    
+    Home --> Tap[点击笔记卡片]
+    Tap --> Detail[笔记详情]
+    
+    Detail --> AI{调用 AI?}
+    AI -->|AI总结| Summary[AI 核心要点总结]
+    AI -->|续写| Continue[AI 续写建议]
+    AI -->|编辑| Edit[编辑笔记]
+    
+    Summary --> Detail
+    Continue --> Detail
+    Edit --> Detail
+    
+    Detail --> Back[返回首页]
+    Back --> Home

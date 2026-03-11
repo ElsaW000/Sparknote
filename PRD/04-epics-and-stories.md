@@ -55,7 +55,7 @@
 | ID | Story | 验收标准 |
 |----|-------|----------|
 | AI-01 | 作为用户，我需要AI总结笔记，以便快速了解要点 | 1. 在笔记详情页点击"AI总结"<br>2. 等待处理<br>3. 看到AI生成的摘要 |
-| AI-02 | 作为用户，我需要AI续写，以便扩展灵感 | 1. 在笔记编辑页点击"AI续写"<br>2. 等待处理<br>3. 看到AI生成的后续内容<br>4. 可选择采纳或拒绝 |
+| AI-02 | 作为用户，我需要AI灵感，以便获取灵感和建议 | 1. 进入AI工作台<br>2. 点击"灵感提取"<br>3. AI分析笔记内容<br>4. 展示灵感建议卡片<br>5. 可选择采纳或重新生成 |
 | AI-03 | 作为用户，我需要和AI对话，以便讨论灵感 | 1. 创建一个对话<br>2. 发送消息<br>3. 收到AI回复 |
 
 ---
@@ -112,3 +112,9 @@
 
 *Created: 2026-03-01*
 *Method: BMad Method - /create-epics-and-stories*
+
+## 7. PRD扩展参考
+
+- 详细对标与新增故事见：`PRD/phases/05-feature-benchmark-and-prd-expansion.md`
+- 分形同构文档见：`PRD/backend-python/fractal/00-index.md`
+- 后端阶段文档见：`PRD/backend-python/00-index.md`

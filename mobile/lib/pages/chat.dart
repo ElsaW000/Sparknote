@@ -4,7 +4,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const backendUrl = String.fromEnvironment('BACKEND_URL', defaultValue: 'http://10.0.2.2:8000');
+import '../config.dart';
+
+
 
 class ChatPage extends StatefulWidget {
   const ChatPage({Key? key}) : super(key: key);
@@ -101,12 +103,12 @@ class _ChatPageState extends State<ChatPage> {
         await showDialog<void>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('AI Summary'),
+            title: const Text('AI 总结'),
             content: SingleChildScrollView(
-              child: Text(summary.isEmpty ? '(empty summary)' : summary),
+              child: Text(summary.isEmpty ? '（空总结）' : summary),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭')),
             ],
           ),
         );
@@ -114,13 +116,13 @@ class _ChatPageState extends State<ChatPage> {
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Summary failed: ${r.statusCode}')),
+          SnackBar(content: Text('总结失败：${r.statusCode}')),
         );
       }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Summary request failed')),
+        const SnackBar(content: Text('总结请求失败')),
       );
     } finally {
       if (mounted) setState(() => _closing = false);
@@ -140,7 +142,7 @@ class _ChatPageState extends State<ChatPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chat - ${_conversationId ?? ''}'),
+        title: Text('对话 - ${_conversationId ?? ''}'),
         actions: [
           IconButton(
             onPressed: _closing ? null : _closeAndSummarize,
@@ -151,7 +153,7 @@ class _ChatPageState extends State<ChatPage> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.summarize),
-            tooltip: 'Generate summary',
+            tooltip: '生成总结',
           ),
         ],
       ),
@@ -187,7 +189,7 @@ class _ChatPageState extends State<ChatPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     child: TextField(
                       controller: _ctrl,
-                      decoration: const InputDecoration(hintText: 'Type a message'),
+                      decoration: const InputDecoration(hintText: '输入消息'),
                     ),
                   ),
                 ),

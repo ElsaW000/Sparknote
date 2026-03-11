@@ -1,0 +1,24 @@
+flowchart TD
+    subgraph AI["AI 功能流程"]
+        Start([用户操作]) --> Which{选择功能?}
+        
+        Which -->|AI总结| S1[点击笔记]
+        S1 --> S2[详情页]
+        S2 --> S3[点击 AI 总结]
+        S3 --> S4[调用 /ai/summary]
+        S4 --> S5[展示核心要点]
+        
+        Which -->|AI灵感| C1[进入 AI 工作台]
+        C1 --> C2[点击灵感提取]
+        C2 --> C3[调用 /ai/inspiration]
+        C3 --> C4[AI 分析内容]
+        C4 --> C5[展示灵感建议卡片]
+        C5 --> C6{采纳?}
+        C6 -->|是| C7[插入正文]
+        C6 -->|否| C3
+        
+        Which -->|AI对话| H1[打开 AI 助手]
+        H1 --> H2[输入问题]
+        H2 --> H3[调用 /ai/chat]
+        H3 --> H4[展示回复]
+    end

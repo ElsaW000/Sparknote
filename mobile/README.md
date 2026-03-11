@@ -24,6 +24,26 @@ flutter run \
   --dart-define=SUPABASE_ANON_KEY=your_anon_key
 ```
 
+### Backend URL
+
+For development the Flutter client will talk to a backend API. The default
+is `http://127.0.0.1:8000` on the web and `http://10.0.2.2:8000` on
+an Android emulator. You can override it with `BACKEND_URL`:
+
+```bash
+flutter run -d chrome \
+  --dart-define=BACKEND_URL=http://localhost:8000
+```
+
+If you start seeing "XMLHttpRequest error" messages in the UI (often shown
+as `请求异常`), it means the client couldn't reach the server or the
+browser blocked the request due to CORS. Make sure the backend is running,
+that the URL is reachable from your device/emulator, and that CORS is enabled
+on the server (the prototype already allows all origins).
+
+These errors are normal during development; the app now shows a clearer
+warning instructing you to check the backend URL when they occur.
+
 For production builds you can set the `dart-define` in `flutter build` commands or via a `.env`/build script.
 
 ## Running the app
