@@ -1,5 +1,7 @@
-import os
+﻿import os
+import re
 import tempfile
+import base64
 
 from fastapi.testclient import TestClient
 
@@ -179,6 +181,38 @@ def test_notes_tag_filter():
     assert titles == {"Note1", "Note3"}
 
 
+def test_notes_search_filter():
+    headers = _auth_headers("search@example.com", "pass")
+    client.post(
+        "/notes",
+        json={"title": "FastAPI tips", "content": "How to build APIs with auth", "tags": ["backend"]},
+        headers=headers,
+    )
+    client.post(
+        "/notes",
+        json={"title": "Random note", "content": "Nothing related here"},
+        headers=headers,
+    )
+    client.post(
+        "/notes",
+        json={"title": "Cooking", "content": "fastapi mentioned in lowercase"},
+        headers=headers,
+    )
+
+    r = client.get("/notes", headers=headers, params={"q": "FastAPI"})
+    assert r.status_code == 200
+    notes = r.json()
+    assert len(notes) == 2
+    titles = {n["title"] for n in notes}
+    assert titles == {"FastAPI tips", "Cooking"}
+
+    r2 = client.get("/notes", headers=headers, params={"q": "auth", "tag": "backend"})
+    assert r2.status_code == 200
+    notes2 = r2.json()
+    assert len(notes2) == 1
+    assert notes2[0]["title"] == "FastAPI tips"
+
+
 def test_related_notes():
     headers = _auth_headers("rel@example.com", "pass")
     r1 = client.post(
@@ -272,30 +306,29 @@ def test_stats_heatmap_and_review():
     review = r3.json()
     assert any(item["title"] in ("H1", "H2") for item in review)
 
-
 def test_registration_captcha():
-    # enable captcha check globally
     main.REQUIRE_REGISTER_CAPTCHA = True
-    # fetch captcha
-    rc = client.get("/auth/captcha")
-    assert rc.status_code == 200
-    chal = rc.json()
-    bad = client.post(
-        "/auth/register",
-        json={"email": "cap@example.com", "password": "pass", "captcha_id": chal["captcha_id"], "captcha_answer": "wrong"},
-    )
-    assert bad.status_code == 400
-    # correct answer? parse question to compute
-    parts = chal["question"].split("：")[1].split("=")[0].strip()
-    a, plus, b = parts.split()
-    answer = str(int(a) + int(b))
-    good = client.post(
-        "/auth/register",
-        json={"email": "cap@example.com", "password": "pass", "captcha_id": chal["captcha_id"], "captcha_answer": answer},
-    )
-    assert good.status_code == 201
-    # restore default for subsequent tests
-    main.REQUIRE_REGISTER_CAPTCHA = False
+    try:
+        rc = client.get("/auth/captcha")
+        assert rc.status_code == 200
+        chal = rc.json()
+        bad = client.post(
+            "/auth/register",
+            json={"email": "cap@example.com", "password": "pass", "captcha_id": chal["captcha_id"], "captcha_answer": "wrong"},
+        )
+        assert bad.status_code == 400
+
+        nums = [int(v) for v in re.findall(r"\d+", chal["question"])]
+        assert len(nums) >= 2
+        answer = str(nums[0] + nums[1])
+
+        good = client.post(
+            "/auth/register",
+            json={"email": "cap@example.com", "password": "pass", "captcha_id": chal["captcha_id"], "captcha_answer": answer},
+        )
+        assert good.status_code == 201
+    finally:
+        main.REQUIRE_REGISTER_CAPTCHA = False
 
 
 def test_insight_endpoints():
@@ -347,6 +380,80 @@ def test_monetization_endpoints():
     assert "checkout_url" in body
 
 
+def test_notion_integration_endpoints():
+    headers = _auth_headers("notion@example.com", "pass1234")
+
+    r = client.get("/integrations/notion", headers=headers)
+    assert r.status_code == 200
+    initial = r.json()
+    assert initial["connected"] is False
+    assert initial["api_token"] is None
+    assert initial["database_id"] is None
+
+    r2 = client.put(
+        "/integrations/notion",
+        headers=headers,
+        json={
+            "api_token": "secret_test_token",
+            "database_id": "db_123456",
+        },
+    )
+    assert r2.status_code == 200
+    updated = r2.json()
+    assert updated["connected"] is True
+    assert updated["api_token"] == "secret_test_token"
+    assert updated["database_id"] == "db_123456"
+
+
+def test_note_attachment_endpoints():
+    headers = _auth_headers("attach@example.com", "pass1234")
+
+    r_note = client.post(
+        "/notes",
+        json={"title": "Attachment note", "content": "body"},
+        headers=headers,
+    )
+    assert r_note.status_code == 200
+    note_id = r_note.json()["id"]
+
+    payload = {
+        "file_name": "idea.txt",
+        "mime_type": "text/plain",
+        "content_base64": base64.b64encode(b"hello attachment").decode("utf-8"),
+    }
+    r_upload = client.post(f"/notes/{note_id}/attachments", json=payload, headers=headers)
+    assert r_upload.status_code == 201
+    uploaded = r_upload.json()
+    assert uploaded["file_name"] == "idea.txt"
+    assert uploaded["mime_type"] == "text/plain"
+    assert uploaded["url"].startswith("/uploads/")
+
+    r_list = client.get(f"/notes/{note_id}/attachments", headers=headers)
+    assert r_list.status_code == 200
+    attachments = r_list.json()
+    assert len(attachments) == 1
+    assert attachments[0]["file_name"] == "idea.txt"
+
+    r_get = client.get(f"/notes/{note_id}", headers=headers)
+    assert r_get.status_code == 200
+    note = r_get.json()
+    assert len(note["attachments"]) == 1
+
+
+def test_audio_transcription_endpoint():
+    headers = _auth_headers("audio@example.com", "pass1234")
+    payload = {
+        "mime_type": "audio/webm",
+        "content_base64": base64.b64encode(b"fake audio bytes").decode("utf-8"),
+        "context": "test context",
+    }
+    r = client.post("/audio/transcribe", json=payload, headers=headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert "transcript" in body
+    assert isinstance(body["transcript"], str)
+
+
 def test_note_auto_extract_hashtags():
     headers = _auth_headers("tagger@example.com", "pass1234")
 
@@ -354,22 +461,23 @@ def test_note_auto_extract_hashtags():
         "/notes",
         json={
             "title": "Tag Test",
-            "content": "capture #idea and #工作 and keep #work-log",
+            "content": "capture #idea and #å·¥ä½œ and keep #work-log",
             "tags": ["manual", "#idea"],
         },
         headers=headers,
     )
     assert r.status_code == 200
     note = r.json()
-    assert set(note["tags"]) == {"manual", "idea", "工作", "work-log"}
+    assert set(note["tags"]) == {"manual", "idea", "å·¥ä½œ", "work-log"}
 
     note_id = note["id"]
     r = client.patch(
         f"/notes/{note_id}",
-        json={"content": "updated content with #newtag and #工作"},
+        json={"content": "updated content with #newtag and #å·¥ä½œ"},
         headers=headers,
     )
     assert r.status_code == 200
     updated = r.json()
     assert "newtag" in updated["tags"]
-    assert "工作" in updated["tags"]
+    assert "å·¥ä½œ" in updated["tags"]
+

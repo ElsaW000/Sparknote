@@ -1,59 +1,82 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:provider/provider.dart';
 
-import 'app_state.dart';
 import 'pages/chat.dart';
 import 'pages/login.dart';
 import 'pages/notes.dart';
+import 'pages/notion_integration.dart';
 import 'pages/register.dart';
-import 'pages/settings.dart';
 
 void main() {
   runApp(const SparknoteApp());
 }
 
 class SparknoteApp extends StatelessWidget {
-  const SparknoteApp({Key? key}) : super(key: key);
+  const SparknoteApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => AppState()..initialize(),
-      child: MaterialApp(
-        title: 'Sparknote',
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF388E3C), // Forest green
-            brightness: Brightness.light,
-          ),
-          cardTheme: CardThemeData(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Colors.grey[300]!),
-            ),
+    const brandDark = Color(0xFF1A3C34);
+    const brand = Color(0xFF2D6A4F);
+    const mint = Color(0xFFD8E2DC);
+
+    return MaterialApp(
+      title: 'Sparknote',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: brand,
+          brightness: Brightness.light,
+        ),
+        scaffoldBackgroundColor: const Color(0xFFFCFDFC),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFFFCFDFC),
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: brandDark,
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: brand,
+            foregroundColor: Colors.white,
           ),
         ),
-        locale: const Locale('zh', 'CN'),
-        supportedLocales: const [
-          Locale('zh', 'CN'),
-          Locale('en', 'US'),
-        ],
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        home: const LoginPage(),
-        routes: {
-          '/notes': (ctx) => const NotesPage(),
-          '/chat': (ctx) => const ChatPage(),
-          '/register': (ctx) => const RegisterPage(),
-          '/settings': (ctx) => const SettingsPage(),
-        },
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: brand,
+            foregroundColor: Colors.white,
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: brand,
+            side: const BorderSide(color: brand),
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: mint),
+          ),
+        ),
       ),
+      locale: const Locale('zh', 'CN'),
+      supportedLocales: const [
+        Locale('zh', 'CN'),
+        Locale('en', 'US'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: const LoginPage(),
+      routes: {
+        '/notes': (ctx) => const NotesPage(),
+        '/chat': (ctx) => const ChatPage(),
+        '/notion-integration': (ctx) => const NotionIntegrationPage(),
+        '/register': (ctx) => const RegisterPage(),
+      },
     );
   }
 }

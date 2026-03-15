@@ -101,7 +101,7 @@
 | 功能 | 描述 | 优先级 |
 |------|------|--------|
 | AI总结 | 自动总结笔记要点 | P0 |
-| AI续写 | 根据笔记内容续写 | P1 |
+| AI灵感工作台 | 根据笔记内容做灵感提取、对话和延展 | P1 |
 
 ### 3.5 消息/对话
 
@@ -158,7 +158,9 @@ GET    /notes/{id}        # 获取笔记详情
 PUT    /notes/{id}        # 更新笔记
 DELETE /notes/{id}        # 删除笔记
 POST   /notes/{id}/summarize  # AI总结
-POST   /notes/{id}/continue   # AI续写
+POST   /conversations         # 创建灵感工作台会话
+POST   /conversations/{id}/message  # 发送 AI 对话消息
+POST   /conversations/{id}/close    # 关闭会话并生成总结
 ```
 
 ---
@@ -203,7 +205,7 @@ POST   /notes/{id}/continue   # AI续写
 ### Phase 2 - Week 3-4
 - [ ] 标签系统
 - [ ] 搜索功能
-- [ ] AI续写
+- [ ] AI灵感工作台
 - [ ] 对话功能
 
 ### Phase 3 - Week 5+

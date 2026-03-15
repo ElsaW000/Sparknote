@@ -1,21 +1,17 @@
-import os
-import threading
-import queue
-import time
 import logging
-from typing import Any
+import os
+import queue
+import threading
 
-from sqlmodel import SQLModel, Field, create_engine, Session, select
+from sqlmodel import Session, create_engine
 
 from backend.ai_provider import get_provider
 
-# 配置日志
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
-
 
 _JOB_QUEUE: "queue.Queue[dict]" = queue.Queue()
 _WORKER_THREAD: threading.Thread | None = None
@@ -23,65 +19,86 @@ _RUNNING = False
 
 
 def _get_engine():
-    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sparknote.db")
+    default_db_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "sparknote.db",
+    )
+    database_url = os.getenv("DATABASE_URL", f"sqlite:///{default_db_path}")
     return create_engine(
-        DATABASE_URL,
+        database_url,
         echo=False,
-        connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+        connect_args={"check_same_thread": False} if database_url.startswith("sqlite") else {},
     )
 
 
-def enqueue_job(conversation_id: int, user_text: str, user_id: int) -> None:
-    """将AI任务加入队列"""
+def enqueue_job(
+    conversation_id: int,
+    user_text: str,
+    user_id: int,
+    note_title: str | None = None,
+    note_content: str | None = None,
+    attachment_labels: list[str] | None = None,
+) -> None:
     try:
-        _JOB_QUEUE.put({"conversation_id": conversation_id, "text": user_text, "user_id": user_id})
-        logger.info(f"Enqueued job for conversation {conversation_id}")
+        _JOB_QUEUE.put(
+            {
+                "conversation_id": conversation_id,
+                "text": user_text,
+                "user_id": user_id,
+                "note_title": note_title,
+                "note_content": note_content,
+                "attachment_labels": attachment_labels or [],
+            }
+        )
+        logger.info("Enqueued job for conversation %s", conversation_id)
     except Exception as e:
-        logger.error(f"Failed to enqueue job: {e}")
+        logger.error("Failed to enqueue job: %s", e)
 
 
 def _worker_loop():
-    """AI工作器主循环"""
     global _RUNNING
     engine = None
     provider = None
-    
+
     try:
         engine = _get_engine()
         provider = get_provider()
         logger.info("AI worker started")
         _RUNNING = True
-        
+
         while _RUNNING:
             try:
                 job = _JOB_QUEUE.get(timeout=0.5)
             except queue.Empty:
                 continue
-            
+
             try:
                 cid = job["conversation_id"]
                 prompt = job["text"]
                 uid = job["user_id"]
-                logger.info(f"Processing job for conversation {cid}")
-                
-                # 调用AI提供商
-                reply = provider.get_reply(prompt)
-                
-                # 保存回复为Message
-                from backend.main import Message  # 本地导入避免循环依赖
+                logger.info("Processing job for conversation %s", cid)
+
+                from backend.main import Message, _build_workspace_prompt
+
+                full_prompt = _build_workspace_prompt(
+                    prompt,
+                    note_title=job.get("note_title"),
+                    note_content=job.get("note_content"),
+                    attachment_labels=job.get("attachment_labels"),
+                )
+                reply = provider.get_reply(full_prompt)
 
                 with Session(engine) as session:
                     ai_msg = Message(conversation_id=cid, sender="ai", text=reply, user_id=uid)
                     session.add(ai_msg)
                     session.commit()
-                
-                logger.info(f"Completed job for conversation {cid}")
+
+                logger.info("Completed job for conversation %s", cid)
             except Exception as e:
-                # 出错时，保存错误消息
                 import traceback
+
                 tb = traceback.format_exc()
-                logger.error(f"Error processing job: {e}\n{tb}")
-                
+                logger.error("Error processing job: %s\n%s", e, tb)
                 try:
                     from backend.main import Message
 
@@ -95,39 +112,36 @@ def _worker_loop():
                         session.add(err_msg)
                         session.commit()
                 except Exception as save_err:
-                    logger.error(f"Failed to save error message: {save_err}")
+                    logger.error("Failed to save error message: %s", save_err)
                     traceback.print_exc()
             finally:
                 _JOB_QUEUE.task_done()
     except Exception as e:
-        logger.error(f"Worker loop failed: {e}")
+        logger.error("Worker loop failed: %s", e)
     finally:
         _RUNNING = False
         logger.info("AI worker stopped")
 
 
 def start_worker():
-    """启动AI工作器"""
     global _WORKER_THREAD
     if _WORKER_THREAD and _WORKER_THREAD.is_alive():
         logger.info("AI worker is already running")
         return
-    
+
     try:
         _WORKER_THREAD = threading.Thread(target=_worker_loop, daemon=True)
         _WORKER_THREAD.start()
         logger.info("AI worker started successfully")
     except Exception as e:
-        logger.error(f"Failed to start AI worker: {e}")
+        logger.error("Failed to start AI worker: %s", e)
 
 
 def stop_worker():
-    """停止AI工作器"""
     global _RUNNING
     _RUNNING = False
     logger.info("AI worker stopping...")
-    
-    # 等待线程结束
+
     if _WORKER_THREAD and _WORKER_THREAD.is_alive():
         _WORKER_THREAD.join(timeout=5.0)
         if _WORKER_THREAD.is_alive():

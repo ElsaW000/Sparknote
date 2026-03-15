@@ -25,3 +25,122 @@
 ### Known Gaps
 - Mobile app currently has login, notes list, and chat prototype flow.
 - Registration UI and fuller product features (voice/image upload, richer note lifecycle) are still pending.
+
+## 2026-03-11
+
+### Summary
+- Restored reliable local login against the real project database at `d:\02-Projects\01-Sparknote\sparknote.db`.
+- Confirmed backend regression signal is available again when running pytest with plugin autoload disabled.
+- Verified the backend happy path for `register -> login -> notes CRUD -> conversation message -> close conversation`.
+- Confirmed `mobile/lib/pages/ai_workspace.dart` is still a frontend-only prototype and is not wired to backend conversation endpoints yet.
+
+### Verification
+- Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests\test_api.py -q`
+- Result: `14 passed`
+- Manual backend flow check via `fastapi.testclient`:
+  - `GET /auth/captcha` -> OK
+  - `POST /auth/register` with captcha + identity -> `201`
+  - `POST /auth/login` -> `200`
+  - `POST /notes` -> `200`
+  - `PATCH /notes/{id}` -> `200`
+  - `GET /notes` -> `200`
+  - `POST /conversations` -> `200`
+  - `POST /conversations/{id}/message` -> `200`
+  - `GET /conversations/{id}/messages` -> `200`
+  - `POST /conversations/{id}/close` -> `200`
+  - `DELETE /notes/{id}` -> `200`
+
+### Findings
+- Root cause of the login blocker was not the login page itself. The real blocker was the local root database using an old schema, plus several debug scripts editing the wrong database file under `backend/sparknote.db`.
+- `tester@example.com / pass1234` is currently a working local login for the real root database.
+- `test@example.com / test123` also works as a fallback local account.
+- Real external AI calls are still blocked in the current environment. Backend conversation close still returns `200`, but the generated content is based on provider failure/fallback behavior rather than a successful remote model response.
+- `mobile/lib/pages/ai_workspace.dart` currently simulates AI chat locally and does not prove the real backend AI flow from the UI.
+
+### Debug Scripts
+- Keep for short-term debugging:
+  - `check_user.py`: inspect users in the real root database
+  - `fix_user.py`: reset/create a known local user in the real root database
+  - `reset_user.py`: recreate `test@example.com` in the real root database
+  - `test_login.py`: quick HTTP smoke test for `/health` and `/auth/login`
+- Archive or delete after this iteration:
+  - `debug_login.py`
+  - `debug_login2.py`
+  - `check_db.py`
+
+### Remaining Blockers
+- There is still no recorded UI-level end-to-end proof for `LoginPage -> NotesPage -> AIWorkspacePage`.
+- `AIWorkspacePage` remains a prototype UI and should not be treated as evidence that the real AI product flow is complete.
+- The notes UI is still functional but visually prototype-level, not presentation-ready.
+
+## 2026-03-15
+
+### Summary
+- Rebuilt the core product UI around the new “灵感流 + 灵感工作台” model and aligned product copy from the old “AI续写” wording.
+- Wired the workspace to real backend conversation flow instead of a frontend-only prototype.
+- Added MVP attachments, audio transcription, and Notion integration entry points.
+- Improved homepage interactivity and quick capture ergonomics, including title parsing, heatmap filtering, and workspace launch from the dashboard.
+
+### Work Done
+- Product/UI alignment
+  - Rewrote `mobile/lib/pages/notes.dart` into the PRD desktop three-column layout plus mobile “灵感流 + 快速输入” structure.
+  - Unified entry naming to “灵感工作台”.
+  - Updated PRD wording and removed duplicated/obsolete “AI续写” design copy.
+- Auth and onboarding
+  - Refined login/register palette to the agreed green system:
+    - `#1A3C34`
+    - `#2D6A4F`
+    - `#D8E2DC`
+    - `#FFFFFF`
+  - Kept the login page as the baseline layout and made register follow the same visual skeleton.
+  - Added persona-card immersion scene navigation from the login page.
+  - Removed identity selection from registration flow.
+  - Fixed captcha question mojibake in backend responses.
+- Workspace and AI flow
+  - Connected `AIWorkspacePage` to real backend conversations.
+  - Sent current note title/content and attachment context together with user prompts so AI can answer based on the note instead of saying it received no content.
+  - Added workspace return navigation, resizable assistant panel, optional `编辑居中 / 对话居中` layout switch, and less intrusive auto-scroll behavior.
+  - Added an AI “thinking” placeholder to reduce the blank wait before a full response arrives.
+- Attachments and audio
+  - Added backend note attachment support:
+    - `GET /notes/{note_id}/attachments`
+    - `POST /notes/{note_id}/attachments`
+    - static file serving for `/uploads/...`
+  - Added backend audio transcription endpoint:
+    - `POST /audio/transcribe`
+  - Added frontend local file picker utilities for Flutter web.
+  - Added image/file upload and audio transcription entry points in the workspace.
+  - Added image/file selection and audio transcription entry points to the homepage quick composer.
+- Homepage and note capture
+  - Added inline quick title parsing using `#标题` on the first line.
+  - Changed note-card fallback title behavior to prefer the first content line instead of always showing “未命名灵感”.
+  - Added selected attachment feedback above the quick composer with filename chips and remove actions.
+  - Made the heatmap clickable to filter notes by date.
+  - Added a summary block to “今日回顾” and made review cards clickable.
+  - Made the right-side “灵感工作台” card clickable to open a note search/selection dialog before entering the workspace.
+  - Replaced note-card database id badges with human-facing order labels such as “第 1 条”.
+- Integrations and tooling
+  - Added Notion integration settings MVP:
+    - `GET /integrations/notion`
+    - `PUT /integrations/notion`
+  - Added an `API连接` entry in the left rail.
+  - Cleaned up root-level debug scripts and consolidated them into `tools/debug/`.
+  - Added `docs/testing/mvp_checklist.md` with split columns for `AI测试` and `人工测试`.
+
+### Verification
+- Backend tests
+  - `pytest backend/tests -q` -> passed during this cycle after test/environment fixes.
+  - `pytest backend/tests/test_api.py -q -k "audio_transcription or attachment or conversation or notion_integration"` -> `4 passed`
+- Frontend
+  - `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000` -> passed multiple times during this cycle.
+  - Latest `flutter analyze` result shows only non-blocking warnings/info and no new functional errors.
+- Functional checks completed in this cycle
+  - `register -> login -> notes CRUD -> conversation message -> close conversation`
+  - workspace reads current note content
+  - homepage quick composer can send note content and attach selected files
+
+### Known Gaps
+- AI replies are still polled and rendered as whole-message responses; true token-level streaming is not implemented yet.
+- Audio input is currently “import audio file and transcribe”, not live browser recording or realtime voice agent.
+- Quick composer currently supports explicit image/file selection, but direct clipboard paste for images/files is still pending.
+- Some legacy analyzer warnings remain in unrelated files and utility wrappers.

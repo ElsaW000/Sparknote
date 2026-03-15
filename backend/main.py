@@ -1,11 +1,11 @@
-from fastapi import FastAPI, HTTPException, Depends, status, Request
+﻿from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import SQLModel, Field, create_engine, Session, select
 from typing import Optional, List, Generator
 from datetime import datetime, timedelta, date
-from sqlalchemy import func
+from sqlalchemy import func, or_
 import json
 import os
 import re
@@ -14,14 +14,15 @@ import threading
 import uuid
 import requests
 import logging
+import base64
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from dotenv import load_dotenv
 
-# 加载环境变量
+# åŠ è½½çŽ¯å¢ƒå˜é‡
 load_dotenv()
 
-# 配置日志
+# é…ç½®æ—¥å¿—
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -29,7 +30,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ---------- database setup ----------
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sparknote.db")
+_DEFAULT_DB_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "sparknote.db",
+)
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{_DEFAULT_DB_PATH}")
 engine = create_engine(
     DATABASE_URL,
     echo=True,
@@ -54,13 +59,34 @@ def _ensure_legacy_schema() -> None:
         return
     try:
         with engine.begin() as conn:
-            rows = conn.exec_driver_sql("PRAGMA table_info(note)").fetchall()
-            cols = {str(r[1]) for r in rows}
-            if "created_at" not in cols:
+            def _table_columns(table_name: str) -> set[str]:
+                rows = conn.exec_driver_sql(f"PRAGMA table_info({table_name})").fetchall()
+                return {str(r[1]) for r in rows}
+
+            note_cols = _table_columns("note")
+            if "user_id" not in note_cols:
+                conn.exec_driver_sql("ALTER TABLE note ADD COLUMN user_id INTEGER")
+            if "created_at" not in note_cols:
                 conn.exec_driver_sql("ALTER TABLE note ADD COLUMN created_at TEXT")
                 conn.exec_driver_sql(
                     "UPDATE note SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"
                 )
+
+            user_cols = _table_columns("user")
+            if "identity" not in user_cols:
+                conn.exec_driver_sql("ALTER TABLE user ADD COLUMN identity TEXT")
+            if "notion_api_token" not in user_cols:
+                conn.exec_driver_sql("ALTER TABLE user ADD COLUMN notion_api_token TEXT")
+            if "notion_database_id" not in user_cols:
+                conn.exec_driver_sql("ALTER TABLE user ADD COLUMN notion_database_id TEXT")
+
+            conversation_cols = _table_columns("conversation")
+            if "user_id" not in conversation_cols:
+                conn.exec_driver_sql("ALTER TABLE conversation ADD COLUMN user_id INTEGER")
+
+            message_cols = _table_columns("message")
+            if "user_id" not in message_cols:
+                conn.exec_driver_sql("ALTER TABLE message ADD COLUMN user_id INTEGER")
     except Exception:
         # Schema compatibility patch should not block app startup.
         pass
@@ -71,8 +97,10 @@ class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(index=True)
     password_hash: str
-    identity: Optional[str] = Field(default=None)  # 小说作者/产品经理/内容创作者/全部
+    identity: Optional[str] = Field(default=None)  # å°è¯´ä½œè€…/äº§å“ç»ç†/å†…å®¹åˆ›ä½œè€…/å…¨éƒ¨
     is_active: bool = True
+    notion_api_token: Optional[str] = Field(default=None)
+    notion_database_id: Optional[str] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -89,6 +117,17 @@ class NoteTag(SQLModel, table=True):
     note_id: int = Field(foreign_key="note.id", index=True)
     user_id: int = Field(foreign_key="user.id", index=True)
     tag: str = Field(index=True)
+
+
+class NoteAttachment(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    note_id: int = Field(foreign_key="note.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    file_name: str
+    stored_name: str
+    mime_type: Optional[str] = None
+    size_bytes: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class Conversation(SQLModel, table=True):
@@ -114,6 +153,9 @@ class Message(SQLModel, table=True):
 class MessageCreate(SQLModel):
     sender: str
     text: str
+    note_title: Optional[str] = None
+    note_content: Optional[str] = None
+    attachment_labels: List[str] = Field(default_factory=list)
 
 
 class NoteCreate(SQLModel):
@@ -135,6 +177,36 @@ class NoteRead(SQLModel):
     user_id: int
     created_at: datetime
     tags: List[str] = Field(default_factory=list)
+    attachments: List["NoteAttachmentRead"] = Field(default_factory=list)
+
+
+class NoteAttachmentRead(SQLModel):
+    id: int
+    note_id: int
+    file_name: str
+    mime_type: Optional[str] = None
+    size_bytes: int
+    created_at: datetime
+    url: str
+
+
+class NoteAttachmentCreate(SQLModel):
+    file_name: str
+    mime_type: Optional[str] = None
+    content_base64: str
+
+
+NoteRead.update_forward_refs(NoteAttachmentRead=NoteAttachmentRead)
+
+
+class AudioTranscriptionRequest(SQLModel):
+    mime_type: Optional[str] = None
+    content_base64: str
+    context: Optional[str] = None
+
+
+class AudioTranscriptionResponse(SQLModel):
+    transcript: str
 
 
 class NoteRelationCreate(SQLModel):
@@ -158,7 +230,7 @@ class UserCreate(SQLModel):
 class UserRegister(SQLModel):
     email: str
     password: str
-    identity: Optional[str] = None  # 小说作者/产品经理/内容创作者/全部
+    identity: Optional[str] = None  # å°è¯´ä½œè€…/äº§å“ç»ç†/å†…å®¹åˆ›ä½œè€…/å…¨éƒ¨
     captcha_id: Optional[str] = None
     captcha_answer: Optional[str] = None
 
@@ -169,6 +241,17 @@ class UserRead(SQLModel):
     identity: Optional[str] = None
     is_active: bool
     created_at: datetime
+
+
+class NotionIntegrationRead(SQLModel):
+    connected: bool
+    api_token: Optional[str] = None
+    database_id: Optional[str] = None
+
+
+class NotionIntegrationUpdate(SQLModel):
+    api_token: Optional[str] = None
+    database_id: Optional[str] = None
 
 
 class Token(SQLModel):
@@ -304,7 +387,7 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """全局异常处理中间件"""
+    """å…¨å±€å¼‚å¸¸å¤„ç†ä¸­é—´ä»¶"""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -314,7 +397,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """HTTP异常处理中间件"""
+    """HTTPå¼‚å¸¸å¤„ç†ä¸­é—´ä»¶"""
     logger.info(f"HTTP exception: {exc.detail}")
     return JSONResponse(
         status_code=exc.status_code,
@@ -335,7 +418,6 @@ def on_startup():
     except Exception:
         pass
 
-
 # ---------- helpers ----------
 from backend.ai_provider import get_provider
 
@@ -348,6 +430,100 @@ def _ai_reply(prompt: str) -> str:
         return _AI_PROVIDER.get_reply(prompt)
     except Exception as e:
         return f"[AI provider error: {e}]"
+
+
+def _build_workspace_prompt(
+    user_text: str,
+    note_title: Optional[str] = None,
+    note_content: Optional[str] = None,
+    attachment_labels: Optional[List[str]] = None,
+) -> str:
+    title = (note_title or "").strip()
+    content = (note_content or "").strip()
+    user_request = user_text.strip()
+    if not title and not content:
+        return user_request
+    sections = [
+        "\u4f60\u662f Sparknote \u7684\u7075\u611f\u5de5\u4f5c\u53f0 AI \u52a9\u624b\u3002",
+        "\u4f60\u9700\u8981\u57fa\u4e8e\u5f53\u524d\u7b14\u8bb0\u5185\u5bb9\u56de\u7b54\u7528\u6237\u95ee\u9898\uff0c\u4e0d\u8981\u8bf4\u201c\u672a\u6536\u5230\u5177\u4f53\u5185\u5bb9\u201d\uff0c\u9664\u975e\u4e0b\u9762\u7684\u7b14\u8bb0\u771f\u7684\u4e3a\u7a7a\u3002",
+    ]
+    if title:
+        sections.append(f"\u5f53\u524d\u7b14\u8bb0\u6807\u9898\uff1a{title}")
+    if content:
+        sections.append("\u5f53\u524d\u7b14\u8bb0\u6b63\u6587\uff1a\n" + content)
+    labels = [label.strip() for label in (attachment_labels or []) if label and label.strip()]
+    if labels:
+        sections.append("\u5f53\u524d\u9644\u4ef6\uff1a\n- " + "\n- ".join(labels))
+    sections.append("\u7528\u6237\u95ee\u9898\uff1a\n" + user_request)
+    sections.append(
+        "\u8bf7\u7ed3\u5408\u8fd9\u6761\u7b14\u8bb0\u7ed9\u51fa\u5177\u4f53\u3001\u53ef\u6267\u884c\u7684\u5efa\u8bae\uff0c\u5fc5\u8981\u65f6\u5f15\u7528\u7b14\u8bb0\u4e2d\u7684\u5173\u952e\u70b9\u3002"
+    )
+    return "\n\n".join(sections)
+
+
+def _transcribe_audio(
+    content_base64: str,
+    mime_type: Optional[str] = None,
+    context: Optional[str] = None,
+) -> str:
+    dash_key = os.getenv("DASHSCOPE_API_KEY") or os.getenv("DASHSCOPE")
+    if not dash_key:
+        return "[mock transcript] 当前环境未配置语音识别服务，请配置 DASHSCOPE_API_KEY。"
+
+    audio_mime = (mime_type or "audio/webm").strip() or "audio/webm"
+    prompt = (
+        (context or "").strip()
+        or "请将这段中文语音准确转写成简体中文文本，保留原意，去掉无意义语气词。"
+    )
+    base = os.getenv("DASHSCOPE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1").rstrip("/")
+    model = os.getenv("DASHSCOPE_ASR_MODEL", "qwen3-asr-flash")
+    payload = {
+        "model": model,
+        "messages": [
+            {
+                "role": "system",
+                "content": [{"type": "text", "text": prompt}],
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_audio",
+                        "input_audio": {
+                            "data": f"data:{audio_mime};base64,{content_base64}",
+                            "format": audio_mime.split("/")[-1],
+                        },
+                    }
+                ],
+            },
+        ],
+    }
+    try:
+        r = requests.post(
+            f"{base}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {dash_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=90,
+        )
+        r.raise_for_status()
+        body = r.json()
+        content = body["choices"][0]["message"]["content"]
+        if isinstance(content, str):
+            return content.strip()
+        if isinstance(content, list):
+            texts = []
+            for item in content:
+                if isinstance(item, dict):
+                    text = item.get("text") or item.get("transcript")
+                    if text:
+                        texts.append(str(text))
+            return "\n".join(texts).strip()
+        return str(content).strip()
+    except Exception as e:
+        return f"[ASR failed] {e}"
 
 
 def _normalize_tags(tags: Optional[List[str]]) -> List[str]:
@@ -371,7 +547,7 @@ def _normalize_tags(tags: Optional[List[str]]) -> List[str]:
 def _extract_tags_from_content(content: Optional[str]) -> List[str]:
     if not content:
         return []
-    # Accept tags like #idea, #work-log, #中文标签 and ignore bare '#'.
+    # Accept tags like #idea, #work-log, #ä¸­æ–‡æ ‡ç­¾ and ignore bare '#'.
     found = re.findall(r"(?<!\w)#([\w\-]+)", content, flags=re.UNICODE)
     return _normalize_tags(found)
 
@@ -397,6 +573,32 @@ def _set_note_tags(session: Session, note_id: int, user_id: int, tags: Optional[
         session.add(NoteTag(note_id=note_id, user_id=user_id, tag=tag))
 
 
+def _uploads_dir() -> str:
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _get_note_attachments(session: Session, note_id: int, user_id: int) -> List["NoteAttachmentRead"]:
+    rows = session.exec(
+        select(NoteAttachment).where(
+            (NoteAttachment.note_id == note_id) & (NoteAttachment.user_id == user_id)
+        )
+    ).all()
+    return [
+        NoteAttachmentRead(
+            id=row.id,
+            note_id=row.note_id,
+            file_name=row.file_name,
+            mime_type=row.mime_type,
+            size_bytes=row.size_bytes,
+            created_at=row.created_at,
+            url=f"/uploads/{row.stored_name}",
+        )
+        for row in rows
+    ]
+
+
 def _to_note_read(session: Session, note: Note) -> NoteRead:
     return NoteRead(
         id=note.id,
@@ -405,6 +607,7 @@ def _to_note_read(session: Session, note: Note) -> NoteRead:
         user_id=note.user_id,
         created_at=note.created_at,
         tags=_get_note_tags(session, note.id, note.user_id),
+        attachments=_get_note_attachments(session, note.id, note.user_id),
     )
 
 
@@ -426,7 +629,7 @@ def _create_captcha() -> CaptchaChallenge:
         _CAPTCHA_STORE[captcha_id] = {"answer": answer, "expires_at": expires_at}
     return CaptchaChallenge(
         captcha_id=captcha_id,
-        question=f"请计算：{left} + {right} = ?",
+        question=f"\u8bf7\u8ba1\u7b97\uff1a{left} + {right} = ?",
         expires_in=REGISTER_CAPTCHA_TTL_SECONDS,
     )
 
@@ -499,16 +702,73 @@ def register_user(payload: UserRegister, session: Session = Depends(get_session)
 
 @app.post("/auth/login", response_model=Token)
 def login(payload: UserCreate, session: Session = Depends(get_session)):
+    logger.info(f"Login attempt for email: {payload.email}")
     user = get_user_by_email(session, payload.email)
-    if not user or not verify_password(payload.password, user.password_hash):
+    if not user:
+        logger.warning(f"User not found: {payload.email}")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
+    
+    logger.info(f"User found: {user.email}, checking password...")
+    logger.info(f"Stored hash: {user.password_hash[:50]}...")
+    
+    is_valid = verify_password(payload.password, user.password_hash)
+    logger.info(f"Password valid: {is_valid}")
+    
+    if not is_valid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
+    
     access_token = create_access_token({"sub": str(user.id)})
+    logger.info(f"Login successful for: {payload.email}")
     return Token(access_token=access_token, token_type="bearer")
 
 
 @app.get("/auth/me", response_model=UserRead)
 def read_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@app.get("/integrations/notion", response_model=NotionIntegrationRead)
+def get_notion_integration(current_user: User = Depends(get_current_user)):
+    return NotionIntegrationRead(
+        connected=bool(current_user.notion_api_token and current_user.notion_database_id),
+        api_token=current_user.notion_api_token,
+        database_id=current_user.notion_database_id,
+    )
+
+
+@app.put("/integrations/notion", response_model=NotionIntegrationRead)
+def update_notion_integration(
+    payload: NotionIntegrationUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.notion_api_token = payload.api_token.strip() if payload.api_token else None
+    current_user.notion_database_id = payload.database_id.strip() if payload.database_id else None
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+    return NotionIntegrationRead(
+        connected=bool(current_user.notion_api_token and current_user.notion_database_id),
+        api_token=current_user.notion_api_token,
+        database_id=current_user.notion_database_id,
+    )
+
+
+@app.post("/audio/transcribe", response_model=AudioTranscriptionResponse)
+def transcribe_audio(
+    payload: AudioTranscriptionRequest,
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        base64.b64decode(payload.content_base64.encode("utf-8"), validate=True)
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid base64 content")
+    transcript = _transcribe_audio(
+        payload.content_base64,
+        mime_type=payload.mime_type,
+        context=payload.context,
+    )
+    return AudioTranscriptionResponse(transcript=transcript)
 
 
 @app.post("/notes", response_model=NoteRead)
@@ -533,10 +793,12 @@ def list_notes(
     current_user: User = Depends(get_current_user),
     since: Optional[datetime] = None,
     tag: Optional[str] = None,
+    q: Optional[str] = None,
 ):
     """List notes for the current user.
     Optional `since` query param (ISO datetime) filters notes created after the given time.
     Optional `tag` query param filters notes containing the exact tag (TAG-04).
+    Optional `q` query param searches note title and content case-insensitively.
     """
     query = select(Note).where(Note.user_id == current_user.id)
     if since is not None:
@@ -544,6 +806,15 @@ def list_notes(
     if tag is not None:
         # Join with NoteTag to filter notes that have the tag
         query = query.join(NoteTag, (NoteTag.note_id == Note.id) & (NoteTag.user_id == current_user.id) & (NoteTag.tag == tag))
+    if q is not None and q.strip():
+        keyword = f"%{q.strip().lower()}%"
+        query = query.where(
+            or_(
+                func.lower(func.coalesce(Note.title, "")).like(keyword),
+                func.lower(Note.content).like(keyword),
+            )
+        )
+    query = query.order_by(Note.created_at.desc())
     notes = session.exec(query).all()
     return [_to_note_read(session, n) for n in notes]
 
@@ -558,6 +829,64 @@ def get_note(
     if not note or note.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="note not found")
     return _to_note_read(session, note)
+
+
+@app.get("/notes/{note_id}/attachments", response_model=List[NoteAttachmentRead])
+def list_note_attachments(
+    note_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    note = session.get(Note, note_id)
+    if not note or note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="note not found")
+    return _get_note_attachments(session, note_id, current_user.id)
+
+
+@app.post("/notes/{note_id}/attachments", response_model=NoteAttachmentRead, status_code=201)
+def upload_note_attachment(
+    note_id: int,
+    payload: NoteAttachmentCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    note = session.get(Note, note_id)
+    if not note or note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="note not found")
+    file_name = payload.file_name.strip()
+    if not file_name:
+        raise HTTPException(status_code=400, detail="file name required")
+    try:
+        raw = base64.b64decode(payload.content_base64.encode("utf-8"), validate=True)
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid base64 content")
+    if not raw:
+        raise HTTPException(status_code=400, detail="empty file")
+    safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", file_name)
+    stored_name = f"{uuid.uuid4().hex}_{safe_name}"
+    file_path = os.path.join(_uploads_dir(), stored_name)
+    with open(file_path, "wb") as f:
+        f.write(raw)
+    row = NoteAttachment(
+        note_id=note_id,
+        user_id=current_user.id,
+        file_name=file_name,
+        stored_name=stored_name,
+        mime_type=(payload.mime_type or "").strip() or None,
+        size_bytes=len(raw),
+    )
+    session.add(row)
+    session.commit()
+    session.refresh(row)
+    return NoteAttachmentRead(
+        id=row.id,
+        note_id=row.note_id,
+        file_name=row.file_name,
+        mime_type=row.mime_type,
+        size_bytes=row.size_bytes,
+        created_at=row.created_at,
+        url=f"/uploads/{row.stored_name}",
+    )
 
 
 @app.get("/tags/suggest")
@@ -934,14 +1263,27 @@ def add_message(
 
     # If user message, enqueue background AI job and return queued status
     if payload.sender == "user":
+        prompt = _build_workspace_prompt(
+            payload.text,
+            note_title=payload.note_title,
+            note_content=payload.note_content,
+            attachment_labels=payload.attachment_labels,
+        )
         try:
             from backend.ai_worker import enqueue_job
 
-            enqueue_job(cid, payload.text, current_user.id)
+            enqueue_job(
+                cid,
+                payload.text,
+                current_user.id,
+                note_title=payload.note_title,
+                note_content=payload.note_content,
+                attachment_labels=payload.attachment_labels,
+            )
             return {"user_message": msg, "status": "queued"}
         except Exception:
             # fallback to synchronous reply if enqueue fails
-            ai_text = _ai_reply(payload.text)
+            ai_text = _ai_reply(prompt)
             ai_msg = Message(
                 conversation_id=cid,
                 sender="ai",
@@ -989,7 +1331,7 @@ def close_conversation(
         )
     ).all()
     summary_prompt = "\n".join([f"{m.sender}: {m.text}" for m in msgs])
-    summary = _ai_reply("请总结以下对话并提取灵感要点：\n" + summary_prompt)
+    summary = _ai_reply("\u8bf7\u603b\u7ed3\u4ee5\u4e0b\u5bf9\u8bdd\u5e76\u63d0\u53d6\u7075\u611f\u8981\u70b9\uff1a\n" + summary_prompt)
     note = Note(
         title=conv.title or f"Summary {cid}",
         content=summary,
@@ -1000,3 +1342,15 @@ def close_conversation(
     session.commit()
     session.refresh(note)
     return {"note_id": note.id, "summary": summary}
+
+
+# Serve frontend static files - MUST be at the end
+from fastapi.staticfiles import StaticFiles
+import os
+
+frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "mobile", "build", "web")
+uploads_dir = _uploads_dir()
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+if os.path.exists(frontend_dir):
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+
