@@ -191,6 +191,10 @@
   - Added clearer product guidance to distinguish “碎片输入” from “新建长笔记”.
   - Relaxed the left-rail spacing again after manual review so the pulse, tag, and notebook areas no longer feel stacked too tightly.
   - Expanded the API guide with direct Notion official links for integrations, databases, and authorization setup.
+  - Split “设置” and “API 文档” into two separate responsibilities:
+    - `设置` now acts as the real configuration center for profile, style, API, and AI provider sections.
+    - `API 文档` now behaves like an operation manual page that explains prerequisites, steps, and official references instead of mixing documentation with live config fields.
+  - Renamed the left-rail entry from `API连接` to `API文档` so users are guided to docs instead of expecting editable configuration there.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`

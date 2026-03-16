@@ -6,6 +6,7 @@ import 'pages/login.dart';
 import 'pages/notes.dart';
 import 'pages/notion_integration.dart';
 import 'pages/register.dart';
+import 'pages/settings.dart';
 
 void main() {
   runApp(const SparknoteApp());
@@ -75,6 +76,7 @@ class SparknoteApp extends StatelessWidget {
         '/notes': (ctx) => const NotesPage(),
         '/chat': (ctx) => const ChatPage(),
         '/notion-integration': (ctx) => const NotionIntegrationPage(),
+        '/settings': (ctx) => const SettingsPage(),
         '/register': (ctx) => const RegisterPage(),
       },
     );

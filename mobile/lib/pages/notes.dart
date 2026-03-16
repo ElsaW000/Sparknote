@@ -851,7 +851,11 @@ class _NotesPageState extends State<NotesPage> {
     Navigator.of(context).pushReplacementNamed('/');
   }
 
-  void _openApiIntegration() {
+  void _openSettings() {
+    Navigator.of(context).pushNamed('/settings');
+  }
+
+  void _openApiDocs() {
     Navigator.of(context).pushNamed('/notion-integration');
   }
 
@@ -1440,7 +1444,7 @@ class _NotesPageState extends State<NotesPage> {
                   backgroundColor: Colors.white.withValues(alpha: 0.12),
                   foregroundColor: Colors.white,
                 ),
-                onPressed: _openApiIntegration,
+                onPressed: _openSettings,
                 icon: const Icon(Icons.settings_outlined),
                 label: const Text('设置'),
               ),
@@ -1451,9 +1455,9 @@ class _NotesPageState extends State<NotesPage> {
                   backgroundColor: Colors.white.withValues(alpha: 0.12),
                   foregroundColor: Colors.white,
                 ),
-                onPressed: _openApiIntegration,
+                onPressed: _openApiDocs,
                 icon: const Icon(Icons.api_outlined),
-                label: const Text('API连接'),
+                label: const Text('API文档'),
               ),
               const SizedBox(height: 10),
               FilledButton.tonalIcon(
