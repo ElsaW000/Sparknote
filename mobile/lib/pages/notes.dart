@@ -1183,7 +1183,7 @@ class _NotesPageState extends State<NotesPage> {
     required IconData icon,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -1213,7 +1213,7 @@ class _NotesPageState extends State<NotesPage> {
                   color: _ink,
                 ),
               ),
-              const SizedBox(height: 1),
+              const SizedBox(height: 2),
               Text(
                 label,
                 style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
@@ -1239,7 +1239,7 @@ class _NotesPageState extends State<NotesPage> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -1273,7 +1273,7 @@ class _NotesPageState extends State<NotesPage> {
                         color: Color(0xFF1A1A1A),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       _formatDate(note['created_at']),
                       style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
@@ -1299,7 +1299,7 @@ class _NotesPageState extends State<NotesPage> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Text(
             _text(note['content'] ?? ''),
             maxLines: compact ? 4 : 6,
@@ -1311,7 +1311,7 @@ class _NotesPageState extends State<NotesPage> {
             ),
           ),
           if (tags.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -1334,7 +1334,7 @@ class _NotesPageState extends State<NotesPage> {
               }).toList(),
             ),
           ],
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -1515,7 +1515,7 @@ class _NotesPageState extends State<NotesPage> {
                               }).toList(),
                             ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
@@ -1618,11 +1618,13 @@ class _NotesPageState extends State<NotesPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 12,
+                        runSpacing: 8,
                         children: [
                           Text(
                             isDesktop ? '灵感流' : '今天的灵感流',
@@ -1632,26 +1634,25 @@ class _NotesPageState extends State<NotesPage> {
                               color: _ink,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            '像聊天一样捕捉碎片，再把值得发展的部分送进灵感工作台。',
-                            style: TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
-                          ),
-                          const SizedBox(height: 10),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEAF4EE),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: _line),
+                              color: Colors.white.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Text(
                               '底部输入适合碎片捕捉，右上按钮适合整理成长笔记。',
                               style: TextStyle(
-                                fontSize: _bodySize,
-                                color: _brandDark,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: Color(0xFF999999),
                                 height: _bodyHeight,
+                                shadows: [
+                                  Shadow(
+                                    color: Color(0x14000000),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 1),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -1663,7 +1664,7 @@ class _NotesPageState extends State<NotesPage> {
                       style: FilledButton.styleFrom(
                         backgroundColor: _brand,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -1674,7 +1675,7 @@ class _NotesPageState extends State<NotesPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
@@ -1739,7 +1740,7 @@ class _NotesPageState extends State<NotesPage> {
                 return _buildNoteCard(
                   note,
                   compact: !isDesktop,
-                  displayIndex: index + 1,
+                  displayIndex: _visibleNotes().length - index,
                 );
               },
             ),
@@ -1839,11 +1840,11 @@ class _NotesPageState extends State<NotesPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: const EdgeInsets.only(bottom: 10),
                       decoration: BoxDecoration(
                         color: _brand.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(16),
@@ -1866,7 +1867,7 @@ class _NotesPageState extends State<NotesPage> {
                 onTap: _openWorkspaceLauncher,
                 borderRadius: BorderRadius.circular(24),
                 child: Container(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: _brandDark,
                     borderRadius: BorderRadius.circular(24),
@@ -2251,7 +2252,7 @@ class _NotesPageState extends State<NotesPage> {
                   (entry) => _buildNoteCard(
                     entry.value as Map<String, dynamic>,
                     compact: true,
-                    displayIndex: entry.key + 1,
+                    displayIndex: _visibleNotes().length - entry.key,
                   ),
                 ),
             ],
