@@ -1,4 +1,5 @@
 ﻿import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -1385,14 +1386,14 @@ class _NotesPageState extends State<NotesPage> {
     final visibleTags = tags.take(2).toList();
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: compact ? 22 : 28),
       constraints: compact
           ? null
           : const BoxConstraints(
               minHeight: 168,
               maxHeight: 168,
             ),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -1919,6 +1920,7 @@ class _NotesPageState extends State<NotesPage> {
                     style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
                   ),
                 ],
+                const SizedBox(height: 10),
               ],
             ),
           ),
@@ -1938,7 +1940,12 @@ class _NotesPageState extends State<NotesPage> {
           )
         else
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(isDesktop ? 28 : 18, 0, isDesktop ? 28 : 18, 200),
+            padding: EdgeInsets.fromLTRB(
+              isDesktop ? 28 : 18,
+              8,
+              isDesktop ? 28 : 18,
+              isDesktop ? 312 : 196,
+            ),
             sliver: SliverList.builder(
               itemCount: _visibleNotes().length,
               itemBuilder: (context, index) {
@@ -2110,24 +2117,28 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   Widget _buildQuickComposer({required bool isDesktop}) {
-    final composerCard = Container(
-      constraints: BoxConstraints(maxWidth: isDesktop ? 960 : double.infinity),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: _line),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A0E1A13),
-            blurRadius: 30,
-            offset: Offset(0, 10),
+    final composerCard = ClipRRect(
+      borderRadius: BorderRadius.circular(26),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          constraints: BoxConstraints(maxWidth: isDesktop ? 948 : double.infinity),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: const Color(0xD6D8E5DC)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x120E1A13),
+                blurRadius: 18,
+                offset: Offset(0, 8),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               if (_quickAttachmentStatus != null || _quickAttachments.isNotEmpty) ...[
                 Align(
                   alignment: Alignment.centerLeft,
@@ -2271,15 +2282,17 @@ class _NotesPageState extends State<NotesPage> {
               ),
             ],
           ),
-        );
+        ),
+      ),
+    );
 
     if (isDesktop) {
       return Positioned(
         left: 318,
         right: 420,
-        bottom: 14,
+        bottom: 18,
         child: SafeArea(
-          minimum: const EdgeInsets.only(bottom: 14),
+          minimum: const EdgeInsets.only(bottom: 18),
           child: composerCard,
         ),
       );

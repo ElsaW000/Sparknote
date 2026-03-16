@@ -226,6 +226,10 @@
     - supports image and document picking before save,
     - shows pending attachments with remove actions,
     - uploads selected files after the note is successfully created or updated.
+  - Relaxed the desktop homepage rhythm:
+    - increased note-card spacing in the main flow,
+    - added a larger bottom spacer so the fixed quick composer no longer crowds the last notes,
+    - softened the composer into a lighter glass-like surface with reduced shadow weight.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`
