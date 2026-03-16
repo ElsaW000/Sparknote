@@ -210,6 +210,7 @@
     - content titles aligned to a 16px heading scale,
     - body and caption text normalized to a 14px reading size,
     - large container radii aligned around 24px for better cross-page consistency.
+  - Moved the desktop note search box out of the center content stream and into the top of the right utility rail so search behaves more like an auxiliary tool and less like the primary workspace.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`

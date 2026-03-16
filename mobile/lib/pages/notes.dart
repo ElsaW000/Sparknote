@@ -942,6 +942,104 @@ class _NotesPageState extends State<NotesPage> {
     return Wrap(spacing: 10, runSpacing: 10, children: chips);
   }
 
+  Widget _buildSearchUtilityCard() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchCtrl,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => _applySearch(),
+                  style: const TextStyle(
+                    fontSize: _bodySize,
+                    color: _ink,
+                    height: _bodyHeight,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '搜索...',
+                    hintStyle: const TextStyle(
+                      fontSize: _bodySize,
+                      color: Color(0xFF666666),
+                      height: _bodyHeight,
+                    ),
+                    isDense: true,
+                    filled: true,
+                    fillColor: const Color(0xFFF8F9F8),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _line),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _line),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _brand, width: 1.2),
+                    ),
+                    prefixIcon: const Icon(Icons.search, size: 18, color: _muted),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: _applySearch,
+                tooltip: '搜索',
+                style: IconButton.styleFrom(
+                  backgroundColor: _brand.withValues(alpha: 0.10),
+                  foregroundColor: _brandDark,
+                  minimumSize: const Size(36, 36),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.search, size: 18),
+              ),
+              if (_searchQuery != null && _searchQuery!.isNotEmpty) ...[
+                const SizedBox(width: 6),
+                IconButton(
+                  onPressed: _clearSearch,
+                  tooltip: '清除',
+                  style: IconButton.styleFrom(
+                    backgroundColor: const Color(0xFFF8F9F8),
+                    foregroundColor: _muted,
+                    minimumSize: const Size(36, 36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.close, size: 18),
+                ),
+              ],
+            ],
+          ),
+          if (_searchQuery != null && _searchQuery!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              '正在搜索 “$_searchQuery”',
+              style: const TextStyle(
+                fontSize: _bodySize,
+                color: Color(0xFF666666),
+                height: _bodyHeight,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeatmapSection() {
     final counts = <String, int>{};
     for (final entry in _heatmap) {
@@ -1607,63 +1705,13 @@ class _NotesPageState extends State<NotesPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
-                Container(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: _line),
+                if (_searchQuery != null || _selectedTag != null || _selectedDate != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    '当前条件：${_searchQuery == null ? '全部内容' : '搜索 "$_searchQuery"'}${_selectedTag == null ? '' : ' · 标签 #$_selectedTag'}${_selectedDate == null ? '' : ' · 日期 $_selectedDate'}',
+                    style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
                   ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _searchCtrl,
-                              textInputAction: TextInputAction.search,
-                              onSubmitted: (_) => _applySearch(),
-                              decoration: _fieldDecoration('搜索标题或正文'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: _brand,
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size(72, 54),
-                            ),
-                            onPressed: _applySearch,
-                            child: const Text('搜索'),
-                          ),
-                          if (_searchQuery != null) ...[
-                            const SizedBox(width: 10),
-                            OutlinedButton(
-                              onPressed: _clearSearch,
-                              child: const Text('清除'),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: _buildTagChips(),
-                      ),
-                      if (_searchQuery != null || _selectedTag != null || _selectedDate != null) ...[
-                        const SizedBox(height: 14),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '当前条件：${_searchQuery == null ? '全部内容' : '搜索 "$_searchQuery"'}${_selectedTag == null ? '' : ' · 标签 #$_selectedTag'}${_selectedDate == null ? '' : ' · 日期 $_selectedDate'}',
-                            style: const TextStyle(fontSize: 13, color: _muted),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+                ],
               ],
             ),
           ),
@@ -1710,6 +1758,8 @@ class _NotesPageState extends State<NotesPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildSearchUtilityCard(),
+              const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
                 decoration: BoxDecoration(
