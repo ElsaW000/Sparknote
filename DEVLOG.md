@@ -195,6 +195,11 @@
     - `设置` now acts as the real configuration center for profile, style, API, and AI provider sections.
     - `API 文档` now behaves like an operation manual page that explains prerequisites, steps, and official references instead of mixing documentation with live config fields.
   - Renamed the left-rail entry from `API连接` to `API文档` so users are guided to docs instead of expecting editable configuration there.
+  - Rebuilt the settings page into a unified left-navigation + right-detail layout:
+    - left rail for section switching,
+    - one focused content canvas on the right,
+    - animated section transitions,
+    - more console-like information architecture instead of flat card stacking.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`

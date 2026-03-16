@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config.dart';
 
+enum _SettingsSection { profile, style, api, provider }
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -16,7 +18,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   static const Color _brand = Color(0xFF2D6A4F);
   static const Color _brandDark = Color(0xFF1A3C34);
-  static const Color _paper = Color(0xFFF3F7F1);
+  static const Color _paper = Color(0xFFF4F7F4);
   static const Color _line = Color(0xFFDDE7DA);
   static const Color _muted = Color(0xFF60716F);
   static const Color _ink = Color(0xFF22302C);
@@ -32,6 +34,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String? _error;
   bool _connected = false;
   String _selectedStyle = '沉静绿洲';
+  _SettingsSection _selectedSection = _SettingsSection.profile;
 
   @override
   void initState() {
@@ -186,36 +189,44 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _sectionCard({
+  Widget _detailCard({
     required String title,
     required String subtitle,
     required Widget child,
-    IconData? icon,
+    required IconData icon,
   }) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      key: ValueKey(_selectedSection.name),
+      width: double.infinity,
+      constraints: const BoxConstraints(maxWidth: 820),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(30),
         border: Border.all(color: _line),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x100E1A13),
+            blurRadius: 28,
+            offset: Offset(0, 14),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              if (icon != null) ...[
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: _brand.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: _brandDark, size: 20),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _brand.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(width: 12),
-              ],
+                child: Icon(icon, color: _brandDark, size: 22),
+              ),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,7 +234,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 22,
+                        fontSize: 28,
                         fontWeight: FontWeight.w700,
                         color: _ink,
                       ),
@@ -231,14 +242,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(fontSize: 13, color: _muted, height: 1.6),
+                      style: const TextStyle(fontSize: 14, color: _muted, height: 1.7),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 24),
           child,
         ],
       ),
@@ -265,10 +276,7 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: const TextStyle(fontSize: 12, color: _muted),
-                ),
+                Text(label, style: const TextStyle(fontSize: 12, color: _muted)),
                 const SizedBox(height: 4),
                 Text(
                   value,
@@ -291,9 +299,9 @@ class _SettingsPageState extends State<SettingsPage> {
     final identity = _userInfo?['identity']?.toString().trim();
     final createdAt = _userInfo?['created_at']?.toString() ?? '未获取';
 
-    return _sectionCard(
+    return _detailCard(
       title: '个人资料',
-      subtitle: '集中展示你的账号身份、绑定状态和基础职业标签。',
+      subtitle: '统一管理绑定邮箱、手机、职业标签等账号基础信息。',
       icon: Icons.person_outline,
       child: Column(
         children: [
@@ -315,18 +323,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildStyleSection() {
     const styles = ['沉静绿洲', '清透纸感', '深色专注'];
-    return _sectionCard(
+    return _detailCard(
       title: '风格',
-      subtitle: '这里放你的界面风格偏好。当前先保存本地偏好，后续再同步到账户。',
+      subtitle: '管理你的界面风格偏好。当前先保存在本地，后续再同步到账户。',
       icon: Icons.palette_outlined,
       child: Wrap(
         spacing: 10,
         runSpacing: 10,
         children: styles.map((style) {
-          final selected = _selectedStyle == style;
           return ChoiceChip(
             label: Text(style),
-            selected: selected,
+            selected: _selectedStyle == style,
             onSelected: (_) => _saveStylePreference(style),
           );
         }).toList(),
@@ -335,9 +342,9 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildApiSection() {
-    return _sectionCard(
+    return _detailCard(
       title: 'API',
-      subtitle: '把真正的对接配置收进设置页，操作文档则单独放到 API 文档页。',
+      subtitle: '真正的接口配置统一收进设置页，文档说明单独放在 API 文档页。',
       icon: Icons.api_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,14 +388,14 @@ class _SettingsPageState extends State<SettingsPage> {
               prefixIcon: const Icon(Icons.table_chart_outlined),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => Navigator.of(context).pushNamed('/notion-integration'),
                   icon: const Icon(Icons.menu_book_outlined),
-                  label: const Text('查看操作文档'),
+                  label: const Text('查看 API 文档'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -416,16 +423,229 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildProviderSection() {
-    return _sectionCard(
+    return _detailCard(
       title: 'AI Provider',
-      subtitle: '当前由服务端统一配置，后续可以扩展为按用户选择 provider、模型和密钥。',
+      subtitle: '当前由服务端统一配置，后续可扩展为按用户选择 Provider、模型和密钥。',
       icon: Icons.smart_toy_outlined,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _infoTile(icon: Icons.hub_outlined, label: '当前模式', value: '服务端统一 Provider'),
           const SizedBox(height: 12),
           _infoTile(icon: Icons.tune_outlined, label: '可扩展项', value: 'Provider / Model / Key / 配额'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionContent() {
+    switch (_selectedSection) {
+      case _SettingsSection.profile:
+        return _buildProfileSection();
+      case _SettingsSection.style:
+        return _buildStyleSection();
+      case _SettingsSection.api:
+        return _buildApiSection();
+      case _SettingsSection.provider:
+        return _buildProviderSection();
+    }
+  }
+
+  Widget _buildSidebarItem({
+    required _SettingsSection section,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    final selected = _selectedSection == section;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: () => setState(() => _selectedSection = section),
+        borderRadius: BorderRadius.circular(20),
+        hoverColor: _brand.withValues(alpha: 0.06),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: selected ? _brandDark : Colors.white.withValues(alpha: 0.74),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? _brandDark : _line,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white.withValues(alpha: 0.14) : _brand.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  icon,
+                  color: selected ? Colors.white : _brandDark,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: selected ? Colors.white : _ink,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.5,
+                        color: selected ? Colors.white70 : _muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSidebar() {
+    final email = _userInfo?['email']?.toString() ?? '当前账号';
+    final identity = _userInfo?['identity']?.toString().trim();
+    return Container(
+      width: 260,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: _line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _brand.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.settings_outlined, color: _brandDark),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '设置中心',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: _ink,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      (identity == null || identity.isEmpty) ? email : '$email · $identity',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, color: _muted, height: 1.5),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildSidebarItem(
+            section: _SettingsSection.profile,
+            title: '个人资料',
+            subtitle: '邮箱、手机、职业标签',
+            icon: Icons.person_outline,
+          ),
+          _buildSidebarItem(
+            section: _SettingsSection.style,
+            title: '风格',
+            subtitle: '主题风格与视觉偏好',
+            icon: Icons.palette_outlined,
+          ),
+          _buildSidebarItem(
+            section: _SettingsSection.api,
+            title: 'API',
+            subtitle: 'Notion Token 与 Database ID',
+            icon: Icons.api_outlined,
+          ),
+          _buildSidebarItem(
+            section: _SettingsSection.provider,
+            title: 'AI Provider',
+            subtitle: 'Provider、模型与配额规划',
+            icon: Icons.smart_toy_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1180),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSidebar(),
+              const SizedBox(width: 24),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 240),
+                  switchInCurve: Curves.easeOut,
+                  transitionBuilder: (child, animation) {
+                    final slide = Tween<Offset>(
+                      begin: const Offset(0, 0.03),
+                      end: Offset.zero,
+                    ).animate(animation);
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(position: slide, child: child),
+                    );
+                  },
+                  child: _buildSectionContent(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        children: [
+          _buildSidebar(),
+          const SizedBox(height: 18),
+          _buildSectionContent(),
         ],
       ),
     );
@@ -442,51 +662,10 @@ class _SettingsPageState extends State<SettingsPage> {
               ? Center(child: Text(_error!))
               : LayoutBuilder(
                   builder: (context, constraints) {
-                    final isWide = constraints.maxWidth >= 1100;
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1280),
-                          child: isWide
-                              ? Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        children: [
-                                          _buildProfileSection(),
-                                          const SizedBox(height: 20),
-                                          _buildApiSection(),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 20),
-                                    Expanded(
-                                      child: Column(
-                                        children: [
-                                          _buildStyleSection(),
-                                          const SizedBox(height: 20),
-                                          _buildProviderSection(),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Column(
-                                  children: [
-                                    _buildProfileSection(),
-                                    const SizedBox(height: 20),
-                                    _buildStyleSection(),
-                                    const SizedBox(height: 20),
-                                    _buildApiSection(),
-                                    const SizedBox(height: 20),
-                                    _buildProviderSection(),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    );
+                    if (constraints.maxWidth >= 980) {
+                      return _buildDesktopLayout();
+                    }
+                    return _buildMobileLayout();
                   },
                 ),
     );
