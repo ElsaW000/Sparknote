@@ -222,6 +222,10 @@
     - surfaces compact highlight keywords first,
     - prefers titles and tags over long concatenated prose,
     - falls back to a single short summary sentence when needed.
+  - Added attachment upload controls to the long-note editor dialog:
+    - supports image and document picking before save,
+    - shows pending attachments with remove actions,
+    - uploads selected files after the note is successfully created or updated.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`
@@ -232,6 +236,7 @@
 ### Known Gaps
 - Frontend manual acceptance is still not fully recorded for the end-to-end UI flow.
 - Settings remain only partially surfaced in the current main navigation flow.
+- `backend/tests/test_api.py::test_stats_heatmap_and_review` is currently date-bound and failed on 2026-03-17 local time because `/review/daily` is using today's local date while the test fixtures are still being created on the previous UTC date.
 - Remaining feature gaps from prior notes are still:
   - AI token-level streaming
   - realtime recording

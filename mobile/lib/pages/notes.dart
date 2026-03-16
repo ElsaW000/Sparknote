@@ -652,6 +652,8 @@ class _NotesPageState extends State<NotesPage> {
             .whereType<Map>()
             .map((item) => Map<String, dynamic>.from(item as Map))
             .toList();
+    var pendingAttachments = <PickedLocalFile>[];
+    var pickingEditorAttachment = false;
     final titleCtrl = TextEditingController(
       text: (note?['title'] ?? '').toString(),
     );
@@ -668,115 +670,207 @@ class _NotesPageState extends State<NotesPage> {
 
     final submit = await showDialog<bool>(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.white,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680, maxHeight: 760),
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          note == null ? '新建笔记' : '编辑笔记',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                            color: _ink,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          '长笔记适合整理标题、正文和标签；底部快速输入更适合即时捕捉灵感。',
-                          style: TextStyle(fontSize: 13, color: _muted, height: 1.6),
-                        ),
-                        const SizedBox(height: 20),
-                        TextField(
-                          controller: titleCtrl,
-                          decoration: _fieldDecoration('标题（可选）'),
-                        ),
-                        const SizedBox(height: 14),
-                        TextField(
-                          controller: contentCtrl,
-                          maxLines: 8,
-                          decoration: _fieldDecoration('正文'),
-                        ),
-                        const SizedBox(height: 14),
-                        TextField(
-                          controller: tagsCtrl,
-                          decoration: _fieldDecoration('标签，用逗号分隔'),
-                        ),
-                        if (existingAttachments.isNotEmpty) ...[
-                          const SizedBox(height: 14),
-                          const Text(
-                            '已保存附件',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: _ink,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: existingAttachments.map((attachment) {
-                              final fileName = _text(attachment['file_name'] ?? '').trim();
-                              final mimeType = _text(attachment['mime_type'] ?? '').trim();
-                              return InputChip(
-                                label: ConstrainedBox(
-                                  constraints: const BoxConstraints(maxWidth: 240),
-                                  child: Text(
-                                    fileName.isEmpty ? '未命名附件' : fileName,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                avatar: Icon(
-                                  mimeType.startsWith('image/')
-                                      ? Icons.image_outlined
-                                      : Icons.attach_file_outlined,
-                                  size: 18,
-                                ),
-                                onPressed: () {},
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          Future<void> pickEditorAttachment(String accept) async {
+            if (pickingEditorAttachment) return;
+            setModalState(() => pickingEditorAttachment = true);
+            try {
+              final picked = await pickLocalFile(accept: accept);
+              if (picked == null || !context.mounted) return;
+              setModalState(() {
+                pendingAttachments = [...pendingAttachments, picked];
+              });
+            } finally {
+              if (context.mounted) {
+                setModalState(() => pickingEditorAttachment = false);
+              }
+            }
+          }
+
+          return Dialog(
+            backgroundColor: Colors.white,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680, maxHeight: 760),
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('取消'),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: _brand,
-                        foregroundColor: Colors.white,
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              note == null ? '新建笔记' : '编辑笔记',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: _ink,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              '长笔记适合整理标题、正文、标签和附件；底部快速输入更适合即时捕捉灵感。',
+                              style: TextStyle(fontSize: 13, color: _muted, height: 1.6),
+                            ),
+                            const SizedBox(height: 20),
+                            TextField(
+                              controller: titleCtrl,
+                              decoration: _fieldDecoration('标题（可选）'),
+                            ),
+                            const SizedBox(height: 14),
+                            TextField(
+                              controller: contentCtrl,
+                              maxLines: 8,
+                              decoration: _fieldDecoration('正文'),
+                            ),
+                            const SizedBox(height: 14),
+                            TextField(
+                              controller: tagsCtrl,
+                              decoration: _fieldDecoration('标签，用逗号分隔'),
+                            ),
+                            const SizedBox(height: 16),
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: pickingEditorAttachment
+                                      ? null
+                                      : () => pickEditorAttachment('image/*'),
+                                  icon: Icon(
+                                    pickingEditorAttachment
+                                        ? Icons.hourglass_top
+                                        : Icons.image_outlined,
+                                  ),
+                                  label: const Text('上传图片'),
+                                ),
+                                OutlinedButton.icon(
+                                  onPressed: pickingEditorAttachment
+                                      ? null
+                                      : () => pickEditorAttachment(
+                                          '.pdf,.doc,.docx,.txt,.md,.ppt,.pptx,.xls,.xlsx',
+                                        ),
+                                  icon: Icon(
+                                    pickingEditorAttachment
+                                        ? Icons.hourglass_top
+                                        : Icons.attach_file_outlined,
+                                  ),
+                                  label: const Text('上传文件'),
+                                ),
+                              ],
+                            ),
+                            if (pendingAttachments.isNotEmpty) ...[
+                              const SizedBox(height: 14),
+                              const Text(
+                                '待上传附件',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: _ink,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: pendingAttachments.map((file) {
+                                  final mimeType = file.mimeType ?? '';
+                                  return InputChip(
+                                    label: ConstrainedBox(
+                                      constraints: const BoxConstraints(maxWidth: 240),
+                                      child: Text(
+                                        file.name,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    avatar: Icon(
+                                      mimeType.startsWith('image/')
+                                          ? Icons.image_outlined
+                                          : Icons.attach_file_outlined,
+                                      size: 18,
+                                    ),
+                                    onDeleted: () {
+                                      setModalState(() {
+                                        pendingAttachments = pendingAttachments
+                                            .where((item) => item != file)
+                                            .toList();
+                                      });
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                            if (existingAttachments.isNotEmpty) ...[
+                              const SizedBox(height: 14),
+                              const Text(
+                                '已保存附件',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: _ink,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: existingAttachments.map((attachment) {
+                                  final fileName = _text(attachment['file_name'] ?? '').trim();
+                                  final mimeType = _text(attachment['mime_type'] ?? '').trim();
+                                  return InputChip(
+                                    label: ConstrainedBox(
+                                      constraints: const BoxConstraints(maxWidth: 240),
+                                      child: Text(
+                                        fileName.isEmpty ? '未命名附件' : fileName,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    avatar: Icon(
+                                      mimeType.startsWith('image/')
+                                          ? Icons.image_outlined
+                                          : Icons.attach_file_outlined,
+                                      size: 18,
+                                    ),
+                                    onPressed: () {},
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('保存'),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('取消'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _brand,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('保存'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
 
@@ -828,6 +922,24 @@ class _NotesPageState extends State<NotesPage> {
 
       if (!mounted) return;
       if (resp.statusCode == 200 || resp.statusCode == 201) {
+        final savedNote = json.decode(_decodeResponse(resp)) as Map<String, dynamic>;
+        final savedNoteId = savedNote['id'] as int?;
+        if (savedNoteId != null && pendingAttachments.isNotEmpty) {
+          for (final file in pendingAttachments) {
+            await http.post(
+              Uri.parse('$backendUrl/notes/$savedNoteId/attachments'),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              body: json.encode({
+                'file_name': file.name,
+                'mime_type': file.mimeType,
+                'content_base64': base64Encode(file.bytes),
+              }),
+            );
+          }
+        }
         await _refreshDashboard();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
