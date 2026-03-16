@@ -1,66 +1,73 @@
-# Mobile Client (Flutter)
+# Sparknote Mobile / Web Client
 
-This folder contains a lightweight skeleton for the Sparknote mobile (and desktop/web) client using Flutter. The goal is to provide a starting point with authentication, a notes list, and placeholders for chat/recording pages.
+当前 Flutter 客户端已经不是初始化骨架，而是可连接真实后端的 MVP 前端。
 
-## Prerequisites
+## 已实现能力
 
-- [Flutter SDK](https://flutter.dev/docs/get-started/install) installed and on your `PATH`.
-- Android emulator or physical device (iOS requires macOS for build).
+- 登录页
+  - 邮箱密码登录
+  - 本地测试账号一键填充
+  - 登录失败友好提示
+  - 身份卡片与沉浸式场景介绍页
+- 注册页
+  - 验证码加载与刷新
+  - 注册成功后自动登录并进入主页
+- 笔记主页
+  - 桌面端三栏布局
+  - 移动端灵感流布局
+  - 搜索标题/正文
+  - 标签筛选
+  - 热力图筛选日期
+  - 今日回顾卡片
+  - 快速输入创建笔记
+  - 长笔记创建与编辑
+  - 删除笔记
+  - 退出登录
+- 快速输入增强
+  - 第一行 `#标题` 自动拆分标题与正文
+  - 图片/文件选择
+  - 音频文件转写到输入框
+- 灵感工作台
+  - 根据当前笔记创建真实后端会话
+  - 发送消息并显示 AI 回复
+  - 上传附件供 AI 参考
+  - 音频文件转写到对话输入框
+  - 将 AI 内容插入正文
+  - 保存草稿
+  - 生成总结
+  - 编辑居中 / 对话居中切换
+- Notion 配置页
+  - 读取并保存 Integration Token / Database ID
 
-## Initial setup
+## 当前限制
+
+- AI 回复为轮询式刷新，不是 token streaming
+- 音频输入仅支持导入文件，不支持浏览器实时录音
+- 快速输入区暂不支持粘贴图片/文件
+- `SettingsPage` 仍是辅助页，未接入主路由
+- `ChatPage` 仍属于旧页面，不是当前主工作流
+
+## 运行方式
 
 ```bash
 cd mobile
 flutter pub get
+flutter run -d chrome --dart-define=BACKEND_URL=http://127.0.0.1:8000
 ```
 
-## Environment variables
+## 后端地址
 
-The app reads Supabase configuration from compile-time environment variables. Example when running locally:
+- Web 默认：`http://127.0.0.1:8000`
+- Android 模拟器默认：`http://10.0.2.2:8000`
+- 可通过 `BACKEND_URL` 覆盖
 
-```bash
-flutter run \
-  --dart-define=SUPABASE_URL=https://xyz.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your_anon_key
-```
+## 建议回归链路
 
-### Backend URL
-
-For development the Flutter client will talk to a backend API. The default
-is `http://127.0.0.1:8000` on the web and `http://10.0.2.2:8000` on
-an Android emulator. You can override it with `BACKEND_URL`:
-
-```bash
-flutter run -d chrome \
-  --dart-define=BACKEND_URL=http://localhost:8000
-```
-
-If you start seeing "XMLHttpRequest error" messages in the UI (often shown
-as `请求异常`), it means the client couldn't reach the server or the
-browser blocked the request due to CORS. Make sure the backend is running,
-that the URL is reachable from your device/emulator, and that CORS is enabled
-on the server (the prototype already allows all origins).
-
-These errors are normal during development; the app now shows a clearer
-warning instructing you to check the backend URL when they occur.
-
-For production builds you can set the `dart-define` in `flutter build` commands or via a `.env`/build script.
-
-## Running the app
-
-Start on Android emulator:
-
-```bash
-flutter run -d emulator-5554 \
-  --dart-define=SUPABASE_URL=https://xyz.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your_anon_key
-```
-
-The login page accepts email/password; you can create users directly in Supabase Auth or extend the UI accordingly.
-
-## Next steps
-
-- Implement `NotesPage` to fetch `/notes` from backend and display them.
-- Add voice/video recording and upload via Supabase Storage.
-- Build chat UI and call `/conversations` endpoints.
-- Add offline caching using `supabase-flutter` local storage or SQLite.
+1. 登录
+2. 创建笔记
+3. 搜索/标签筛选
+4. 进入灵感工作台
+5. 发送消息
+6. 保存草稿
+7. 生成总结
+8. 退出登录

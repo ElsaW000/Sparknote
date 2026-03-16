@@ -1,11 +1,59 @@
 # Sparknote
 
-Sparknote — inspiration notebook for collecting notes, voice, images, and AI-assisted summaries.
+Sparknote 是一个面向创作者的灵感记录与整理应用，当前代码库已经具备从注册/登录、笔记记录，到 AI 工作台、附件上传、音频转写和部分集成配置的 MVP 主链路。
 
-This repository contains a minimal prototype scaffold:
-- `backend/` — FastAPI-based backend prototype (notes, conversations, AI summarization hooks)
-- `db/migrations/` — example SQL migration files for Supabase/Postgres
-- `mobile/` — starter notes and guidance for the Flutter app
-- `infra/` — deployment and infra notes
+## 当前功能状态
 
-Next steps: run the backend prototype and iterate on mobile client.
+### 已实现
+- 邮箱注册、验证码、登录、登录态持久化
+- 灵感流首页与三栏桌面主页
+- 快速输入、长笔记创建、编辑、删除
+- 标题/正文搜索
+- 标签建议、标签筛选、正文 `#hashtag` 自动提取
+- 热力图、今日回顾
+- 灵感工作台
+  - 基于真实后端会话创建对话
+  - 发送消息并轮询 AI 回复
+  - 保存草稿到当前笔记
+  - 生成会话总结
+- 附件上传与列表查看
+- 音频文件转写
+- 相关笔记与手动关系管理
+- Notion 集成配置保存
+- 订阅/支付占位接口
+
+### 当前已知缺口
+- AI 回复仍为轮询整段返回，不是流式输出
+- 音频能力目前是“导入文件转写”，不是实时录音
+- 快速输入区暂不支持直接粘贴图片/文件
+- Notion 仅保存连接配置，尚未做实际同步
+- 自动化测试发现中文 hashtag 自动提取存在回归
+
+## 最新验证结论
+
+- 2026-03-16 运行后端测试：`16 passed, 1 failed`
+- 失败项：`backend/tests/test_api.py::test_note_auto_extract_hashtags`
+- 当前已确认失败原因：
+  中文标签 `#工作` 在自动提取时被错误识别，测试中实际得到的是异常标签值而不是完整中文标签
+
+## 目录
+
+- `backend/`：FastAPI 后端，负责认证、笔记、会话、标签、附件、转写与集成配置
+- `mobile/`：Flutter Web/移动端界面
+- `docs/`：测试清单、流程图与计划文档
+- `PRD/`：产品需求与阶段性规划
+- `tools/debug/`：本地调试脚本
+
+## 推荐本地验证顺序
+
+1. 启动后端服务
+2. 打开前端登录页
+3. 用测试账号登录
+4. 创建一条笔记
+5. 进入灵感工作台发送一条消息
+6. 测试附件上传或音频转写
+
+## 测试账号
+
+- `tester@example.com / pass1234`
+- `test@example.com / test123`

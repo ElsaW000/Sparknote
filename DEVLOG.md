@@ -144,3 +144,34 @@
 - Audio input is currently “import audio file and transcribe”, not live browser recording or realtime voice agent.
 - Quick composer currently supports explicit image/file selection, but direct clipboard paste for images/files is still pending.
 - Some legacy analyzer warnings remain in unrelated files and utility wrappers.
+
+## 2026-03-16
+
+### Summary
+- Audited the current codebase against existing docs and synchronized the main functional documentation with the real implementation state.
+- Confirmed that login, registration, notes CRUD, search/filtering, workspace conversation flow, attachments, audio transcription, related notes, and Notion configuration are already implemented in code.
+- Found one active regression during automated verification: Chinese hashtag auto-extraction is currently failing.
+
+### Work Done
+- Documentation sync
+  - Rewrote root `README.md` to reflect the actual MVP feature set instead of the old scaffold description.
+  - Updated `mobile/README.md` to describe the current Flutter product flow and limitations.
+  - Updated `backend/README.md` to document the implemented API surface and current verification status.
+  - Updated `NEXT_STEP.md` to replace outdated “AIWorkspace is still prototype-only” guidance.
+  - Updated `docs/testing/mvp_checklist.md` with a fresh automated-check snapshot and a clearer split between verified and still-manual items.
+- Status clarification
+  - Recorded that `AIWorkspacePage` is now wired to real backend conversations.
+  - Recorded that logout, search, tag filtering, attachments, audio file transcription, and Notion config are available.
+  - Marked streaming AI, realtime recording, clipboard paste, and real Notion sync as remaining enhancement items.
+
+### Verification
+- Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`
+- Result: `16 passed, 1 failed`
+- Failing case:
+  - `backend/tests/test_api.py::test_note_auto_extract_hashtags`
+  - Symptom: Chinese hashtag content such as `#工作` is not extracted correctly into tags
+
+### Known Gaps
+- Chinese hashtag extraction has an active regression and should be treated as the highest-priority backend bug from this audit.
+- Frontend manual acceptance is still not fully recorded for the end-to-end UI flow.
+- Settings remain only partially surfaced in the current main navigation flow.
