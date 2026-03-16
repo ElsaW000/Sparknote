@@ -44,6 +44,42 @@ class _HeatmapLegendDot extends StatelessWidget {
   }
 }
 
+class _RailPulseMetric extends StatelessWidget {
+  final String value;
+  final String label;
+
+  const _RailPulseMetric({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(color: Color(0xFFE7F1EC), fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _NotesPageState extends State<NotesPage> {
   static const Color _brand = Color(0xFF2D6A4F);
   static const Color _brandDark = Color(0xFF1A3C34);
@@ -1041,41 +1077,43 @@ class _NotesPageState extends State<NotesPage> {
     required IconData icon,
   }) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _line),
       ),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: _brand.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: _brandDark),
+            child: Icon(icon, color: _brandDark, size: 20),
           ),
-          const SizedBox(width: 12),
-          Column(
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 value,
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 19,
                   fontWeight: FontWeight.w700,
                   color: _ink,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               Text(
                 label,
-                style: const TextStyle(fontSize: 12, color: _muted),
+                style: const TextStyle(fontSize: 11, color: _muted),
               ),
             ],
+          ),
           ),
         ],
       ),
@@ -1141,7 +1179,7 @@ class _NotesPageState extends State<NotesPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _panel,
+                  color: _brand.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -1149,7 +1187,7 @@ class _NotesPageState extends State<NotesPage> {
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: _muted,
+                    color: _brandDark,
                   ),
                 ),
               ),
@@ -1225,7 +1263,7 @@ class _NotesPageState extends State<NotesPage> {
 
   Widget _buildLeftRail() {
     return Container(
-      width: 290,
+      width: 272,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -1275,67 +1313,51 @@ class _NotesPageState extends State<NotesPage> {
               ),
               const SizedBox(height: 28),
               Container(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white24),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '今天的创作脉搏',
+                      '创作脉搏',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _RailPulseMetric(
+                            value: '${_todayCount()}',
+                            label: '今日记录',
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _RailPulseMetric(
+                            value: '${_activeDays()}',
+                            label: '活跃天数',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  children: [
+                    const Text(
+                      '标签索引',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    Text(
-                      '${_todayCount()}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 34,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '条灵感被记录',
-                      style: TextStyle(color: _softText),
-                    ),
-                    const SizedBox(height: 18),
-                    const Divider(color: Colors.white24),
-                    const SizedBox(height: 18),
-                    Text(
-                      '${_activeDays()} 天',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '近 35 天有记录',
-                      style: TextStyle(color: _softText),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                '标签索引',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: ListView(
-                  children: [
+                    const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -1386,13 +1408,50 @@ class _NotesPageState extends State<NotesPage> {
                               }).toList(),
                             ),
                     ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '笔记本',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            '后续会支持按项目、主题、阶段收纳笔记。',
+                            style: TextStyle(color: _softText, height: 1.6, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 14),
               FilledButton.tonalIcon(
                 style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
+                  minimumSize: const Size.fromHeight(46),
+                  backgroundColor: Colors.white.withValues(alpha: 0.12),
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: _openApiIntegration,
+                icon: const Icon(Icons.settings_outlined),
+                label: const Text('设置'),
+              ),
+              const SizedBox(height: 10),
+              FilledButton.tonalIcon(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(46),
                   backgroundColor: Colors.white.withValues(alpha: 0.12),
                   foregroundColor: Colors.white,
                 ),
@@ -1403,7 +1462,7 @@ class _NotesPageState extends State<NotesPage> {
               const SizedBox(height: 10),
               FilledButton.tonalIcon(
                 style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
+                  minimumSize: const Size.fromHeight(46),
                   backgroundColor: Colors.white.withValues(alpha: 0.12),
                   foregroundColor: Colors.white,
                 ),
@@ -1476,6 +1535,23 @@ class _NotesPageState extends State<NotesPage> {
                             '像聊天一样捕捉碎片，再把值得发展的部分送进灵感工作台。',
                             style: TextStyle(fontSize: 14, color: _muted, height: 1.6),
                           ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEAF4EE),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: _line),
+                            ),
+                            child: const Text(
+                              '底部输入适合碎片捕捉，右上按钮适合整理成长笔记。',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _brandDark,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -1484,7 +1560,7 @@ class _NotesPageState extends State<NotesPage> {
                       style: FilledButton.styleFrom(
                         backgroundColor: _brand,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -1495,13 +1571,13 @@ class _NotesPageState extends State<NotesPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
                 Wrap(
-                  spacing: 14,
-                  runSpacing: 14,
+                  spacing: 10,
+                  runSpacing: 10,
                   children: [
                     SizedBox(
-                      width: isDesktop ? 220 : double.infinity,
+                      width: isDesktop ? 204 : double.infinity,
                       child: _buildMetricCard(
                         label: '总笔记数',
                         value: '${_notes.length}',
@@ -1509,7 +1585,7 @@ class _NotesPageState extends State<NotesPage> {
                       ),
                     ),
                     SizedBox(
-                      width: isDesktop ? 220 : double.infinity,
+                      width: isDesktop ? 204 : double.infinity,
                       child: _buildMetricCard(
                         label: '今日记录',
                         value: '${_todayCount()}',
@@ -1517,7 +1593,7 @@ class _NotesPageState extends State<NotesPage> {
                       ),
                     ),
                     SizedBox(
-                      width: isDesktop ? 220 : double.infinity,
+                      width: isDesktop ? 204 : double.infinity,
                       child: _buildMetricCard(
                         label: '活跃天数',
                         value: '${_activeDays()}',
@@ -1526,9 +1602,9 @@ class _NotesPageState extends State<NotesPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
                 Container(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
@@ -1565,7 +1641,7 @@ class _NotesPageState extends State<NotesPage> {
                           ],
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: _buildTagChips(),
@@ -1602,7 +1678,7 @@ class _NotesPageState extends State<NotesPage> {
           )
         else
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(isDesktop ? 28 : 18, 0, isDesktop ? 28 : 18, 140),
+            padding: EdgeInsets.fromLTRB(isDesktop ? 28 : 18, 0, isDesktop ? 28 : 18, 200),
             sliver: SliverList.builder(
               itemCount: _visibleNotes().length,
               itemBuilder: (context, index) {
@@ -1621,7 +1697,7 @@ class _NotesPageState extends State<NotesPage> {
 
   Widget _buildRightPanel() {
     return Container(
-      width: 360,
+      width: 392,
       color: _panel,
       child: SafeArea(
         child: SingleChildScrollView(
@@ -1630,7 +1706,7 @@ class _NotesPageState extends State<NotesPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
@@ -1666,19 +1742,17 @@ class _NotesPageState extends State<NotesPage> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 20),
                     _buildHeatmapSection(),
                     const SizedBox(height: 12),
-                    Row(
-                      children: const [
+                    const Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
                         _HeatmapLegendDot(color: Color(0xFFD9D9D9), label: '0'),
-                        SizedBox(width: 8),
                         _HeatmapLegendDot(color: Color(0xFF95D5B2), label: '低'),
-                        SizedBox(width: 8),
                         _HeatmapLegendDot(color: Color(0xFF40916C), label: '中'),
-                        SizedBox(width: 8),
                         _HeatmapLegendDot(color: Color(0xFF2D6A4F), label: '高'),
-                        SizedBox(width: 8),
                         _HeatmapLegendDot(color: Color(0xFF1B4332), label: '峰值'),
                       ],
                     ),
@@ -1940,7 +2014,7 @@ class _NotesPageState extends State<NotesPage> {
     if (isDesktop) {
       return Positioned(
         left: 318,
-        right: 388,
+        right: 420,
         bottom: 14,
         child: SafeArea(
           minimum: const EdgeInsets.only(bottom: 14),

@@ -182,6 +182,13 @@
   - Standardized the local test refresh flow around `flutter build web` plus backend health verification so frontend fixes are not tested against stale bundles.
   - Redesigned the Notion/API settings page into a clearer two-column desktop layout with a left navigation area and a right-side setup guide.
   - Restricted the desktop quick composer to the center content region so it no longer covers the right-side “灵感工作台” card.
+  - Tightened the desktop homepage layout:
+    - compressed the left rail pulse card,
+    - moved more utility into the side rail,
+    - reduced the height/spacing of the top stat cards,
+    - enlarged the right-side panel area for the heatmap,
+    - increased note-list bottom padding so the floating composer does not cover trailing content.
+  - Added clearer product guidance to distinguish “碎片输入” from “新建长笔记”.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`
