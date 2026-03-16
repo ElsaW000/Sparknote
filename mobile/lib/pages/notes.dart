@@ -89,6 +89,10 @@ class _NotesPageState extends State<NotesPage> {
   static const Color _muted = Color(0xFF60716F);
   static const Color _line = Color(0xFFC6D6CD);
   static const Color _softText = Color(0xFFE7F1EC);
+  static const double _h1Size = 24;
+  static const double _sectionTitleSize = 16;
+  static const double _bodySize = 14;
+  static const double _bodyHeight = 1.6;
 
   final TextEditingController _searchCtrl = TextEditingController();
   final TextEditingController _quickInputCtrl = TextEditingController();
@@ -1084,7 +1088,7 @@ class _NotesPageState extends State<NotesPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: _line),
       ),
       child: Row(
@@ -1106,7 +1110,7 @@ class _NotesPageState extends State<NotesPage> {
               Text(
                 value,
                 style: const TextStyle(
-                  fontSize: 19,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: _ink,
                 ),
@@ -1114,7 +1118,7 @@ class _NotesPageState extends State<NotesPage> {
               const SizedBox(height: 1),
               Text(
                 label,
-                style: const TextStyle(fontSize: 11, color: _muted),
+                style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
               ),
             ],
           ),
@@ -1166,15 +1170,15 @@ class _NotesPageState extends State<NotesPage> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontFamily: compact ? null : 'Georgia',
-                        fontSize: compact ? 18 : 22,
+                        fontSize: _sectionTitleSize,
                         fontWeight: FontWeight.w700,
-                        color: _ink,
+                        color: Color(0xFF1A1A1A),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       _formatDate(note['created_at']),
-                      style: const TextStyle(fontSize: 12, color: _muted),
+                      style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
                     ),
                   ],
                 ),
@@ -1203,8 +1207,8 @@ class _NotesPageState extends State<NotesPage> {
             maxLines: compact ? 4 : 6,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 14,
-              height: 1.75,
+              fontSize: _bodySize,
+              height: _bodyHeight,
               color: _ink,
             ),
           ),
@@ -1308,7 +1312,7 @@ class _NotesPageState extends State<NotesPage> {
                         SizedBox(height: 4),
                         Text(
                           '灵感流与工作台',
-                          style: TextStyle(color: _softText, fontSize: 12),
+                          style: TextStyle(color: _softText, fontSize: _bodySize, height: _bodyHeight),
                         ),
                       ],
                     ),
@@ -1428,7 +1432,7 @@ class _NotesPageState extends State<NotesPage> {
                           Expanded(
                             child: Text(
                               '笔记本功能后续会支持按项目、主题、阶段收纳笔记。',
-                              style: TextStyle(color: _softText, height: 1.6, fontSize: 12),
+                              style: TextStyle(color: _softText, height: _bodyHeight, fontSize: _bodySize),
                             ),
                           ),
                         ],
@@ -1525,15 +1529,15 @@ class _NotesPageState extends State<NotesPage> {
                           Text(
                             isDesktop ? '灵感流' : '今天的灵感流',
                             style: TextStyle(
-                              fontSize: isDesktop ? 34 : 28,
-                              fontWeight: FontWeight.w700,
+                              fontSize: _h1Size,
+                              fontWeight: FontWeight.w600,
                               color: _ink,
                             ),
                           ),
                           const SizedBox(height: 8),
                           const Text(
                             '像聊天一样捕捉碎片，再把值得发展的部分送进灵感工作台。',
-                            style: TextStyle(fontSize: 14, color: _muted, height: 1.6),
+                            style: TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
                           ),
                           const SizedBox(height: 10),
                           Container(
@@ -1546,9 +1550,10 @@ class _NotesPageState extends State<NotesPage> {
                             child: const Text(
                               '底部输入适合碎片捕捉，右上按钮适合整理成长笔记。',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: _bodySize,
                                 color: _brandDark,
                                 fontWeight: FontWeight.w600,
+                                height: _bodyHeight,
                               ),
                             ),
                           ),
@@ -1715,10 +1720,10 @@ class _NotesPageState extends State<NotesPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '记录热力图',
-                      style: TextStyle(
-                        fontSize: 16,
+                        const Text(
+                          '记录热力图',
+                          style: TextStyle(
+                        fontSize: _sectionTitleSize,
                         fontWeight: FontWeight.w700,
                         color: _ink,
                       ),
@@ -1726,7 +1731,7 @@ class _NotesPageState extends State<NotesPage> {
                     const SizedBox(height: 8),
                     const Text(
                       '近 35 天的记录强度，越深表示当天沉淀越多。',
-                      style: TextStyle(fontSize: 12, color: _muted, height: 1.6),
+                      style: TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
                     ),
                     if (_selectedDate != null) ...[
                       const SizedBox(height: 10),
@@ -1777,7 +1782,7 @@ class _NotesPageState extends State<NotesPage> {
                         Text(
                           '今日回顾',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: _sectionTitleSize,
                             fontWeight: FontWeight.w700,
                             color: _ink,
                           ),
@@ -1796,9 +1801,9 @@ class _NotesPageState extends State<NotesPage> {
                       child: Text(
                         _dailyReviewSummary(),
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: _bodySize,
                           color: _ink,
-                          height: 1.6,
+                          height: _bodyHeight,
                         ),
                       ),
                     ),
@@ -1823,7 +1828,7 @@ class _NotesPageState extends State<NotesPage> {
                         '灵感工作台',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: _sectionTitleSize,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1832,8 +1837,8 @@ class _NotesPageState extends State<NotesPage> {
                         '点击后可先搜索并选择一条笔记，再进入工作台做灵感提取、AI 对话和草稿整理。',
                         style: TextStyle(
                           color: _softText,
-                          fontSize: 13,
-                          height: 1.7,
+                          fontSize: _bodySize,
+                          height: _bodyHeight,
                         ),
                       ),
                     ],

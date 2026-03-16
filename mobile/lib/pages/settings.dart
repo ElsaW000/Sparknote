@@ -23,6 +23,10 @@ class _SettingsPageState extends State<SettingsPage> {
   static const Color _muted = Color(0xFF60716F);
   static const Color _ink = Color(0xFF22302C);
   static const String _stylePrefKey = 'ui_style_preference';
+  static const double _h1Size = 24;
+  static const double _sectionTitleSize = 16;
+  static const double _bodySize = 14;
+  static const double _bodyHeight = 1.6;
 
   final TextEditingController _tokenCtrl = TextEditingController();
   final TextEditingController _databaseCtrl = TextEditingController();
@@ -202,7 +206,7 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: _line),
         boxShadow: const [
           BoxShadow(
@@ -222,7 +226,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: _brand.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: _brandDark, size: 22),
               ),
@@ -234,15 +238,15 @@ class _SettingsPageState extends State<SettingsPage> {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
+                        fontSize: _h1Size,
+                        fontWeight: FontWeight.w600,
                         color: _ink,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(fontSize: 14, color: _muted, height: 1.7),
+                      style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
                     ),
                   ],
                 ),
@@ -265,7 +269,7 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _paper,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: _line),
       ),
       child: Row(
@@ -276,14 +280,15 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 12, color: _muted)),
+                Text(label, style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight)),
                 const SizedBox(height: 4),
                 Text(
                   value,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: _bodySize,
                     fontWeight: FontWeight.w600,
                     color: _ink,
+                    height: _bodyHeight,
                   ),
                 ),
               ],
@@ -359,9 +364,10 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Text(
               _connected ? '当前状态：Notion 已连接' : '当前状态：Notion 未连接',
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: _bodySize,
                 color: _ink,
                 fontWeight: FontWeight.w600,
+                height: _bodyHeight,
               ),
             ),
           ),
@@ -461,7 +467,7 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: () => setState(() => _selectedSection = section),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         hoverColor: _brand.withValues(alpha: 0.06),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
@@ -469,7 +475,7 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: selected ? _brandDark : Colors.white.withValues(alpha: 0.74),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: selected ? _brandDark : _line,
             ),
@@ -481,7 +487,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 height: 42,
                 decoration: BoxDecoration(
                   color: selected ? Colors.white.withValues(alpha: 0.14) : _brand.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
@@ -497,7 +503,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: _sectionTitleSize,
                         fontWeight: FontWeight.w700,
                         color: selected ? Colors.white : _ink,
                       ),
@@ -508,8 +514,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 12,
-                        height: 1.5,
+                        fontSize: _bodySize,
+                        height: _bodyHeight,
                         color: selected ? Colors.white70 : _muted,
                       ),
                     ),
@@ -531,7 +537,7 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: _line),
       ),
       child: Column(
@@ -544,7 +550,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: _brand.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.settings_outlined, color: _brandDark),
               ),
@@ -556,7 +562,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     const Text(
                       '设置中心',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: _sectionTitleSize,
                         fontWeight: FontWeight.w700,
                         color: _ink,
                       ),
@@ -566,7 +572,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       (identity == null || identity.isEmpty) ? email : '$email · $identity',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: _muted, height: 1.5),
+                      style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
                     ),
                   ],
                 ),

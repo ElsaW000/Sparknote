@@ -205,6 +205,11 @@
     - one active platform document on the right,
     - reusable document center structure for Notion / Obsidian / Logseq,
     - direct shortcut from docs to the settings configuration page.
+  - Introduced a clearer typography and scale pass across the homepage, settings page, and API docs center:
+    - main page titles reduced,
+    - content titles aligned to a 16px heading scale,
+    - body and caption text normalized to a 14px reading size,
+    - large container radii aligned around 24px for better cross-page consistency.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`

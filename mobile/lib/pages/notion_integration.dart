@@ -30,6 +30,10 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
   static const Color _line = Color(0xFFDDE7DA);
   static const Color _muted = Color(0xFF60716F);
   static const Color _ink = Color(0xFF22302C);
+  static const double _h1Size = 24;
+  static const double _sectionTitleSize = 16;
+  static const double _bodySize = 14;
+  static const double _bodyHeight = 1.6;
 
   _DocService _selectedService = _DocService.notion;
 
@@ -137,7 +141,7 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: () => setState(() => _selectedService = service),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         hoverColor: _brand.withValues(alpha: 0.06),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
@@ -145,7 +149,7 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: selected ? _brandDark : Colors.white.withValues(alpha: 0.74),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: selected ? _brandDark : _line),
           ),
           child: Row(
@@ -155,7 +159,7 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
                 height: 44,
                 decoration: BoxDecoration(
                   color: selected ? Colors.white.withValues(alpha: 0.14) : _brand.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
@@ -171,7 +175,7 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: _sectionTitleSize,
                         fontWeight: FontWeight.w700,
                         color: selected ? Colors.white : _ink,
                       ),
@@ -182,8 +186,8 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 12,
-                        height: 1.5,
+                        fontSize: _bodySize,
+                        height: _bodyHeight,
                         color: selected ? Colors.white70 : _muted,
                       ),
                     ),
@@ -203,7 +207,7 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: _line),
       ),
       child: Column(
@@ -216,7 +220,7 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: _brand.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.menu_book_outlined, color: _brandDark),
               ),
@@ -228,7 +232,7 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
                     Text(
                       '文档中心',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: _sectionTitleSize,
                         fontWeight: FontWeight.w700,
                         color: _ink,
                       ),
@@ -236,7 +240,7 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
                     SizedBox(height: 2),
                     Text(
                       '接入指南会按平台沉淀在这里，后续可以继续扩展更多服务。',
-                      style: TextStyle(fontSize: 12, color: _muted, height: 1.5),
+                      style: TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
                     ),
                   ],
                 ),
@@ -294,7 +298,7 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
           Text(
             title,
             style: const TextStyle(
-              fontSize: 22,
+              fontSize: _sectionTitleSize,
               fontWeight: FontWeight.w700,
               color: _ink,
             ),
@@ -319,7 +323,7 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
             padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(color: _line),
               boxShadow: const [
                 BoxShadow(
@@ -344,15 +348,15 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
                 Text(
                   doc.title,
                   style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
+                    fontSize: _h1Size,
+                    fontWeight: FontWeight.w600,
                     color: _ink,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   doc.subtitle,
-                  style: const TextStyle(fontSize: 14, color: _muted, height: 1.7),
+                  style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
                 ),
                 const SizedBox(height: 18),
                 Wrap(
@@ -387,9 +391,9 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
                       child: Text(
                         item,
                         style: const TextStyle(
-                          fontSize: 14,
-                          color: _muted,
-                          height: 1.8,
+                          fontSize: _bodySize,
+                          color: Color(0xFF666666),
+                          height: _bodyHeight,
                         ),
                       ),
                     ),
@@ -409,9 +413,9 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
                       child: Text(
                         item,
                         style: const TextStyle(
-                          fontSize: 14,
-                          color: _muted,
-                          height: 1.8,
+                          fontSize: _bodySize,
+                          color: Color(0xFF666666),
+                          height: _bodyHeight,
                         ),
                       ),
                     ),
@@ -429,13 +433,13 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: InkWell(
                         onTap: () => _openExternalLink(item.url),
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(24),
                         child: Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF6FAF7),
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: BorderRadius.circular(24),
                             border: Border.all(color: _line),
                           ),
                           child: Column(
@@ -459,7 +463,7 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
                               Text(
                                 item.label,
                                 style: const TextStyle(
-                                  fontSize: 15,
+                                  fontSize: _sectionTitleSize,
                                   fontWeight: FontWeight.w700,
                                   color: _ink,
                                 ),
@@ -468,17 +472,18 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
                               Text(
                                 item.description,
                                 style: const TextStyle(
-                                  fontSize: 13,
-                                  color: _muted,
-                                  height: 1.7,
+                                  fontSize: _bodySize,
+                                  color: Color(0xFF666666),
+                                  height: _bodyHeight,
                                 ),
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 item.url,
                                 style: const TextStyle(
-                                  fontSize: 12,
-                                  color: _muted,
+                                  fontSize: _bodySize,
+                                  color: Color(0xFF666666),
+                                  height: _bodyHeight,
                                 ),
                               ),
                             ],
@@ -495,7 +500,7 @@ class _NotionIntegrationPageState extends State<NotionIntegrationPage> {
             title: '页面说明',
             child: Text(
               doc.note,
-              style: const TextStyle(fontSize: 14, color: _muted, height: 1.8),
+              style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
             ),
           ),
         ],
