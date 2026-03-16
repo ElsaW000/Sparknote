@@ -579,7 +579,10 @@ def _set_note_tags(session: Session, note_id: int, user_id: int, tags: Optional[
 
 
 def _uploads_dir() -> str:
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+    path = os.getenv("UPLOADS_DIR") or os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "uploads",
+    )
     os.makedirs(path, exist_ok=True)
     return path
 

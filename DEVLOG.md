@@ -165,6 +165,11 @@
   - Marked streaming AI, realtime recording, clipboard paste, and real Notion sync as remaining enhancement items.
 - Bug fix
   - Replaced the old `\w`-based hashtag extraction rule with a delimiter-based matcher so Chinese tags such as `#工作` are preserved correctly.
+- Deployment prep
+  - Added `Dockerfile` for shipping backend plus built Flutter web assets together.
+  - Added `render.yaml` for Render Blueprint deployment with persistent disk.
+  - Added `DEPLOY_RENDER.md` with step-by-step deployment instructions.
+  - Added `UPLOADS_DIR` support so uploads can persist outside the app container.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`

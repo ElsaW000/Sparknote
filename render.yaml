@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: sparknote
+    runtime: docker
+    plan: starter
+    autoDeploy: true
+    disk:
+      name: sparknote-data
+      mountPath: /data
+      sizeGB: 5
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:////data/sparknote.db
+      - key: UPLOADS_DIR
+        value: /data/uploads
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: REQUIRE_REGISTER_CAPTCHA
+        value: "1"

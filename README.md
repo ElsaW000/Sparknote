@@ -55,3 +55,10 @@ Sparknote 是一个面向创作者的灵感记录与整理应用，当前代码�
 
 - `tester@example.com / pass1234`
 - `test@example.com / test123`
+
+## 云部署
+
+仓库已经补上 Render 部署配置，可直接按蓝图方式部署成固定公网地址：
+
+- [render.yaml](/d:/02-Projects/01-Sparknote/render.yaml)
+- [DEPLOY_RENDER.md](/d:/02-Projects/01-Sparknote/DEPLOY_RENDER.md)

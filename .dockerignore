@@ -1,0 +1,17 @@
+.git
+.venv
+.pytest_cache
+.runlogs
+.tmp_*
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.db
+uploads/
+build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
