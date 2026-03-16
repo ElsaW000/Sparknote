@@ -218,6 +218,10 @@
     - single-line body truncation,
     - tags moved beside the action row,
     - fixed desktop card height for more consistent list rhythm.
+  - Refined the `今日回顾` panel into a more AI-like recap:
+    - surfaces compact highlight keywords first,
+    - prefers titles and tags over long concatenated prose,
+    - falls back to a single short summary sentence when needed.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`

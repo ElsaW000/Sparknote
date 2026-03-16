@@ -430,21 +430,55 @@ class _NotesPageState extends State<NotesPage> {
     }).toList();
   }
 
+  List<String> _dailyReviewHighlights() {
+    final highlights = <String>[];
+
+    void addHighlight(String value, {bool prefixTag = false}) {
+      final normalized = value.trim();
+      if (normalized.isEmpty) return;
+      final displayValue = prefixTag ? '#$normalized' : normalized;
+      if (!highlights.contains(displayValue)) {
+        highlights.add(displayValue);
+      }
+    }
+
+    for (final item in _dailyReview.whereType<Map<String, dynamic>>()) {
+      final title = _text(item['title'] ?? '').trim();
+      if (title.isNotEmpty) {
+        addHighlight(title);
+      }
+
+      final tags = item['tags'];
+      if (tags is List) {
+        for (final tag in tags) {
+          addHighlight(_text(tag), prefixTag: true);
+        }
+      }
+    }
+
+    if (highlights.isEmpty) {
+      for (final item in _dailyReview.whereType<Map<String, dynamic>>()) {
+        final content = _text(item['content'] ?? '').trim();
+        if (content.isEmpty) continue;
+        final firstLine = content.split('\n').first.trim();
+        if (firstLine.isNotEmpty) {
+          addHighlight(firstLine);
+        }
+      }
+    }
+
+    return highlights.take(4).toList();
+  }
+
   String _dailyReviewSummary() {
     if (_dailyReview.isEmpty) {
       return '今天还没有新的灵感沉淀，写下一条记录后这里会自动出现回顾。';
     }
-    final titles = _dailyReview
-        .whereType<Map<String, dynamic>>()
-        .map(_displayTitle)
-        .where((title) => title.isNotEmpty)
-        .take(3)
-        .toList();
-    final count = _dailyReview.length;
-    if (titles.isEmpty) {
-      return '今天共记录了 $count 条内容，可以从下方卡片继续回看。';
+    final highlights = _dailyReviewHighlights();
+    if (highlights.isNotEmpty) {
+      return '今天聚焦：${highlights.join(' · ')}。';
     }
-    return '今天共记录了 $count 条内容，重点包括 ${titles.join('、')}。';
+    return '今天沉淀了 ${_dailyReview.length} 条记录，已经形成可继续延展的一组灵感线索。';
   }
 
   Future<void> _pickQuickAttachment({required String accept}) async {
