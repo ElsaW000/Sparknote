@@ -1236,9 +1236,16 @@ class _NotesPageState extends State<NotesPage> {
     final tags = (note['tags'] as List<dynamic>? ?? [])
         .map((e) => e.toString())
         .toList();
+    final visibleTags = tags.take(2).toList();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
+      constraints: compact
+          ? null
+          : const BoxConstraints(
+              minHeight: 168,
+              maxHeight: 168,
+            ),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1254,114 +1261,167 @@ class _NotesPageState extends State<NotesPage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
                       _displayTitle(note),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontFamily: compact ? null : 'Georgia',
                         fontSize: _sectionTitleSize,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A1A1A),
+                        color: const Color(0xFF1A1A1A),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _formatDate(note['created_at']),
-                      style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _brand.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
                     ),
-                  ],
+                    child: Text(
+                      '第 $displayIndex 条',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: _brandDark,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _formatDate(note['created_at']),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF999999),
+                  height: _bodyHeight,
                 ),
               ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(
-                  color: _brand.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  '第 $displayIndex 条',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: _brandDark,
-                  ),
+              const SizedBox(height: 12),
+              Text(
+                _text(note['content'] ?? ''),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: _bodySize,
+                  height: _bodyHeight,
+                  color: Color(0xFF444444),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Text(
-            _text(note['content'] ?? ''),
-            maxLines: compact ? 4 : 6,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: _bodySize,
-              height: _bodyHeight,
-              color: _ink,
-            ),
-          ),
-          if (tags.isNotEmpty) ...[
-            const SizedBox(height: 14),
+          if (compact)
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: tags.take(compact ? 3 : 5).map((tag) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: _tagColor(tag).withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    '#$tag',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: _tagColor(tag),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => _openNoteEditor(note: note),
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('\u7f16\u8f91'),
-              ),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: _brand,
-                  foregroundColor: Colors.white,
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                if (visibleTags.isNotEmpty)
+                  ...visibleTags.map((tag) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: _tagColor(tag).withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '#$tag',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: _tagColor(tag),
+                        ),
+                      ),
+                    );
+                  }),
+                OutlinedButton.icon(
+                  onPressed: () => _openNoteEditor(note: note),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('\u7f16\u8f91'),
                 ),
-                onPressed: () {
-                  _openWorkspaceForNote(note);
-                },
-                icon: const Icon(Icons.auto_awesome, size: 18),
-                label: const Text('灵感工作台'),
-              ),
-              IconButton.filledTonal(
-                onPressed: () => _deleteNote(note['id'] as int),
-                icon: const Icon(Icons.delete_outline),
-                tooltip: '删除',
-              ),
-            ],
-          ),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _brand,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    _openWorkspaceForNote(note);
+                  },
+                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  label: const Text('灵感工作台'),
+                ),
+                IconButton.filledTonal(
+                  onPressed: () => _deleteNote(note['id'] as int),
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: '删除',
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: visibleTags.map((tag) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: _tagColor(tag).withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '#$tag',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: _tagColor(tag),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: () => _openNoteEditor(note: note),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('\u7f16\u8f91'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _brand,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    _openWorkspaceForNote(note);
+                  },
+                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  label: const Text('灵感工作台'),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  onPressed: () => _deleteNote(note['id'] as int),
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: '删除',
+                ),
+              ],
+            ),
         ],
       ),
     );

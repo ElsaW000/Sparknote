@@ -213,6 +213,11 @@
   - Moved the desktop note search box out of the center content stream and into the top of the right utility rail so search behaves more like an auxiliary tool and less like the primary workspace.
   - Reduced vertical stacking pressure on the homepage content header by moving the workflow hint beside the page title and trimming note-card / utility-card padding further.
   - Changed note numbering display to follow chronological order labels, so the earliest visible note is treated as `第1条` even when the list itself is shown in reverse chronological order.
+  - Normalized desktop note cards into a stricter preview format:
+    - single-line title truncation,
+    - single-line body truncation,
+    - tags moved beside the action row,
+    - fixed desktop card height for more consistent list rhythm.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`
