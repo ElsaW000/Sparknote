@@ -180,6 +180,8 @@
   - Removed the temporary `UI-ATTACH-20260316-03` debug marker from the UI after verification.
   - Reworked the heatmap rendering to use clearer multi-level color bands and added a small legend for intensity interpretation.
   - Standardized the local test refresh flow around `flutter build web` plus backend health verification so frontend fixes are not tested against stale bundles.
+  - Redesigned the Notion/API settings page into a clearer two-column desktop layout with a left navigation area and a right-side setup guide.
+  - Restricted the desktop quick composer to the center content region so it no longer covers the right-side “灵感工作台” card.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`

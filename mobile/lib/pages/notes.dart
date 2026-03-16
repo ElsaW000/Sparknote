@@ -1774,28 +1774,24 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   Widget _buildQuickComposer({required bool isDesktop}) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: SafeArea(
-        minimum: EdgeInsets.fromLTRB(isDesktop ? 28 : 14, 0, isDesktop ? 28 : 14, 14),
-        child: Container(
-          constraints: BoxConstraints(maxWidth: isDesktop ? 920 : double.infinity),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: _line),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x1A0E1A13),
-                blurRadius: 30,
-                offset: Offset(0, 10),
-              ),
-            ],
+    final composerCard = Container(
+      constraints: BoxConstraints(maxWidth: isDesktop ? 960 : double.infinity),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: _line),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A0E1A13),
+            blurRadius: 30,
+            offset: Offset(0, 10),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
               if (_quickAttachmentStatus != null || _quickAttachments.isNotEmpty) ...[
                 Align(
                   alignment: Alignment.centerLeft,
@@ -1939,7 +1935,25 @@ class _NotesPageState extends State<NotesPage> {
               ),
             ],
           ),
+        );
+
+    if (isDesktop) {
+      return Positioned(
+        left: 318,
+        right: 388,
+        bottom: 14,
+        child: SafeArea(
+          minimum: const EdgeInsets.only(bottom: 14),
+          child: composerCard,
         ),
+      );
+    }
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+        child: composerCard,
       ),
     );
   }
