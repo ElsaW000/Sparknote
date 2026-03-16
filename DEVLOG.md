@@ -200,6 +200,11 @@
     - one focused content canvas on the right,
     - animated section transitions,
     - more console-like information architecture instead of flat card stacking.
+  - Rebuilt the API docs page into the same split-view pattern:
+    - service directory on the left,
+    - one active platform document on the right,
+    - reusable document center structure for Notion / Obsidian / Logseq,
+    - direct shortcut from docs to the settings configuration page.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`
