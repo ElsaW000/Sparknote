@@ -151,6 +151,7 @@
 - Audited the current codebase against existing docs and synchronized the main functional documentation with the real implementation state.
 - Confirmed that login, registration, notes CRUD, search/filtering, workspace conversation flow, attachments, audio transcription, related notes, and Notion configuration are already implemented in code.
 - Fixed the Chinese hashtag auto-extraction regression found during automated verification.
+- Continued manual UI verification and closed several frontend/backend consistency issues found during attachment and dashboard testing.
 
 ### Work Done
 - Documentation sync
@@ -170,10 +171,21 @@
   - Added `render.yaml` for Render Blueprint deployment with persistent disk.
   - Added `DEPLOY_RENDER.md` with step-by-step deployment instructions.
   - Added `UPLOADS_DIR` support so uploads can persist outside the app container.
+- Manual QA fixes
+  - Fixed Flutter web local file picking so selected images/files reliably enter frontend state on web and show filename chips with remove actions before upload.
+  - Added note-attachment deletion support in the backend and covered it with API tests.
+  - Updated the note editor to show already-saved attachments and made the dialog body scroll so action buttons stay reachable when attachments are present.
+  - Changed `/review/daily` to return full note payloads instead of title-only summaries.
+  - Updated the homepage daily-review cards to open the full note content instead of an empty editor.
+  - Removed the temporary `UI-ATTACH-20260316-03` debug marker from the UI after verification.
+  - Reworked the heatmap rendering to use clearer multi-level color bands and added a small legend for intensity interpretation.
+  - Standardized the local test refresh flow around `flutter build web` plus backend health verification so frontend fixes are not tested against stale bundles.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`
 - Result: `17 passed`
+- Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+- Verified local backend health: `GET /health -> {"status":"ok"}`
 
 ### Known Gaps
 - Frontend manual acceptance is still not fully recorded for the end-to-end UI flow.

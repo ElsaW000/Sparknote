@@ -201,6 +201,33 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
     }
   }
 
+  Future<void> _deleteAttachment(Map<String, dynamic> attachment) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final attachmentId = attachment['id'] as int?;
+    if (attachmentId == null) return;
+    try {
+      final headers = await _authHeaders();
+      if (!mounted || headers == null) return;
+      final r = await http.delete(
+        Uri.parse('$backendUrl/notes/${widget.noteId}/attachments/$attachmentId'),
+        headers: headers,
+      );
+      if (!mounted) return;
+      if (r.statusCode == 200) {
+        await _fetchAttachments();
+        setState(() => _statusNote = '附件已移除。');
+        messenger.showSnackBar(const SnackBar(content: Text('附件已删除')));
+      } else {
+        messenger.showSnackBar(
+          SnackBar(content: Text('删除失败：${r.statusCode}')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('删除失败：$e')));
+    }
+  }
+
   Future<void> _transcribeAudioToChat() async {
     final messenger = ScaffoldMessenger.of(context);
     final picked = await pickLocalFile(accept: 'audio/*');
@@ -714,33 +741,41 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                           )
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: _attachments.take(6).map((item) {
-                              final name = (item['file_name'] ?? '').toString();
-                              final mime = (item['mime_type'] ?? '').toString();
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Icon(
+                            children: [
+                              Text(
+                                '当前附件（${_attachments.length}）',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: _ink,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _attachments.map((item) {
+                                  final name = (item['file_name'] ?? '').toString();
+                                  final mime = (item['mime_type'] ?? '').toString();
+                                  return InputChip(
+                                    label: ConstrainedBox(
+                                      constraints: const BoxConstraints(maxWidth: 180),
+                                      child: Text(
+                                        name.isEmpty ? '未命名附件' : name,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    avatar: Icon(
                                       mime.startsWith('image/')
                                           ? Icons.image_outlined
                                           : Icons.insert_drive_file_outlined,
-                                      size: 16,
-                                      color: _brandDark,
+                                      size: 18,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        name,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(fontSize: 12, color: _ink),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
+                                    onDeleted: () => _deleteAttachment(item),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
                           ),
                   ),
                 ],

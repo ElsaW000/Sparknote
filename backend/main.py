@@ -897,6 +897,32 @@ def upload_note_attachment(
     )
 
 
+@app.delete("/notes/{note_id}/attachments/{attachment_id}")
+def delete_note_attachment(
+    note_id: int,
+    attachment_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    note = session.get(Note, note_id)
+    if not note or note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="note not found")
+    attachment = session.get(NoteAttachment, attachment_id)
+    if not attachment or attachment.note_id != note_id or attachment.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="attachment not found")
+
+    file_path = os.path.join(_uploads_dir(), attachment.stored_name)
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except OSError:
+        pass
+
+    session.delete(attachment)
+    session.commit()
+    return {"ok": True, "deleted_attachment_id": attachment_id}
+
+
 @app.get("/tags/suggest")
 def suggest_tags(
     session: Session = Depends(get_session),
@@ -1104,7 +1130,7 @@ def review_daily(
             & (func.date(Note.created_at) == today)
         )
     ).all()
-    return [{"id": n.id, "title": n.title} for n in notes]
+    return [_to_note_read(session, n) for n in notes]
 
 
 # ---- AI insight endpoints ----

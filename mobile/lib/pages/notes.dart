@@ -15,6 +15,35 @@ class NotesPage extends StatefulWidget {
   State<NotesPage> createState() => _NotesPageState();
 }
 
+class _HeatmapLegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _HeatmapLegendDot({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: Color(0xFF60716F)),
+        ),
+      ],
+    );
+  }
+}
+
 class _NotesPageState extends State<NotesPage> {
   static const Color _brand = Color(0xFF2D6A4F);
   static const Color _brandDark = Color(0xFF1A3C34);
@@ -180,6 +209,35 @@ class _NotesPageState extends State<NotesPage> {
     } catch (_) {}
   }
 
+  Future<void> _openDailyReviewNote(Map<String, dynamic> item) async {
+    final noteId = item['id'];
+    if (noteId is! int) {
+      await _openNoteEditor(note: item);
+      return;
+    }
+
+    final token = await _token();
+    if (!mounted || token == null || token.isEmpty) return;
+
+    try {
+      final resp = await http.get(
+        Uri.parse('$backendUrl/notes/$noteId'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (!mounted) return;
+      if (resp.statusCode == 200) {
+        final note = json.decode(_decodeResponse(resp)) as Map<String, dynamic>;
+        await _openNoteEditor(note: note);
+        return;
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('加载完整笔记失败，请稍后重试。')),
+    );
+  }
+
   void _applySearch() {
     final value = _searchCtrl.text.trim();
     setState(() => _searchQuery = value.isEmpty ? null : value);
@@ -319,11 +377,7 @@ class _NotesPageState extends State<NotesPage> {
   String _displayTitle(Map<String, dynamic> note) {
     final title = _text(note['title'] ?? '').trim();
     if (title.isNotEmpty) return title;
-    final content = _text(note['content'] ?? '').trim();
-    if (content.isEmpty) return '未命名灵感';
-    final firstLine = content.split('\n').first.trim();
-    if (firstLine.isEmpty) return '未命名灵感';
-    return firstLine.length > 20 ? '${firstLine.substring(0, 20)}...' : firstLine;
+    return '未命名灵感';
   }
 
   List<dynamic> _visibleNotes() {
@@ -342,7 +396,7 @@ class _NotesPageState extends State<NotesPage> {
     }
     final titles = _dailyReview
         .whereType<Map<String, dynamic>>()
-        .map((item) => _text(item['title'] ?? '').trim())
+        .map(_displayTitle)
         .where((title) => title.isNotEmpty)
         .take(3)
         .toList();
@@ -518,6 +572,12 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   Future<void> _openNoteEditor({Map<String, dynamic>? note}) async {
+    final existingAttachments = note == null
+        ? <Map<String, dynamic>>[]
+        : (note['attachments'] as List<dynamic>? ?? [])
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
     final titleCtrl = TextEditingController(
       text: (note?['title'] ?? '').toString(),
     );
@@ -539,43 +599,88 @@ class _NotesPageState extends State<NotesPage> {
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
+          constraints: const BoxConstraints(maxWidth: 680, maxHeight: 760),
           child: Padding(
             padding: const EdgeInsets.all(28),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  note == null ? '新建笔记' : '编辑笔记',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: _ink,
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          note == null ? '新建笔记' : '编辑笔记',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: _ink,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '长笔记适合整理标题、正文和标签；底部快速输入更适合即时捕捉灵感。',
+                          style: TextStyle(fontSize: 13, color: _muted, height: 1.6),
+                        ),
+                        const SizedBox(height: 20),
+                        TextField(
+                          controller: titleCtrl,
+                          decoration: _fieldDecoration('标题（可选）'),
+                        ),
+                        const SizedBox(height: 14),
+                        TextField(
+                          controller: contentCtrl,
+                          maxLines: 8,
+                          decoration: _fieldDecoration('正文'),
+                        ),
+                        const SizedBox(height: 14),
+                        TextField(
+                          controller: tagsCtrl,
+                          decoration: _fieldDecoration('标签，用逗号分隔'),
+                        ),
+                        if (existingAttachments.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          const Text(
+                            '已保存附件',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: _ink,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: existingAttachments.map((attachment) {
+                              final fileName = _text(attachment['file_name'] ?? '').trim();
+                              final mimeType = _text(attachment['mime_type'] ?? '').trim();
+                              return InputChip(
+                                label: ConstrainedBox(
+                                  constraints: const BoxConstraints(maxWidth: 240),
+                                  child: Text(
+                                    fileName.isEmpty ? '未命名附件' : fileName,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                avatar: Icon(
+                                  mimeType.startsWith('image/')
+                                      ? Icons.image_outlined
+                                      : Icons.attach_file_outlined,
+                                  size: 18,
+                                ),
+                                onPressed: () {},
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  '长笔记适合整理标题、正文和标签；底部快速输入更适合即时捕捉灵感。',
-                  style: TextStyle(fontSize: 13, color: _muted, height: 1.6),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: titleCtrl,
-                  decoration: _fieldDecoration('标题（可选）'),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: contentCtrl,
-                  maxLines: 8,
-                  decoration: _fieldDecoration('正文'),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: tagsCtrl,
-                  decoration: _fieldDecoration('标签，用逗号分隔'),
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -805,6 +910,16 @@ class _NotesPageState extends State<NotesPage> {
         ? 0
         : counts.values.reduce((a, b) => a > b ? a : b);
 
+    Color colorForCount(int count) {
+      if (count <= 0) return Colors.grey.shade300;
+      if (maxCount <= 1) return const Color(0xFF2D6A4F);
+      final ratio = count / maxCount;
+      if (ratio >= 0.85) return const Color(0xFF1B4332);
+      if (ratio >= 0.60) return const Color(0xFF2D6A4F);
+      if (ratio >= 0.35) return const Color(0xFF40916C);
+      return const Color(0xFF95D5B2);
+    }
+
     return Wrap(
       spacing: 4,
       runSpacing: 4,
@@ -813,8 +928,6 @@ class _NotesPageState extends State<NotesPage> {
         final key =
             '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
         final count = counts[key] ?? 0;
-        final alpha = maxCount == 0 ? 0.12 : (count / maxCount).clamp(0.12, 1.0);
-
         final selected = _selectedDate == key;
         return Tooltip(
           message: '$key · $count 条',
@@ -831,9 +944,7 @@ class _NotesPageState extends State<NotesPage> {
               width: 15,
               height: 15,
               decoration: BoxDecoration(
-                color: count == 0
-                    ? Colors.grey.shade300
-                    : _brand.withValues(alpha: alpha),
+                color: colorForCount(count),
                 borderRadius: BorderRadius.circular(4),
                 border: selected ? Border.all(color: _brandDark, width: 1.5) : null,
               ),
@@ -865,7 +976,7 @@ class _NotesPageState extends State<NotesPage> {
           item['content'] = _text(item['content'] ?? '');
         }
         return InkWell(
-          onTap: item is Map<String, dynamic> ? () => _openNoteEditor(note: item) : null,
+          onTap: item is Map<String, dynamic> ? () => _openDailyReviewNote(item) : null,
           borderRadius: BorderRadius.circular(18),
           child: Container(
             margin: const EdgeInsets.only(bottom: 10),
@@ -892,7 +1003,7 @@ class _NotesPageState extends State<NotesPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _text(item['title'] ?? '\u672a\u547d\u540d'),
+                        item is Map<String, dynamic> ? _displayTitle(item) : '未命名灵感',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -902,7 +1013,9 @@ class _NotesPageState extends State<NotesPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _text(item['content'] ?? ''),
+                        _text(item['content'] ?? '').trim().isEmpty
+                            ? '点击查看今天这条记录的完整内容。'
+                            : _text(item['content'] ?? ''),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -1555,6 +1668,20 @@ class _NotesPageState extends State<NotesPage> {
                     ],
                     const SizedBox(height: 18),
                     _buildHeatmapSection(),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: const [
+                        _HeatmapLegendDot(color: Color(0xFFD9D9D9), label: '0'),
+                        SizedBox(width: 8),
+                        _HeatmapLegendDot(color: Color(0xFF95D5B2), label: '低'),
+                        SizedBox(width: 8),
+                        _HeatmapLegendDot(color: Color(0xFF40916C), label: '中'),
+                        SizedBox(width: 8),
+                        _HeatmapLegendDot(color: Color(0xFF2D6A4F), label: '高'),
+                        SizedBox(width: 8),
+                        _HeatmapLegendDot(color: Color(0xFF1B4332), label: '峰值'),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -1675,6 +1802,18 @@ class _NotesPageState extends State<NotesPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (_quickAttachments.isNotEmpty)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            '已选附件',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: _ink,
+                            ),
+                          ),
+                        ),
                       if (_quickAttachmentStatus != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),

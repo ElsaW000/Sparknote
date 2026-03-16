@@ -305,6 +305,7 @@ def test_stats_heatmap_and_review():
     assert r3.status_code == 200
     review = r3.json()
     assert any(item["title"] in ("H1", "H2") for item in review)
+    assert all("content" in item for item in review)
 
 def test_registration_captcha():
     main.REQUIRE_REGISTER_CAPTCHA = True
@@ -433,11 +434,22 @@ def test_note_attachment_endpoints():
     attachments = r_list.json()
     assert len(attachments) == 1
     assert attachments[0]["file_name"] == "idea.txt"
+    attachment_id = attachments[0]["id"]
 
     r_get = client.get(f"/notes/{note_id}", headers=headers)
     assert r_get.status_code == 200
     note = r_get.json()
     assert len(note["attachments"]) == 1
+
+    r_delete = client.delete(
+        f"/notes/{note_id}/attachments/{attachment_id}",
+        headers=headers,
+    )
+    assert r_delete.status_code == 200
+
+    r_list_again = client.get(f"/notes/{note_id}/attachments", headers=headers)
+    assert r_list_again.status_code == 200
+    assert r_list_again.json() == []
 
 
 def test_audio_transcription_endpoint():

@@ -19,7 +19,15 @@ Future<PickedLocalFile?> pickLocalFileImpl({String? accept}) async {
   final completer = Completer<PickedLocalFile?>();
   reader.onLoadEnd.listen((_) {
     final result = reader.result;
-    if (result is! ByteBuffer) {
+    Uint8List? bytes;
+    if (result is ByteBuffer) {
+      bytes = Uint8List.view(result);
+    } else if (result is Uint8List) {
+      bytes = result;
+    } else if (result is List<int>) {
+      bytes = Uint8List.fromList(result);
+    }
+    if (bytes == null) {
       completer.complete(null);
       return;
     }
@@ -27,7 +35,7 @@ Future<PickedLocalFile?> pickLocalFileImpl({String? accept}) async {
       PickedLocalFile(
         name: file.name,
         mimeType: file.type.isEmpty ? null : file.type,
-        bytes: Uint8List.view(result),
+        bytes: bytes,
       ),
     );
   });
