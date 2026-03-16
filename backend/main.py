@@ -547,8 +547,13 @@ def _normalize_tags(tags: Optional[List[str]]) -> List[str]:
 def _extract_tags_from_content(content: Optional[str]) -> List[str]:
     if not content:
         return []
-    # Accept tags like #idea, #work-log, #ä¸­æ–‡æ ‡ç­¾ and ignore bare '#'.
-    found = re.findall(r"(?<!\w)#([\w\-]+)", content, flags=re.UNICODE)
+    # Capture tags until whitespace or obvious punctuation so CJK tags like
+    # #工作 are preserved instead of being truncated by \w-only matching.
+    found = re.findall(
+        r"(?<!\S)#([^\s#.,!?;:，。！？；：、/\\|()\[\]{}<>\"'“”‘’]+)",
+        content,
+        flags=re.UNICODE,
+    )
     return _normalize_tags(found)
 
 

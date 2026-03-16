@@ -70,9 +70,8 @@
 2026-03-16：
 
 - 运行：`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`
-- 结果：`16 passed, 1 failed`
-- 已知失败：
-  `test_note_auto_extract_hashtags` 中中文标签自动提取异常，说明中文 hashtag 提取存在回归
+- 结果：`17 passed`
+- 说明：中文 hashtag 自动提取回归已修复
 
 ## 本地启动
 

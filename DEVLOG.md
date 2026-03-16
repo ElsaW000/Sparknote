@@ -150,7 +150,7 @@
 ### Summary
 - Audited the current codebase against existing docs and synchronized the main functional documentation with the real implementation state.
 - Confirmed that login, registration, notes CRUD, search/filtering, workspace conversation flow, attachments, audio transcription, related notes, and Notion configuration are already implemented in code.
-- Found one active regression during automated verification: Chinese hashtag auto-extraction is currently failing.
+- Fixed the Chinese hashtag auto-extraction regression found during automated verification.
 
 ### Work Done
 - Documentation sync
@@ -163,15 +163,18 @@
   - Recorded that `AIWorkspacePage` is now wired to real backend conversations.
   - Recorded that logout, search, tag filtering, attachments, audio file transcription, and Notion config are available.
   - Marked streaming AI, realtime recording, clipboard paste, and real Notion sync as remaining enhancement items.
+- Bug fix
+  - Replaced the old `\w`-based hashtag extraction rule with a delimiter-based matcher so Chinese tags such as `#工作` are preserved correctly.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`
-- Result: `16 passed, 1 failed`
-- Failing case:
-  - `backend/tests/test_api.py::test_note_auto_extract_hashtags`
-  - Symptom: Chinese hashtag content such as `#工作` is not extracted correctly into tags
+- Result: `17 passed`
 
 ### Known Gaps
-- Chinese hashtag extraction has an active regression and should be treated as the highest-priority backend bug from this audit.
 - Frontend manual acceptance is still not fully recorded for the end-to-end UI flow.
 - Settings remain only partially surfaced in the current main navigation flow.
+- Remaining feature gaps from prior notes are still:
+  - AI token-level streaming
+  - realtime recording
+  - clipboard paste for images/files
+  - real Notion sync/writeback
