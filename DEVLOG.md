@@ -189,6 +189,8 @@
     - enlarged the right-side panel area for the heatmap,
     - increased note-list bottom padding so the floating composer does not cover trailing content.
   - Added clearer product guidance to distinguish “碎片输入” from “新建长笔记”.
+  - Relaxed the left-rail spacing again after manual review so the pulse, tag, and notebook areas no longer feel stacked too tightly.
+  - Expanded the API guide with direct Notion official links for integrations, databases, and authorization setup.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`

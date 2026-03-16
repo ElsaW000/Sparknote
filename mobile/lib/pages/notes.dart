@@ -53,7 +53,7 @@ class _RailPulseMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(18),
@@ -65,7 +65,7 @@ class _RailPulseMetric extends StatelessWidget {
             value,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1347,17 +1347,18 @@ class _NotesPageState extends State<NotesPage> {
                   ],
                 ),
               ),
+              const SizedBox(height: 22),
+              const Text(
+                '标签索引',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
               Expanded(
                 child: ListView(
                   children: [
-                    const Text(
-                      '标签索引',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -1408,28 +1409,23 @@ class _NotesPageState extends State<NotesPage> {
                               }).toList(),
                             ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 20),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(22),
                         border: Border.all(color: Colors.white24),
                       ),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: const Row(
                         children: [
-                          Text(
-                            '笔记本',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
+                          Icon(Icons.folder_open_outlined, color: Colors.white70, size: 18),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              '笔记本功能后续会支持按项目、主题、阶段收纳笔记。',
+                              style: TextStyle(color: _softText, height: 1.6, fontSize: 12),
                             ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            '后续会支持按项目、主题、阶段收纳笔记。',
-                            style: TextStyle(color: _softText, height: 1.6, fontSize: 12),
                           ),
                         ],
                       ),
