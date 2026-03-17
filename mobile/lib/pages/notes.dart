@@ -2335,12 +2335,17 @@ class _NotesPageState extends State<NotesPage> {
                             _CollapsedRailButton(
                               icon: Icons.label_outline,
                               tooltip: '标签筛选',
-                              onTap: () {},
+                              onTap: () => setState(() => _leftRailCollapsed = false),
                             ),
                             _CollapsedRailButton(
                               icon: Icons.folder_open_outlined,
                               tooltip: '笔记本',
-                              onTap: () {},
+                              onTap: () {
+                                setState(() => _leftRailCollapsed = false);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('笔记本功能仍在整理中，先为你展开左侧栏。')),
+                                );
+                              },
                             ),
                           ],
                         ),

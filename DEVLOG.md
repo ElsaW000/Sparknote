@@ -339,3 +339,15 @@
 - Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
 - Verified local health endpoint again:
   - `GET /health -> {"status":"ok"}`
+
+## 2026-03-17 - Collapsed Rail Interaction Follow-up
+
+### What changed
+- Added simple expand behavior for collapsed left-rail utility icons:
+  - clicking the tag icon now expands the left rail,
+  - clicking the notebook icon now expands the left rail and shows a lightweight placeholder message.
+
+### Verification
+- Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+- Verified local health endpoint again:
+  - `GET /health -> {"status":"ok"}`
