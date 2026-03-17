@@ -2737,7 +2737,7 @@ class _NotesPageState extends State<NotesPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            '记录热力图',
+                            '日历记录',
                             style: TextStyle(
                               fontSize: _sectionTitleSize,
                               fontWeight: FontWeight.w700,
@@ -2847,7 +2847,7 @@ class _NotesPageState extends State<NotesPage> {
                     const SizedBox(height: 12),
                     _CollapsedRailButton(
                       icon: Icons.calendar_view_month_rounded,
-                      tooltip: '热力图',
+                      tooltip: '日历记录',
                       onTap: () => setState(() => _rightRailCollapsed = false),
                     ),
                     const SizedBox(height: 12),
@@ -3277,7 +3277,7 @@ class _NotesPageState extends State<NotesPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        '热力图',
+                        '日历记录',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,

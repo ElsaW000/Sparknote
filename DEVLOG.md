@@ -427,3 +427,9 @@
 - Local API health still returns:
   - `GET /health -> {"status":"ok"}`
 - This round focused on UI structure and did not complete a fresh Flutter web build because the local build process continued timing out in the current environment.
+
+## 2026-03-17 - Calendar Naming Cleanup
+
+### What changed
+- Renamed the homepage right-rail calendar section from `热力图` to `日历记录`.
+- Updated the collapsed right-rail tooltip and matching mobile copy so the naming stays consistent across layouts.
