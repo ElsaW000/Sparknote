@@ -296,3 +296,18 @@
 - Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
 - Verified local health endpoint again:
   - `GET /health -> {"status":"ok"}`
+
+## 2026-03-17 - Long-note Form Clarity
+
+### What changed
+- Improved the long-note editor dialog field differentiation:
+  - title, content, and tags now use different fill/border colors,
+  - each field has its own icon and stronger label semantics so unfinished inputs are easier to spot.
+- Expanded tag parsing in the long-note editor:
+  - supports both English comma `,` and Chinese comma `，`,
+  - prevents multiple tags from being saved as a single merged label.
+
+### Verification
+- Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+- Verified local health endpoint again:
+  - `GET /health -> {"status":"ok"}`

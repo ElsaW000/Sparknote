@@ -1178,18 +1178,36 @@ class _NotesPageState extends State<NotesPage> {
                             const SizedBox(height: 20),
                             TextField(
                               controller: titleCtrl,
-                              decoration: _fieldDecoration('标题（可选）'),
+                              decoration: _editorFieldDecoration(
+                                label: '标题',
+                                hint: '标题（可选）',
+                                fillColor: const Color(0xFFF4FAF6),
+                                borderColor: const Color(0xFF2D6A4F),
+                                icon: Icons.title_rounded,
+                              ),
                             ),
                             const SizedBox(height: 14),
                             TextField(
                               controller: contentCtrl,
                               maxLines: 8,
-                              decoration: _fieldDecoration('正文'),
+                              decoration: _editorFieldDecoration(
+                                label: '正文',
+                                hint: '正文（必填）',
+                                fillColor: const Color(0xFFFFFBF2),
+                                borderColor: const Color(0xFFB7791F),
+                                icon: Icons.notes_rounded,
+                              ),
                             ),
                             const SizedBox(height: 14),
                             TextField(
                               controller: tagsCtrl,
-                              decoration: _fieldDecoration('标签，用逗号分隔'),
+                              decoration: _editorFieldDecoration(
+                                label: '标签',
+                                hint: '多个标签请用逗号分隔，如 产品, 测试, 文本',
+                                fillColor: const Color(0xFFF4F7FF),
+                                borderColor: const Color(0xFF4C6FFF),
+                                icon: Icons.sell_outlined,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             Align(
@@ -1359,11 +1377,7 @@ class _NotesPageState extends State<NotesPage> {
       final body = json.encode({
         'title': titleCtrl.text.trim().isEmpty ? null : titleCtrl.text.trim(),
         'content': content,
-        'tags': tagsCtrl.text
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList(),
+        'tags': _parseTagInput(tagsCtrl.text),
       });
 
       final uri = note == null
@@ -1477,6 +1491,14 @@ class _NotesPageState extends State<NotesPage> {
     Navigator.of(context).pushNamed('/notion-integration');
   }
 
+  List<String> _parseTagInput(String raw) {
+    return raw
+        .split(RegExp(r'[,，]'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+
   InputDecoration _fieldDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
@@ -1487,6 +1509,43 @@ class _NotesPageState extends State<NotesPage> {
         borderSide: BorderSide.none,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+    );
+  }
+
+  InputDecoration _editorFieldDecoration({
+    required String label,
+    required String hint,
+    required Color fillColor,
+    required Color borderColor,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(icon, color: borderColor),
+      labelStyle: TextStyle(
+        color: borderColor,
+        fontWeight: FontWeight.w700,
+      ),
+      floatingLabelStyle: TextStyle(
+        color: borderColor,
+        fontWeight: FontWeight.w700,
+      ),
+      filled: true,
+      fillColor: fillColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: borderColor.withValues(alpha: 0.38)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: borderColor.withValues(alpha: 0.38)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: borderColor, width: 1.4),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
     );
   }
 
