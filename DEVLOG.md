@@ -327,3 +327,15 @@
 - Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
 - Verified local health endpoint again:
   - `GET /health -> {"status":"ok"}`
+
+## 2026-03-17 - Collapsed Rail Icon Tuning
+
+### What changed
+- Reduced the collapsed left-rail icon button size and icon size.
+- Right-aligned the collapsed left-rail controls so the icon column no longer feels oversized and centered.
+- Tightened the top brand icon and collapse chevron in the collapsed state.
+
+### Verification
+- Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+- Verified local health endpoint again:
+  - `GET /health -> {"status":"ok"}`

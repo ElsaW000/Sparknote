@@ -111,16 +111,16 @@ class _CollapsedRailButton extends StatelessWidget {
       message: tooltip,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          width: 56,
-          height: 56,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white24),
           ),
-          child: Icon(icon, color: Colors.white),
+          child: Icon(icon, color: Colors.white, size: 22),
         ),
       ),
     );
@@ -2143,18 +2143,23 @@ class _NotesPageState extends State<NotesPage> {
         child: Padding(
           padding: EdgeInsets.fromLTRB(collapsed ? 14 : 20, 18, collapsed ? 14 : 20, 20),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+                collapsed ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: collapsed ? 40 : 44,
+                    height: collapsed ? 40 : 44,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(collapsed ? 12 : 14),
                     ),
-                    child: const Icon(Icons.eco_outlined, color: _brandDark),
+                    child: Icon(
+                      Icons.eco_outlined,
+                      color: _brandDark,
+                      size: collapsed ? 21 : 24,
+                    ),
                   ),
                   if (!collapsed) ...[
                     const SizedBox(width: 12),
@@ -2186,7 +2191,14 @@ class _NotesPageState extends State<NotesPage> {
                     icon: Icon(
                       collapsed ? Icons.chevron_right_rounded : Icons.chevron_left_rounded,
                       color: Colors.white,
+                      size: collapsed ? 24 : 28,
                     ),
+                    visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+                    constraints: BoxConstraints.tightFor(
+                      width: collapsed ? 30 : 36,
+                      height: collapsed ? 30 : 36,
+                    ),
+                    padding: EdgeInsets.zero,
                   ),
                 ],
               ),
@@ -2313,11 +2325,12 @@ class _NotesPageState extends State<NotesPage> {
                         ),
                       ),
                     ] else ...[
-                      Center(
+                      Align(
+                        alignment: Alignment.centerRight,
                         child: Wrap(
                           direction: Axis.vertical,
-                          spacing: 12,
-                          runSpacing: 12,
+                          spacing: 10,
+                          runSpacing: 10,
                           children: [
                             _CollapsedRailButton(
                               icon: Icons.label_outline,
@@ -2371,11 +2384,12 @@ class _NotesPageState extends State<NotesPage> {
                   label: const Text('退出登录'),
                 ),
               ] else ...[
-                Center(
+                Align(
+                  alignment: Alignment.centerRight,
                   child: Wrap(
                     direction: Axis.vertical,
-                    spacing: 10,
-                    runSpacing: 10,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       _CollapsedRailButton(
                         icon: Icons.settings_outlined,
