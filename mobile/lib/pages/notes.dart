@@ -94,6 +94,39 @@ class _RailPulseMetric extends StatelessWidget {
   }
 }
 
+class _CollapsedRailButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _CollapsedRailButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: Icon(icon, color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
 class _NotesPageState extends State<NotesPage> {
   static const Color _brand = Color(0xFF2D6A4F);
   static const Color _brandDark = Color(0xFF1A3C34);
@@ -120,12 +153,16 @@ class _NotesPageState extends State<NotesPage> {
   bool _loading = false;
   bool _creatingQuickNote = false;
   bool _uploadingQuickAttachment = false;
-  double _rightPanelWidth = 392;
+  double _rightPanelWidth = 320;
+  bool _leftRailCollapsed = false;
   String? _loadError;
   String? _quickAttachmentStatus;
   String? _selectedTag;
   String? _selectedDate;
   String? _searchQuery;
+
+  static const double _expandedSideRailWidth = 320;
+  static const double _collapsedLeftRailWidth = 92;
 
   @override
   void initState() {
@@ -375,6 +412,9 @@ class _NotesPageState extends State<NotesPage> {
     setState(() => _searchQuery = null);
     _fetchNotes();
   }
+
+  double get _leftRailWidth =>
+      _leftRailCollapsed ? _collapsedLeftRailWidth : _expandedSideRailWidth;
 
   Future<void> _createQuickNote() async {
     final messenger = ScaffoldMessenger.of(context);
@@ -2026,8 +2066,9 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   Widget _buildLeftRail() {
+    final collapsed = _leftRailCollapsed;
     return Container(
-      width: 272,
+      width: _leftRailWidth,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -2037,7 +2078,7 @@ class _NotesPageState extends State<NotesPage> {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+          padding: EdgeInsets.fromLTRB(collapsed ? 14 : 20, 18, collapsed ? 14 : 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2052,184 +2093,246 @@ class _NotesPageState extends State<NotesPage> {
                     ),
                     child: const Icon(Icons.eco_outlined, color: _brandDark),
                   ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Sparknote',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
+                  if (!collapsed) ...[
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Sparknote',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          '灵感流与工作台',
-                          style: TextStyle(color: _softText, fontSize: _bodySize, height: _bodyHeight),
-                        ),
-                      ],
+                          SizedBox(height: 4),
+                          Text(
+                            '灵感流与工作台',
+                            style: TextStyle(color: _softText, fontSize: _bodySize, height: _bodyHeight),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else
+                    const Spacer(),
+                  IconButton(
+                    tooltip: collapsed ? '展开侧栏' : '收起侧栏',
+                    onPressed: () => setState(() => _leftRailCollapsed = !_leftRailCollapsed),
+                    icon: Icon(
+                      collapsed ? Icons.chevron_right_rounded : Icons.chevron_left_rounded,
+                      color: Colors.white,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 28),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white24),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '创作脉搏',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _RailPulseMetric(
-                            value: '${_todayCount()}',
-                            label: '今日记录',
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _RailPulseMetric(
-                            value: '${_activeDays()}',
-                            label: '活跃天数',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 22),
-              const Text(
-                '标签索引',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: ListView(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: Colors.white24),
+              if (!collapsed) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '创作脉搏',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
                       ),
-                      child: _tagSuggestions.isEmpty
-                          ? const Text(
-                              '还没有标签建议。',
-                              style: TextStyle(color: _softText),
-                            )
-                          : Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _tagSuggestions.take(12).map((item) {
-                                final tag = item['tag']?.toString() ?? '';
-                                if (tag.isEmpty) return const SizedBox.shrink();
-                                final selected = _selectedTag == tag;
-                                return InkWell(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedTag = selected ? null : tag;
-                                    });
-                                    _fetchNotes();
-                                  },
-                                  borderRadius: BorderRadius.circular(999),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: selected
-                                          ? Colors.white
-                                          : Colors.white.withValues(alpha: 0.10),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: Text(
-                                      '#$tag',
-                                      style: TextStyle(
-                                        color: selected ? _brandDark : Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                    ),
-                    const SizedBox(height: 18),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      child: const Row(
+                      const SizedBox(height: 12),
+                      Row(
                         children: [
-                          Icon(Icons.folder_open_outlined, color: Colors.white70, size: 18),
-                          SizedBox(width: 10),
                           Expanded(
-                            child: Text(
-                              '笔记本功能后续会支持按项目、主题、阶段收纳笔记。',
-                              style: TextStyle(color: _softText, height: _bodyHeight, fontSize: _bodySize),
+                            child: _RailPulseMetric(
+                              value: '${_todayCount()}',
+                              label: '今日记录',
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _RailPulseMetric(
+                              value: '${_activeDays()}',
+                              label: '活跃天数',
                             ),
                           ),
                         ],
                       ),
-                    ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 22),
+                const Text(
+                  '标签索引',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              Expanded(
+                child: ListView(
+                  children: [
+                    if (!collapsed) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: _tagSuggestions.isEmpty
+                            ? const Text(
+                                '还没有标签建议。',
+                                style: TextStyle(color: _softText),
+                              )
+                            : Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _tagSuggestions.take(12).map((item) {
+                                  final tag = item['tag']?.toString() ?? '';
+                                  if (tag.isEmpty) return const SizedBox.shrink();
+                                  final selected = _selectedTag == tag;
+                                  return InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedTag = selected ? null : tag;
+                                      });
+                                      _fetchNotes();
+                                    },
+                                    borderRadius: BorderRadius.circular(999),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: selected
+                                            ? Colors.white
+                                            : Colors.white.withValues(alpha: 0.10),
+                                        borderRadius: BorderRadius.circular(999),
+                                      ),
+                                      child: Text(
+                                        '#$tag',
+                                        style: TextStyle(
+                                          color: selected ? _brandDark : Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                      ),
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.folder_open_outlined, color: Colors.white70, size: 18),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                '笔记本功能后续会支持按项目、主题、阶段收纳笔记。',
+                                style: TextStyle(color: _softText, height: _bodyHeight, fontSize: _bodySize),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      Center(
+                        child: Wrap(
+                          direction: Axis.vertical,
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            _CollapsedRailButton(
+                              icon: Icons.label_outline,
+                              tooltip: '标签筛选',
+                              onTap: () {},
+                            ),
+                            _CollapsedRailButton(
+                              icon: Icons.folder_open_outlined,
+                              tooltip: '笔记本',
+                              onTap: () {},
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
               const SizedBox(height: 14),
-              FilledButton.tonalIcon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(46),
-                  backgroundColor: Colors.white.withValues(alpha: 0.12),
-                  foregroundColor: Colors.white,
+              if (!collapsed) ...[
+                FilledButton.tonalIcon(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(46),
+                    backgroundColor: Colors.white.withValues(alpha: 0.12),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: _openSettings,
+                  icon: const Icon(Icons.settings_outlined),
+                  label: const Text('设置'),
                 ),
-                onPressed: _openSettings,
-                icon: const Icon(Icons.settings_outlined),
-                label: const Text('设置'),
-              ),
-              const SizedBox(height: 10),
-              FilledButton.tonalIcon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(46),
-                  backgroundColor: Colors.white.withValues(alpha: 0.12),
-                  foregroundColor: Colors.white,
+                const SizedBox(height: 10),
+                FilledButton.tonalIcon(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(46),
+                    backgroundColor: Colors.white.withValues(alpha: 0.12),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: _openApiDocs,
+                  icon: const Icon(Icons.api_outlined),
+                  label: const Text('API文档'),
                 ),
-                onPressed: _openApiDocs,
-                icon: const Icon(Icons.api_outlined),
-                label: const Text('API文档'),
-              ),
-              const SizedBox(height: 10),
-              FilledButton.tonalIcon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(46),
-                  backgroundColor: Colors.white.withValues(alpha: 0.12),
-                  foregroundColor: Colors.white,
+                const SizedBox(height: 10),
+                FilledButton.tonalIcon(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(46),
+                    backgroundColor: Colors.white.withValues(alpha: 0.12),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: _logout,
+                  icon: const Icon(Icons.logout),
+                  label: const Text('退出登录'),
                 ),
-                onPressed: _logout,
-                icon: const Icon(Icons.logout),
-                label: const Text('退出登录'),
-              ),
+              ] else ...[
+                Center(
+                  child: Wrap(
+                    direction: Axis.vertical,
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _CollapsedRailButton(
+                        icon: Icons.settings_outlined,
+                        tooltip: '设置',
+                        onTap: _openSettings,
+                      ),
+                      _CollapsedRailButton(
+                        icon: Icons.api_outlined,
+                        tooltip: 'API文档',
+                        onTap: _openApiDocs,
+                      ),
+                      _CollapsedRailButton(
+                        icon: Icons.logout,
+                        tooltip: '退出登录',
+                        onTap: _logout,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -2757,7 +2860,7 @@ class _NotesPageState extends State<NotesPage> {
 
     if (isDesktop) {
       return Positioned(
-        left: 318,
+        left: _leftRailWidth + 28,
         right: _rightPanelWidth + 28,
         bottom: 18,
         child: SafeArea(

@@ -282,3 +282,17 @@
 - Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
 - Verified live workspace resume endpoint with local data:
   - `GET /workspace/notes/11/resume -> 200`
+
+## 2026-03-17 - Sidebar Width Alignment
+
+### What changed
+- Matched the desktop left rail to the same initial width system as the right utility rail.
+- Added a click-to-collapse left rail state:
+  - expanded state keeps the full branded panel,
+  - collapsed state switches to compact icon-only navigation.
+- Updated the quick composer offset so it follows the current left rail width instead of using a hardcoded left margin.
+
+### Verification
+- Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+- Verified local health endpoint again:
+  - `GET /health -> {"status":"ok"}`
