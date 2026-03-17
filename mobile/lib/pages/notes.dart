@@ -1185,8 +1185,8 @@ class _NotesPageState extends State<NotesPage> {
                               decoration: _editorFieldDecoration(
                                 label: '标题',
                                 hint: '标题（可选）',
-                                fillColor: const Color(0xFFF4FAF6),
-                                borderColor: const Color(0xFF2D6A4F),
+                                fillColor: const Color(0xFFF6F8FA),
+                                accentColor: const Color(0xFF5F7A6D),
                                 icon: Icons.title_rounded,
                               ),
                             ),
@@ -1197,8 +1197,8 @@ class _NotesPageState extends State<NotesPage> {
                               decoration: _editorFieldDecoration(
                                 label: '正文',
                                 hint: '正文（必填）',
-                                fillColor: const Color(0xFFFFFBF2),
-                                borderColor: const Color(0xFFB7791F),
+                                fillColor: const Color(0xFFF7F8F6),
+                                accentColor: const Color(0xFF6E766C),
                                 icon: Icons.notes_rounded,
                               ),
                             ),
@@ -1208,8 +1208,8 @@ class _NotesPageState extends State<NotesPage> {
                               decoration: _editorFieldDecoration(
                                 label: '标签',
                                 hint: '多个标签请用逗号分隔，如 产品, 测试, 文本',
-                                fillColor: const Color(0xFFF4F7FF),
-                                borderColor: const Color(0xFF4C6FFF),
+                                fillColor: const Color(0xFFF6F8FA),
+                                accentColor: const Color(0xFF667085),
                                 icon: Icons.sell_outlined,
                               ),
                             ),
@@ -1520,34 +1520,38 @@ class _NotesPageState extends State<NotesPage> {
     required String label,
     required String hint,
     required Color fillColor,
-    required Color borderColor,
+    required Color accentColor,
     required IconData icon,
   }) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      prefixIcon: Icon(icon, color: borderColor),
+      prefixIcon: Icon(icon, color: accentColor.withValues(alpha: 0.78), size: 20),
       labelStyle: TextStyle(
-        color: borderColor,
-        fontWeight: FontWeight.w700,
+        color: accentColor.withValues(alpha: 0.82),
+        fontWeight: FontWeight.w600,
       ),
       floatingLabelStyle: TextStyle(
-        color: borderColor,
-        fontWeight: FontWeight.w700,
+        color: accentColor.withValues(alpha: 0.82),
+        fontWeight: FontWeight.w600,
+      ),
+      hintStyle: const TextStyle(
+        color: Color(0xFF8A949E),
+        fontSize: 14,
       ),
       filled: true,
       fillColor: fillColor,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: borderColor.withValues(alpha: 0.38)),
+        borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: borderColor.withValues(alpha: 0.38)),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: borderColor, width: 1.4),
+        borderSide: BorderSide.none,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
     );

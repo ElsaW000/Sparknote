@@ -351,3 +351,17 @@
 - Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
 - Verified local health endpoint again:
   - `GET /health -> {"status":"ok"}`
+
+## 2026-03-17 - Long-note Form Tone Softening
+
+### What changed
+- Softened the long-note editor fields into a cleaner neutral palette:
+  - switched title/content/tags fields to very light gray-green/gray fills,
+  - removed the visible colored outlines,
+  - kept only subtle tonal differences plus lighter icon/label accents.
+- The form now reads closer to `#F6F8FA`-style quiet surfaces instead of heavy multi-color panels.
+
+### Verification
+- Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+- Verified local health endpoint again:
+  - `GET /health -> {"status":"ok"}`
