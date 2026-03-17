@@ -264,10 +264,68 @@ class _NotesPageState extends State<NotesPage> {
     } catch (_) {}
   }
 
+  bool _looksLikeWorkspaceDraft(Map<String, dynamic> item) {
+    final status = (item['workspace_status'] ?? '').toString();
+    final title = _text(item['title'] ?? '');
+    return status == 'open' || title.contains('草稿');
+  }
+
+  Future<void> _resumeWorkspaceFromNoteId(
+    int noteId, {
+    String fallbackWorkflowLabel = '通用灵感',
+  }) async {
+    final token = await _token();
+    if (!mounted || token == null || token.isEmpty) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final resp = await http.get(
+        Uri.parse('$backendUrl/workspace/notes/$noteId/resume'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (!mounted) return;
+      if (resp.statusCode == 200) {
+        final item = json.decode(_decodeResponse(resp)) as Map<String, dynamic>;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AIWorkspacePage(
+              noteId: item['note_id'] as int? ?? noteId,
+              noteTitle: _text(item['note_title']),
+              noteContent: _text(item['note_content']),
+              workflowLabel: _text(item['workflow_label']).isEmpty
+                  ? fallbackWorkflowLabel
+                  : _text(item['workflow_label']),
+              sourceNoteCount: item['source_count'] as int? ?? 1,
+              conversationId: item['conversation_id'] as int?,
+            ),
+          ),
+        );
+        return;
+      }
+      messenger.showSnackBar(
+        SnackBar(content: Text('恢复工作台失败：${resp.statusCode}')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('恢复工作台失败：$e')));
+    }
+  }
+
   Future<void> _openDailyReviewNote(Map<String, dynamic> item) async {
     final noteId = item['id'];
     if (noteId is! int) {
       await _openNoteEditor(note: item);
+      return;
+    }
+
+    if (_looksLikeWorkspaceDraft(item)) {
+      await _resumeWorkspaceFromNoteId(
+        noteId,
+        fallbackWorkflowLabel: _text(item['workspace_mode']).isEmpty
+            ? '通用灵感'
+            : _text(item['workspace_mode']),
+      );
       return;
     }
 

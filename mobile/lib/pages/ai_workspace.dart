@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -394,6 +395,98 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
     } catch (_) {}
   }
 
+  void _resumeWorkspaceHistoryItem(Map<String, dynamic> item, BuildContext dialogContext) {
+    Navigator.pop(dialogContext);
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => AIWorkspacePage(
+          noteId: item['note_id'] as int? ?? widget.noteId,
+          noteTitle: _text(item['note_title']),
+          noteContent: _text(item['note_content']),
+          workflowLabel: _text(item['workflow_label']).isEmpty
+              ? '通用灵感'
+              : _text(item['workflow_label']),
+          sourceNoteCount: item['source_count'] as int? ?? 1,
+          conversationId: item['conversation_id'] as int?,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _shareWorkspaceHistoryItem(Map<String, dynamic> item) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final conversationId = item['conversation_id'] as int?;
+    if (conversationId == null) return;
+    try {
+      final headers = await _authHeaders();
+      if (!mounted || headers == null) return;
+      final r = await http.post(
+        Uri.parse('$backendUrl/workspace/history/$conversationId/share'),
+        headers: headers,
+      );
+      if (!mounted) return;
+      if (r.statusCode == 200) {
+        final body = json.decode(_decodeResponse(r)) as Map<String, dynamic>;
+        final shareText = _text(body['share_text']);
+        await Clipboard.setData(ClipboardData(text: shareText));
+        messenger.showSnackBar(const SnackBar(content: Text('分享文案已复制到剪贴板')));
+      } else {
+        messenger.showSnackBar(SnackBar(content: Text('分享失败：${r.statusCode}')));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('分享失败：$e')));
+    }
+  }
+
+  Future<void> _deleteWorkspaceHistoryItem(Map<String, dynamic> item, BuildContext dialogContext) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final conversationId = item['conversation_id'] as int?;
+    if (conversationId == null) return;
+    final confirmed = await showDialog<bool>(
+          context: dialogContext,
+          builder: (confirmCtx) => AlertDialog(
+            title: const Text('删除历史灵感'),
+            content: const Text('删除后将清理这条工作台上下文，但不会删除原始笔记。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(confirmCtx, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(confirmCtx, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                child: const Text('删除'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) return;
+    try {
+      final headers = await _authHeaders();
+      if (!mounted || headers == null) return;
+      final r = await http.delete(
+        Uri.parse('$backendUrl/workspace/history/$conversationId'),
+        headers: headers,
+      );
+      if (!mounted) return;
+      if (r.statusCode == 200) {
+        await _fetchWorkspaceHistory();
+        messenger.showSnackBar(const SnackBar(content: Text('历史灵感已删除')));
+        if (Navigator.of(dialogContext).canPop()) {
+          Navigator.pop(dialogContext);
+          await _openWorkspaceHistory();
+        }
+      } else {
+        messenger.showSnackBar(SnackBar(content: Text('删除失败：${r.statusCode}')));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('删除失败：$e')));
+    }
+  }
+
   Future<void> _openWorkspaceHistory() async {
     await _fetchWorkspaceHistory();
     if (!mounted) return;
@@ -530,24 +623,20 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                                   Column(
                                     children: [
                                       OutlinedButton(
-                                        onPressed: () {
-                                          Navigator.pop(ctx);
-                                          Navigator.of(context).pushReplacement(
-                                            MaterialPageRoute(
-                                              builder: (_) => AIWorkspacePage(
-                                                noteId: item['note_id'] as int? ?? widget.noteId,
-                                                noteTitle: _text(item['note_title']),
-                                                noteContent: _text(item['note_content']),
-                                                workflowLabel: _text(item['workflow_label']).isEmpty
-                                                    ? '通用灵感'
-                                                    : _text(item['workflow_label']),
-                                                sourceNoteCount: item['source_count'] as int? ?? 1,
-                                                conversationId: item['conversation_id'] as int?,
-                                              ),
-                                            ),
-                                          );
-                                        },
+                                        onPressed: () => _resumeWorkspaceHistoryItem(item, ctx),
                                         child: const Text('继续编辑'),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextButton(
+                                        onPressed: () => _shareWorkspaceHistoryItem(item),
+                                        child: const Text('分享'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => _deleteWorkspaceHistoryItem(item, ctx),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors.redAccent,
+                                        ),
+                                        child: const Text('删除'),
                                       ),
                                     ],
                                   ),
@@ -1250,28 +1339,36 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
             ),
           ),
           Expanded(
-            child: _messages.isEmpty
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(28),
-                      child: Text(
-                        '还没有消息。你可以从左侧建议指令开始，或者在下方直接向 AI 发起请求。',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13, height: 1.6, color: Color(0xFF60716F)),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _brand.withValues(alpha: 0.28)),
+              ),
+              child: _messages.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(28),
+                        child: Text(
+                          '还没有消息。你可以从左侧建议指令开始，或者在下方直接向 AI 发起请求。',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 13, height: 1.6, color: Color(0xFF60716F)),
+                        ),
                       ),
+                    )
+                  : ListView.builder(
+                      controller: _messageScrollCtrl,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _messages.length + (_waitingForAi ? 1 : 0),
+                      itemBuilder: (ctx, i) {
+                        if (i >= _messages.length) {
+                          return _buildTypingBubble();
+                        }
+                        return _buildMessageBubble(_messages[i] as Map<String, dynamic>);
+                      },
                     ),
-                  )
-                : ListView.builder(
-                    controller: _messageScrollCtrl,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length + (_waitingForAi ? 1 : 0),
-                    itemBuilder: (ctx, i) {
-                      if (i >= _messages.length) {
-                        return _buildTypingBubble();
-                      }
-                      return _buildMessageBubble(_messages[i] as Map<String, dynamic>);
-                    },
-                  ),
+            ),
           ),
           Container(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),

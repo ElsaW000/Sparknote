@@ -267,8 +267,18 @@
 - Fixed the Windows local launcher URL-open step:
   - replaced `start "" "http://127.0.0.1:8000/..."` with PowerShell `Start-Process`,
   - avoids the recurring Windows "无法访问指定设备、路径或文件" error when opening the local test page.
+- Repaired the workspace resume loop:
+  - added `GET /workspace/notes/{note_id}/resume` so draft-like review cards can reopen a live workspace session,
+  - daily review now routes draft cards back into the workspace instead of falling into the plain note editor,
+  - workspace history now includes `继续编辑 / 分享 / 删除` actions,
+  - strengthened the assistant panel contrast with a white inner surface and green border.
 
 ### Verification
 - Relaunched the local backend with the stable single-window mode.
 - Verified local health endpoint again:
   - `GET /health -> {"status":"ok"}`
+- Ran: `.\.venv\Scripts\python -m pytest backend/tests -q`
+- Result: `18 passed`
+- Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+- Verified live workspace resume endpoint with local data:
+  - `GET /workspace/notes/11/resume -> 200`

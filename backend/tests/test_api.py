@@ -466,6 +466,48 @@ def test_audio_transcription_endpoint():
     assert isinstance(body["transcript"], str)
 
 
+def test_workspace_resume_and_history_actions():
+    headers = _auth_headers("workspace@example.com", "pass1234")
+
+    r_note = client.post(
+        "/notes",
+        json={"title": "产品灵感整合草稿", "content": "draft body"},
+        headers=headers,
+    )
+    assert r_note.status_code == 200
+    note_id = r_note.json()["id"]
+
+    r_resume = client.get(f"/workspace/notes/{note_id}/resume", headers=headers)
+    assert r_resume.status_code == 200
+    resumed = r_resume.json()
+    assert resumed["note_id"] == note_id
+    assert resumed["status"] == "open"
+    conversation_id = resumed["conversation_id"]
+
+    r_note_detail = client.get(f"/notes/{note_id}", headers=headers)
+    assert r_note_detail.status_code == 200
+    note_detail = r_note_detail.json()
+    assert note_detail["workspace_conversation_id"] == conversation_id
+    assert note_detail["workspace_status"] == "open"
+
+    r_history = client.get("/workspace/history", headers=headers)
+    assert r_history.status_code == 200
+    history = r_history.json()
+    assert any(item["conversation_id"] == conversation_id for item in history)
+
+    r_share = client.post(f"/workspace/history/{conversation_id}/share", headers=headers)
+    assert r_share.status_code == 200
+    shared = r_share.json()
+    assert str(conversation_id) in shared["share_text"]
+
+    r_delete = client.delete(f"/workspace/history/{conversation_id}", headers=headers)
+    assert r_delete.status_code == 200
+
+    r_history_after = client.get("/workspace/history", headers=headers)
+    assert r_history_after.status_code == 200
+    assert all(item["conversation_id"] != conversation_id for item in r_history_after.json())
+
+
 def test_note_auto_extract_hashtags():
     headers = _auth_headers("tagger@example.com", "pass1234")
 

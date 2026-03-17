@@ -230,6 +230,12 @@ class WorkspaceHistoryItem(SQLModel):
     created_at: datetime
 
 
+class WorkspaceShareResponse(SQLModel):
+    conversation_id: int
+    note_id: int
+    share_text: str
+
+
 NoteRead.update_forward_refs(NoteAttachmentRead=NoteAttachmentRead)
 
 
@@ -671,6 +677,25 @@ def _to_note_read(session: Session, note: Note) -> NoteRead:
         workspace_status=workspace.status if workspace else None,
         workspace_mode=workspace.workflow_label if workspace else None,
         workspace_source_count=max(len(source_ids), 1) if workspace else 0,
+    )
+
+
+def _workspace_item_from_conversation(session: Session, conv: Conversation) -> Optional[WorkspaceHistoryItem]:
+    note = session.get(Note, conv.note_id)
+    if not note or note.user_id != conv.user_id:
+        return None
+    source_ids = [item.strip() for item in (conv.source_note_ids or "").split(",") if item.strip()]
+    preview = (note.content or "").strip().replace("\n", " ")
+    return WorkspaceHistoryItem(
+        conversation_id=conv.id,
+        note_id=note.id,
+        note_title=note.title or "未命名草稿",
+        note_preview=preview[:120],
+        note_content=note.content,
+        workflow_label=conv.workflow_label or "通用灵感",
+        status=conv.status,
+        source_count=max(len(source_ids), 1),
+        created_at=note.created_at,
     )
 
 
@@ -1375,25 +1400,88 @@ def workspace_history(
     ).all()
     items: List[WorkspaceHistoryItem] = []
     for conv in conversations:
-        note = session.get(Note, conv.note_id)
-        if not note or note.user_id != current_user.id:
-            continue
-        source_ids = [item.strip() for item in (conv.source_note_ids or "").split(",") if item.strip()]
-        preview = (note.content or "").strip().replace("\n", " ")
-        items.append(
-            WorkspaceHistoryItem(
-                conversation_id=conv.id,
-                note_id=note.id,
-                note_title=note.title or "未命名草稿",
-                note_preview=preview[:120],
-                note_content=note.content,
-                workflow_label=conv.workflow_label or "通用灵感",
-                status=conv.status,
-                source_count=max(len(source_ids), 1),
-                created_at=note.created_at,
-            )
-        )
+        item = _workspace_item_from_conversation(session, conv)
+        if item:
+            items.append(item)
     return items
+
+
+@app.get("/workspace/notes/{note_id}/resume", response_model=WorkspaceHistoryItem)
+def resume_workspace_for_note(
+    note_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    note = session.get(Note, note_id)
+    if not note or note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="note not found")
+
+    latest = session.exec(
+        select(Conversation)
+        .where(
+            (Conversation.user_id == current_user.id)
+            & (Conversation.note_id == note_id)
+        )
+        .order_by(Conversation.id.desc())
+    ).first()
+
+    if latest is None or latest.status != "open":
+        latest = Conversation(
+            title=note.title or "灵感工作台会话",
+            status="open",
+            user_id=current_user.id,
+            note_id=note.id,
+            workflow_label=(latest.workflow_label if latest and latest.workflow_label else "通用灵感"),
+            source_note_ids=(
+                latest.source_note_ids
+                if latest and latest.source_note_ids
+                else str(note.id)
+            ),
+        )
+        session.add(latest)
+        session.commit()
+        session.refresh(latest)
+
+    item = _workspace_item_from_conversation(session, latest)
+    if item is None:
+        raise HTTPException(status_code=404, detail="workspace not found")
+    return item
+
+
+@app.post("/workspace/history/{conversation_id}/share", response_model=WorkspaceShareResponse)
+def share_workspace_history(
+    conversation_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    conv = session.get(Conversation, conversation_id)
+    if not conv or conv.user_id != current_user.id or conv.note_id is None:
+        raise HTTPException(status_code=404, detail="workspace not found")
+    note = session.get(Note, conv.note_id)
+    if not note or note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="workspace not found")
+
+    workflow = conv.workflow_label or "通用灵感"
+    title = note.title or "未命名草稿"
+    return WorkspaceShareResponse(
+        conversation_id=conv.id,
+        note_id=note.id,
+        share_text=f"{workflow}｜{title}｜继续编辑：http://127.0.0.1:8000/?workspace={conv.id}",
+    )
+
+
+@app.delete("/workspace/history/{conversation_id}")
+def delete_workspace_history(
+    conversation_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    conv = session.get(Conversation, conversation_id)
+    if not conv or conv.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="workspace not found")
+    session.delete(conv)
+    session.commit()
+    return {"ok": True, "deleted_conversation_id": conversation_id}
 
 
 @app.post("/conversations/{cid}/message")
