@@ -14,12 +14,16 @@ class AIWorkspacePage extends StatefulWidget {
   final int noteId;
   final String noteTitle;
   final String noteContent;
+  final String workflowLabel;
+  final int sourceNoteCount;
 
   const AIWorkspacePage({
     super.key,
     required this.noteId,
     required this.noteTitle,
     required this.noteContent,
+    this.workflowLabel = '通用灵感',
+    this.sourceNoteCount = 1,
   });
 
   @override
@@ -686,10 +690,12 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: const [
-                      _MetaPill(label: 'Serif Editor'),
-                      _MetaPill(label: 'AI Dialogue'),
-                      _MetaPill(label: 'Live Draft'),
+                    children: [
+                      _MetaPill(label: widget.workflowLabel),
+                      if (widget.sourceNoteCount > 1)
+                        _MetaPill(label: '整合 ${widget.sourceNoteCount} 条'),
+                      const _MetaPill(label: 'AI Dialogue'),
+                      const _MetaPill(label: 'Live Draft'),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -861,9 +867,9 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
               color: _brand.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(999),
             ),
-            child: const Text(
-              'Immersive Draft',
-              style: TextStyle(
+            child: Text(
+              widget.workflowLabel,
+              style: const TextStyle(
                 fontSize: 11,
                 color: _brandDark,
                 fontWeight: FontWeight.w700,

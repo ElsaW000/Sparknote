@@ -16,6 +16,19 @@ class NotesPage extends StatefulWidget {
   State<NotesPage> createState() => _NotesPageState();
 }
 
+enum _WorkspaceMode {
+  universal('通用灵感', Icons.auto_awesome_outlined, '适合自由整理、延展和总结'),
+  product('产品灵感', Icons.lightbulb_outline, '适合问题拆解、方案构思和 PRD 草稿'),
+  writing('写作灵感', Icons.edit_note_outlined, '适合人物、情节、章节和文风推进'),
+  video('视频灵感', Icons.ondemand_video_outlined, '适合选题、脚本、分镜和节奏整理');
+
+  const _WorkspaceMode(this.label, this.icon, this.description);
+
+  final String label;
+  final IconData icon;
+  final String description;
+}
+
 class _HeatmapLegendDot extends StatelessWidget {
   final Color color;
   final String label;
@@ -107,6 +120,7 @@ class _NotesPageState extends State<NotesPage> {
   bool _loading = false;
   bool _creatingQuickNote = false;
   bool _uploadingQuickAttachment = false;
+  double _rightPanelWidth = 392;
   String? _loadError;
   String? _quickAttachmentStatus;
   String? _selectedTag;
@@ -527,7 +541,11 @@ class _NotesPageState extends State<NotesPage> {
     }
   }
 
-  void _openWorkspaceForNote(Map<String, dynamic> note) {
+  void _openWorkspaceForNote(
+    Map<String, dynamic> note, {
+    String workflowLabel = '通用灵感',
+    int sourceNoteCount = 1,
+  }) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -535,6 +553,8 @@ class _NotesPageState extends State<NotesPage> {
           noteId: note['id'] as int? ?? 0,
           noteTitle: _text(note['title'] ?? ''),
           noteContent: _text(note['content'] ?? ''),
+          workflowLabel: workflowLabel,
+          sourceNoteCount: sourceNoteCount,
         ),
       ),
     );
@@ -542,98 +562,415 @@ class _NotesPageState extends State<NotesPage> {
 
   Future<void> _openWorkspaceLauncher() async {
     String query = '';
+    var selectedMode = _WorkspaceMode.universal;
+    final selectedIds = <int>{};
+
     await showDialog<void>(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final matches = _notes.whereType<Map<String, dynamic>>().where((note) {
+            final allNotes = _notes.whereType<Map<String, dynamic>>().toList();
+            final matches = allNotes.where((note) {
               final title = _displayTitle(note).toLowerCase();
               final content = _text(note['content'] ?? '').toLowerCase();
               final keyword = query.trim().toLowerCase();
               if (keyword.isEmpty) return true;
               return title.contains(keyword) || content.contains(keyword);
             }).toList();
+            final selectedNotes = allNotes
+                .where((note) => selectedIds.contains(note['id'] as int?))
+                .toList();
+
             return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              backgroundColor: Colors.white.withValues(alpha: 0.96),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720, maxHeight: 640),
+                constraints: const BoxConstraints(maxWidth: 1040, maxHeight: 720),
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(28),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        '选择要进入工作台的笔记',
+                        '灵感工作台',
                         style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _ink),
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        '可以直接搜索标题或正文，再进入灵感延展、AI 对话和草稿整理。',
+                        '先选择工作流模式，再勾选一条或多条灵感素材，最后进入对应工作台。',
                         style: TextStyle(fontSize: 13, color: _muted, height: 1.6),
                       ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        onChanged: (value) => setModalState(() => query = value),
-                        decoration: _fieldDecoration('搜索想进入工作台的笔记'),
+                      const SizedBox(height: 18),
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SizedBox(
+                              width: 286,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    '第一步 · 选择模式',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: _muted,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ..._WorkspaceMode.values.map((mode) {
+                                    final active = mode == selectedMode;
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 12),
+                                      child: InkWell(
+                                        onTap: () => setModalState(() => selectedMode = mode),
+                                        borderRadius: BorderRadius.circular(22),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 180),
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: active
+                                                ? _brand.withValues(alpha: 0.12)
+                                                : const Color(0xFFF8F9F8),
+                                            borderRadius: BorderRadius.circular(22),
+                                            border: Border.all(
+                                              color: active ? _brand : _line,
+                                              width: active ? 1.4 : 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Container(
+                                                width: 42,
+                                                height: 42,
+                                                decoration: BoxDecoration(
+                                                  color: active ? _brandDark : Colors.white,
+                                                  borderRadius: BorderRadius.circular(14),
+                                                ),
+                                                child: Icon(
+                                                  mode.icon,
+                                                  color: active ? Colors.white : _brandDark,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      mode.label,
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w700,
+                                                        color: active ? _brandDark : _ink,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      mode.description,
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: _muted,
+                                                        height: 1.5,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    '第二步 · 选择素材',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: _muted,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextField(
+                                    onChanged: (value) => setModalState(() => query = value),
+                                    decoration: _fieldDecoration('搜索想进入工作台的笔记'),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 3,
+                                          child: matches.isEmpty
+                                              ? const Center(
+                                                  child: Text(
+                                                    '没有找到匹配的笔记。',
+                                                    style: TextStyle(color: _muted),
+                                                  ),
+                                                )
+                                              : ListView.separated(
+                                                  itemCount: matches.length,
+                                                  separatorBuilder: (_, __) =>
+                                                      const SizedBox(height: 10),
+                                                  itemBuilder: (_, index) {
+                                                    final note = matches[index];
+                                                    final noteId = note['id'] as int? ?? 0;
+                                                    final active = selectedIds.contains(noteId);
+                                                    return InkWell(
+                                                      onTap: () {
+                                                        setModalState(() {
+                                                          if (active) {
+                                                            selectedIds.remove(noteId);
+                                                          } else {
+                                                            selectedIds.add(noteId);
+                                                          }
+                                                        });
+                                                      },
+                                                      borderRadius: BorderRadius.circular(18),
+                                                      child: AnimatedContainer(
+                                                        duration: const Duration(milliseconds: 180),
+                                                        padding: const EdgeInsets.all(16),
+                                                        decoration: BoxDecoration(
+                                                          color: active
+                                                              ? _brand.withValues(alpha: 0.10)
+                                                              : Colors.white,
+                                                          borderRadius:
+                                                              BorderRadius.circular(18),
+                                                          border: Border.all(
+                                                            color: active ? _brand : _line,
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment.start,
+                                                          children: [
+                                                            Checkbox(
+                                                              value: active,
+                                                              activeColor: _brand,
+                                                              onChanged: (_) {
+                                                                setModalState(() {
+                                                                  if (active) {
+                                                                    selectedIds.remove(noteId);
+                                                                  } else {
+                                                                    selectedIds.add(noteId);
+                                                                  }
+                                                                });
+                                                              },
+                                                            ),
+                                                            const SizedBox(width: 4),
+                                                            Expanded(
+                                                              child: Column(
+                                                                crossAxisAlignment:
+                                                                    CrossAxisAlignment.start,
+                                                                children: [
+                                                                  Text(
+                                                                    _displayTitle(note),
+                                                                    maxLines: 1,
+                                                                    overflow: TextOverflow.ellipsis,
+                                                                    style: const TextStyle(
+                                                                      fontSize: 16,
+                                                                      fontWeight: FontWeight.w700,
+                                                                      color: _ink,
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(height: 6),
+                                                                  Text(
+                                                                    _formatDate(note['created_at']),
+                                                                    style: const TextStyle(
+                                                                      fontSize: 12,
+                                                                      color: Color(0xFF999999),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF8F9F8),
+                                              borderRadius: BorderRadius.circular(22),
+                                              border: Border.all(color: _line),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                const Text(
+                                                  '已选预览',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: _ink,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  selectedNotes.isEmpty
+                                                      ? '还没有选择笔记。可单选，也可多选后整合进入工作台。'
+                                                      : '已选 ${selectedNotes.length} 条素材，将按 ${selectedMode.label} 模式进入工作台。',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: _muted,
+                                                    height: 1.6,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 14),
+                                                Expanded(
+                                                  child: selectedNotes.isEmpty
+                                                      ? const SizedBox.shrink()
+                                                      : ListView.separated(
+                                                          itemCount: selectedNotes.length,
+                                                          separatorBuilder: (_, __) =>
+                                                              const SizedBox(height: 8),
+                                                          itemBuilder: (_, index) {
+                                                            final note = selectedNotes[index];
+                                                            return Container(
+                                                              padding: const EdgeInsets.all(12),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors.white,
+                                                                borderRadius:
+                                                                    BorderRadius.circular(16),
+                                                                border: Border.all(color: _line),
+                                                              ),
+                                                              child: Text(
+                                                                _displayTitle(note),
+                                                                maxLines: 2,
+                                                                overflow: TextOverflow.ellipsis,
+                                                                style: const TextStyle(
+                                                                  fontSize: 13,
+                                                                  fontWeight: FontWeight.w600,
+                                                                  color: _ink,
+                                                                  height: 1.5,
+                                                                ),
+                                                              ),
+                                                            );
+                                                          },
+                                                        ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      Expanded(
-                        child: matches.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  '没有找到匹配的笔记。',
-                                  style: TextStyle(color: _muted),
-                                ),
-                              )
-                            : ListView.separated(
-                                itemCount: matches.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                                itemBuilder: (_, index) {
-                                  final note = matches[index];
-                                  return InkWell(
-                                    onTap: () {
-                                      Navigator.pop(ctx);
-                                      _openWorkspaceForNote(note);
-                                    },
-                                    borderRadius: BorderRadius.circular(18),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(18),
-                                        border: Border.all(color: _line),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            _displayTitle(note),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w700,
-                                              color: _ink,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            _text(note['content'] ?? ''),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              height: 1.6,
-                                              color: _muted,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('取消'),
+                          ),
+                          const Spacer(),
+                          FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: _brand,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 14,
                               ),
+                            ),
+                            onPressed: selectedIds.isEmpty
+                                ? null
+                                : () async {
+                                    final selected = allNotes
+                                        .where((note) => selectedIds.contains(note['id'] as int?))
+                                        .toList();
+                                    Navigator.pop(ctx);
+                                    if (selected.isEmpty) return;
+                                    if (selected.length == 1) {
+                                      _openWorkspaceForNote(
+                                        selected.first,
+                                        workflowLabel: selectedMode.label,
+                                        sourceNoteCount: 1,
+                                      );
+                                      return;
+                                    }
+
+                                    final token = await _token();
+                                    if (!mounted || token == null || token.isEmpty) return;
+                                    final mergedTitle = '${selectedMode.label}整合草稿';
+                                    final mergedTags = selected
+                                        .expand((note) => (note['tags'] as List<dynamic>? ?? []))
+                                        .map((tag) => _text(tag).trim())
+                                        .where((tag) => tag.isNotEmpty)
+                                        .toSet()
+                                        .toList();
+                                    final mergedContent = selected.map((note) {
+                                      final title = _displayTitle(note);
+                                      final content = _text(note['content'] ?? '').trim();
+                                      return '【$title】\n$content';
+                                    }).join('\n\n');
+                                    try {
+                                      final resp = await http.post(
+                                        Uri.parse('$backendUrl/notes'),
+                                        headers: {
+                                          'Content-Type': 'application/json',
+                                          'Authorization': 'Bearer $token',
+                                        },
+                                        body: json.encode({
+                                          'title': mergedTitle,
+                                          'content': mergedContent,
+                                          'tags': mergedTags,
+                                        }),
+                                      );
+                                      if (!mounted) return;
+                                      if (resp.statusCode == 200 || resp.statusCode == 201) {
+                                        final mergedNote = json.decode(_decodeResponse(resp))
+                                            as Map<String, dynamic>;
+                                        await _refreshDashboard();
+                                        if (!mounted) return;
+                                        _openWorkspaceForNote(
+                                          mergedNote,
+                                          workflowLabel: selectedMode.label,
+                                          sourceNoteCount: selected.length,
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('创建整合草稿失败：${resp.statusCode}'),
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (!mounted) return;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('创建整合草稿失败：$e')),
+                                      );
+                                    }
+                                  },
+                            icon: const Icon(Icons.auto_awesome),
+                            label: const Text('进入工作台'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -694,7 +1031,7 @@ class _NotesPageState extends State<NotesPage> {
             insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 680, maxHeight: 760),
+              constraints: const BoxConstraints(maxWidth: 760, maxHeight: 780),
               child: Padding(
                 padding: const EdgeInsets.all(28),
                 child: Column(
@@ -736,35 +1073,46 @@ class _NotesPageState extends State<NotesPage> {
                               decoration: _fieldDecoration('标签，用逗号分隔'),
                             ),
                             const SizedBox(height: 16),
-                            Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
-                              children: [
-                                OutlinedButton.icon(
-                                  onPressed: pickingEditorAttachment
-                                      ? null
-                                      : () => pickEditorAttachment('image/*'),
-                                  icon: Icon(
-                                    pickingEditorAttachment
-                                        ? Icons.hourglass_top
-                                        : Icons.image_outlined,
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Wrap(
+                                spacing: 12,
+                                runSpacing: 10,
+                                children: [
+                                  OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      minimumSize: const Size(148, 44),
+                                      alignment: Alignment.centerLeft,
+                                    ),
+                                    onPressed: pickingEditorAttachment
+                                        ? null
+                                        : () => pickEditorAttachment('image/*'),
+                                    icon: Icon(
+                                      pickingEditorAttachment
+                                          ? Icons.hourglass_top
+                                          : Icons.image_outlined,
+                                    ),
+                                    label: const Text('上传图片'),
                                   ),
-                                  label: const Text('上传图片'),
-                                ),
-                                OutlinedButton.icon(
-                                  onPressed: pickingEditorAttachment
-                                      ? null
-                                      : () => pickEditorAttachment(
-                                          '.pdf,.doc,.docx,.txt,.md,.ppt,.pptx,.xls,.xlsx',
-                                        ),
-                                  icon: Icon(
-                                    pickingEditorAttachment
-                                        ? Icons.hourglass_top
-                                        : Icons.attach_file_outlined,
+                                  OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      minimumSize: const Size(148, 44),
+                                      alignment: Alignment.centerLeft,
+                                    ),
+                                    onPressed: pickingEditorAttachment
+                                        ? null
+                                        : () => pickEditorAttachment(
+                                            '.pdf,.doc,.docx,.txt,.md,.ppt,.pptx,.xls,.xlsx',
+                                          ),
+                                    icon: Icon(
+                                      pickingEditorAttachment
+                                          ? Icons.hourglass_top
+                                          : Icons.attach_file_outlined,
+                                    ),
+                                    label: const Text('上传文件'),
                                   ),
-                                  label: const Text('上传文件'),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                             if (pendingAttachments.isNotEmpty) ...[
                               const SizedBox(height: 14),
@@ -1962,9 +2310,9 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
-  Widget _buildRightPanel() {
+  Widget _buildRightPanel({required double width}) {
     return Container(
-      width: 392,
+      width: width,
       color: _panel,
       child: SafeArea(
         child: SingleChildScrollView(
@@ -2073,40 +2421,6 @@ class _NotesPageState extends State<NotesPage> {
                     ),
                     _buildDailyReviewSection(),
                   ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: _openWorkspaceLauncher,
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _brandDark,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '灵感工作台',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: _sectionTitleSize,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        '点击后可先搜索并选择一条笔记，再进入工作台做灵感提取、AI 对话和草稿整理。',
-                        style: TextStyle(
-                          color: _softText,
-                          fontSize: _bodySize,
-                          height: _bodyHeight,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ],
@@ -2289,7 +2603,7 @@ class _NotesPageState extends State<NotesPage> {
     if (isDesktop) {
       return Positioned(
         left: 318,
-        right: 420,
+        right: _rightPanelWidth + 28,
         bottom: 18,
         child: SafeArea(
           minimum: const EdgeInsets.only(bottom: 18),
@@ -2307,6 +2621,65 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
+  Widget _buildWorkspaceFab({required bool isDesktop}) {
+    final fab = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _openWorkspaceLauncher,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          decoration: BoxDecoration(
+            color: _brandDark,
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x221A3C34),
+                blurRadius: 18,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+              SizedBox(width: 10),
+              Text(
+                '灵感工作台',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (isDesktop) {
+      return Positioned(
+        right: _rightPanelWidth + 28,
+        bottom: 136,
+        child: SafeArea(
+          minimum: const EdgeInsets.only(bottom: 20),
+          child: fab,
+        ),
+      );
+    }
+
+    return Positioned(
+      right: 18,
+      bottom: 124,
+      child: SafeArea(
+        minimum: const EdgeInsets.only(bottom: 10),
+        child: fab,
+      ),
+    );
+  }
+
   Widget _buildDesktopLayout() {
     return Scaffold(
       backgroundColor: _paper,
@@ -2316,10 +2689,36 @@ class _NotesPageState extends State<NotesPage> {
             children: [
               _buildLeftRail(),
               Expanded(child: _buildCenterPanel(isDesktop: true)),
-              _buildRightPanel(),
+              MouseRegion(
+                cursor: SystemMouseCursors.resizeColumn,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragUpdate: (details) {
+                    setState(() {
+                      _rightPanelWidth =
+                          (_rightPanelWidth - details.delta.dx).clamp(356.0, 520.0);
+                    });
+                  },
+                  child: Container(
+                    width: 14,
+                    color: Colors.transparent,
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: 4,
+                      height: 86,
+                      decoration: BoxDecoration(
+                        color: _line,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              _buildRightPanel(width: _rightPanelWidth),
             ],
           ),
           _buildQuickComposer(isDesktop: true),
+          _buildWorkspaceFab(isDesktop: true),
         ],
       ),
     );
@@ -2477,6 +2876,7 @@ class _NotesPageState extends State<NotesPage> {
             ],
           ),
           _buildQuickComposer(isDesktop: false),
+          _buildWorkspaceFab(isDesktop: false),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(

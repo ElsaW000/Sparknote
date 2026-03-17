@@ -230,6 +230,11 @@
     - increased note-card spacing in the main flow,
     - added a larger bottom spacer so the fixed quick composer no longer crowds the last notes,
     - softened the composer into a lighter glass-like surface with reduced shadow weight.
+  - Continued the desktop UI convergence pass:
+    - made the right utility rail resizable by dragging the center-right divider,
+    - widened and realigned the long-note editor so attachment actions sit on the same visual grid as the form,
+    - replaced the heavy static workspace block with a floating workspace launcher,
+    - upgraded the workspace launcher into a mode-and-source selector that supports single-note entry and multi-note merge drafts.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`
