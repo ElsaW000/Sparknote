@@ -153,7 +153,7 @@ class _NotesPageState extends State<NotesPage> {
   bool _loading = false;
   bool _creatingQuickNote = false;
   bool _uploadingQuickAttachment = false;
-  double _rightPanelWidth = 320;
+  bool _rightRailCollapsed = false;
   bool _leftRailCollapsed = false;
   String? _loadError;
   String? _quickAttachmentStatus;
@@ -161,8 +161,9 @@ class _NotesPageState extends State<NotesPage> {
   String? _selectedDate;
   String? _searchQuery;
 
-  static const double _expandedSideRailWidth = 320;
+  static const double _expandedSideRailWidth = 280;
   static const double _collapsedLeftRailWidth = 92;
+  static const double _collapsedRightRailWidth = 92;
 
   @override
   void initState() {
@@ -415,6 +416,9 @@ class _NotesPageState extends State<NotesPage> {
 
   double get _leftRailWidth =>
       _leftRailCollapsed ? _collapsedLeftRailWidth : _expandedSideRailWidth;
+
+  double get _rightRailWidth =>
+      _rightRailCollapsed ? _collapsedRightRailWidth : _expandedSideRailWidth;
 
   Future<void> _createQuickNote() async {
     final messenger = ScaffoldMessenger.of(context);
@@ -2579,6 +2583,7 @@ class _NotesPageState extends State<NotesPage> {
     final compactRail = width < 340;
     final outerPadding = compactRail ? 14.0 : 18.0;
     final cardPadding = compactRail ? 16.0 : 18.0;
+    final collapsed = _rightRailCollapsed;
 
     return Container(
       width: width,
@@ -2586,121 +2591,165 @@ class _NotesPageState extends State<NotesPage> {
       child: SafeArea(
         child: Stack(
           children: [
-            SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(outerPadding, 20, outerPadding, 116),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSearchUtilityCard(),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: EdgeInsets.fromLTRB(cardPadding, cardPadding, cardPadding, cardPadding + 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: _line),
+            if (!collapsed)
+              SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(outerPadding, 20, outerPadding, 116),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton(
+                        tooltip: '收起右栏',
+                        onPressed: () => setState(() => _rightRailCollapsed = true),
+                        icon: const Icon(Icons.chevron_right_rounded, color: _brandDark),
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '记录热力图',
-                          style: TextStyle(
-                            fontSize: _sectionTitleSize,
-                            fontWeight: FontWeight.w700,
-                            color: _ink,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          '近 35 天的记录强度，越深表示当天沉淀越多。',
-                          style: TextStyle(
-                            fontSize: _bodySize,
-                            color: Color(0xFF666666),
-                            height: _bodyHeight,
-                          ),
-                        ),
-                        if (_selectedDate != null) ...[
-                          const SizedBox(height: 10),
-                          InkWell(
-                            onTap: () => setState(() => _selectedDate = null),
-                            child: Text(
-                              '当前筛选：$_selectedDate · 点击清除',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: _brand,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 20),
-                        _buildHeatmapSection(),
-                        const SizedBox(height: 12),
-                        const Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _HeatmapLegendDot(color: Color(0xFFD9D9D9), label: '0'),
-                            _HeatmapLegendDot(color: Color(0xFF95D5B2), label: '低'),
-                            _HeatmapLegendDot(color: Color(0xFF40916C), label: '中'),
-                            _HeatmapLegendDot(color: Color(0xFF2D6A4F), label: '高'),
-                            _HeatmapLegendDot(color: Color(0xFF1B4332), label: '峰值'),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: EdgeInsets.all(cardPadding),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: _line),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.auto_awesome, color: _brandDark, size: 18),
-                            SizedBox(width: 8),
-                            Text(
-                              '今日回顾',
-                              style: TextStyle(
-                                fontSize: _sectionTitleSize,
-                                fontWeight: FontWeight.w700,
-                                color: _ink,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          margin: const EdgeInsets.only(bottom: 10),
-                          decoration: BoxDecoration(
-                            color: _brand.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            _dailyReviewSummary(),
-                            style: const TextStyle(
-                              fontSize: _bodySize,
+                    _buildSearchUtilityCard(),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: EdgeInsets.fromLTRB(cardPadding, cardPadding, cardPadding, cardPadding + 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: _line),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '记录热力图',
+                            style: TextStyle(
+                              fontSize: _sectionTitleSize,
+                              fontWeight: FontWeight.w700,
                               color: _ink,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            '近 35 天的记录强度，越深表示当天沉淀越多。',
+                            style: TextStyle(
+                              fontSize: _bodySize,
+                              color: Color(0xFF666666),
                               height: _bodyHeight,
                             ),
                           ),
-                        ),
-                        _buildDailyReviewSection(),
-                      ],
+                          if (_selectedDate != null) ...[
+                            const SizedBox(height: 10),
+                            InkWell(
+                              onTap: () => setState(() => _selectedDate = null),
+                              child: Text(
+                                '当前筛选：$_selectedDate · 点击清除',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: _brand,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 20),
+                          _buildHeatmapSection(),
+                          const SizedBox(height: 12),
+                          const Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _HeatmapLegendDot(color: Color(0xFFD9D9D9), label: '0'),
+                              _HeatmapLegendDot(color: Color(0xFF95D5B2), label: '低'),
+                              _HeatmapLegendDot(color: Color(0xFF40916C), label: '中'),
+                              _HeatmapLegendDot(color: Color(0xFF2D6A4F), label: '高'),
+                              _HeatmapLegendDot(color: Color(0xFF1B4332), label: '峰值'),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: EdgeInsets.all(cardPadding),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: _line),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.auto_awesome, color: _brandDark, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                '今日回顾',
+                                style: TextStyle(
+                                  fontSize: _sectionTitleSize,
+                                  fontWeight: FontWeight.w700,
+                                  color: _ink,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: _brand.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              _dailyReviewSummary(),
+                              style: const TextStyle(
+                                fontSize: _bodySize,
+                                color: _ink,
+                                height: _bodyHeight,
+                              ),
+                            ),
+                          ),
+                          _buildDailyReviewSection(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
+                child: Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton(
+                        tooltip: '展开右栏',
+                        onPressed: () => setState(() => _rightRailCollapsed = false),
+                        icon: const Icon(Icons.chevron_left_rounded, color: _brandDark),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _CollapsedRailButton(
+                      icon: Icons.search_rounded,
+                      tooltip: '展开搜索与回顾面板',
+                      onTap: () => setState(() => _rightRailCollapsed = false),
+                    ),
+                    const SizedBox(height: 12),
+                    _CollapsedRailButton(
+                      icon: Icons.calendar_view_month_rounded,
+                      tooltip: '热力图',
+                      onTap: () => setState(() => _rightRailCollapsed = false),
+                    ),
+                    const SizedBox(height: 12),
+                    _CollapsedRailButton(
+                      icon: Icons.auto_awesome,
+                      tooltip: '今日回顾',
+                      onTap: () => setState(() => _rightRailCollapsed = false),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
               ),
-            ),
             Positioned(
               right: outerPadding,
               bottom: 18,
@@ -2710,7 +2759,10 @@ class _NotesPageState extends State<NotesPage> {
                   onTap: _openWorkspaceLauncher,
                   borderRadius: BorderRadius.circular(999),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: collapsed ? 14 : 18,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
                       color: _brandDark,
                       borderRadius: BorderRadius.circular(999),
@@ -2722,19 +2774,21 @@ class _NotesPageState extends State<NotesPage> {
                         ),
                       ],
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.auto_awesome, color: Colors.white, size: 18),
-                        SizedBox(width: 10),
-                        Text(
-                          '灵感工作台',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                        const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                        if (!collapsed) ...[
+                          const SizedBox(width: 10),
+                          const Text(
+                            '灵感工作台',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
@@ -2920,7 +2974,7 @@ class _NotesPageState extends State<NotesPage> {
     if (isDesktop) {
       return Positioned(
         left: _leftRailWidth + 28,
-        right: _rightPanelWidth + 28,
+        right: _rightRailWidth + 28,
         bottom: 18,
         child: SafeArea(
           minimum: const EdgeInsets.only(bottom: 18),
@@ -2947,32 +3001,20 @@ class _NotesPageState extends State<NotesPage> {
             children: [
               _buildLeftRail(),
               Expanded(child: _buildCenterPanel(isDesktop: true)),
-              MouseRegion(
-                cursor: SystemMouseCursors.resizeColumn,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onHorizontalDragUpdate: (details) {
-                    setState(() {
-                      _rightPanelWidth =
-                          (_rightPanelWidth - details.delta.dx).clamp(300.0, 520.0);
-                    });
-                  },
-                  child: Container(
-                    width: 14,
-                    color: Colors.transparent,
-                    alignment: Alignment.center,
-                    child: Container(
-                      width: 4,
-                      height: 86,
-                      decoration: BoxDecoration(
-                        color: _line,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
+              Container(
+                width: 14,
+                color: Colors.transparent,
+                alignment: Alignment.center,
+                child: Container(
+                  width: 4,
+                  height: 86,
+                  decoration: BoxDecoration(
+                    color: _line,
+                    borderRadius: BorderRadius.circular(999),
                   ),
                 ),
               ),
-              _buildRightPanel(width: _rightPanelWidth),
+              _buildRightPanel(width: _rightRailWidth),
             ],
           ),
           _buildQuickComposer(isDesktop: true),

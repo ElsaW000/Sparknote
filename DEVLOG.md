@@ -311,3 +311,19 @@
 - Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
 - Verified local health endpoint again:
   - `GET /health -> {"status":"ok"}`
+
+## 2026-03-17 - Narrow Side Rails
+
+### What changed
+- Narrowed both desktop side rails to a lighter fixed baseline width.
+- Kept the left rail collapsible and added the same click-to-collapse behavior to the right rail.
+- Removed the right-rail-first resize dependency so the layout is now centered around:
+  - narrower default side rails,
+  - optional collapse on both sides,
+  - a wider middle content area by default.
+- Updated the quick composer right offset to follow the current right rail width after collapse/expand.
+
+### Verification
+- Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+- Verified local health endpoint again:
+  - `GET /health -> {"status":"ok"}`
