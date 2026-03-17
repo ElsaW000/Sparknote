@@ -453,3 +453,19 @@
   - `powershell -NoProfile -ExecutionPolicy Bypass -File run_sparknote_background.ps1`
 - Confirmed local service health:
   - `GET /health -> {"status":"ok"}`
+
+## 2026-03-17 - Launcher History Entry Fix
+
+### What changed
+- Added a real `历史灵感` entry to the top-right of the homepage `灵感工作台` launcher modal.
+- Wired the launcher modal directly to workspace history actions:
+  - `继续编辑`
+  - `分享`
+  - `删除`
+- Reused the same restore flow so old drafts can reopen the full three-panel workspace directly from the launcher, not only after entering the workspace page.
+
+### Verification
+- Ran `flutter analyze`
+  - result: no blocking compile errors from this change
+- Rebuilt the tested web bundle:
+  - `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`

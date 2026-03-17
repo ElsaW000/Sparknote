@@ -2,6 +2,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -121,6 +122,32 @@ class _CollapsedRailButton extends StatelessWidget {
             border: Border.all(color: Colors.white24),
           ),
           child: Icon(icon, color: Colors.white, size: 22),
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryPill extends StatelessWidget {
+  final String label;
+  final bool active;
+
+  const _HistoryPill({required this.label, this.active = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFFE7F5EC) : const Color(0xFFF2F5F3),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: active ? const Color(0xFF2F7A4F) : const Color(0xFF204C43),
         ),
       ),
     );
@@ -684,6 +711,274 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
+  String _normalizeHistoryWorkflowLabel(String raw, {String title = ''}) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty || RegExp(r'^\?+$').hasMatch(trimmed)) {
+      if (title.contains('产品')) return '产品灵感';
+      if (title.contains('视频') || title.contains('脚本')) return '视频灵感';
+      if (title.contains('写作') || title.contains('文章') || title.contains('小说')) {
+        return '写作灵感';
+      }
+      return '通用灵感';
+    }
+    return trimmed;
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchWorkspaceHistoryItems() async {
+    final token = await _token();
+    if (!mounted || token == null || token.isEmpty) return [];
+    try {
+      final r = await http.get(
+        Uri.parse('$backendUrl/workspace/history'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (r.statusCode == 200) {
+        return (json.decode(_decodeResponse(r)) as List<dynamic>)
+            .whereType<Map<String, dynamic>>()
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  void _resumeWorkspaceHistoryItem(
+    Map<String, dynamic> item,
+    BuildContext dialogContext,
+  ) {
+    Navigator.of(dialogContext).pop();
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AIWorkspacePage(
+            noteId: item['note_id'] as int? ?? 0,
+            noteTitle: _text(item['note_title']),
+            noteContent: _text(item['note_content']),
+            workflowLabel: _normalizeHistoryWorkflowLabel(
+              _text(item['workflow_label']),
+              title: _text(item['note_title']),
+            ),
+            sourceNoteCount: item['source_count'] as int? ?? 1,
+            conversationId: item['conversation_id'] as int?,
+          ),
+        ),
+      );
+    });
+  }
+
+  Future<void> _shareWorkspaceHistoryItem(Map<String, dynamic> item) async {
+    final token = await _token();
+    if (!mounted || token == null || token.isEmpty) return;
+    final conversationId = item['conversation_id'] as int?;
+    if (conversationId == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final r = await http.post(
+        Uri.parse('$backendUrl/workspace/history/$conversationId/share'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (!mounted) return;
+      if (r.statusCode == 200) {
+        final body = json.decode(_decodeResponse(r)) as Map<String, dynamic>;
+        await Clipboard.setData(ClipboardData(text: _text(body['share_text'])));
+        messenger.showSnackBar(const SnackBar(content: Text('分享文案已复制到剪贴板')));
+      } else {
+        messenger.showSnackBar(SnackBar(content: Text('分享失败：${r.statusCode}')));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('分享失败：$e')));
+    }
+  }
+
+  Future<void> _deleteWorkspaceHistoryItem(
+    Map<String, dynamic> item,
+    BuildContext dialogContext,
+  ) async {
+    final token = await _token();
+    if (!mounted || token == null || token.isEmpty) return;
+    final conversationId = item['conversation_id'] as int?;
+    if (conversationId == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+          context: dialogContext,
+          builder: (confirmCtx) => AlertDialog(
+            title: const Text('删除历史灵感'),
+            content: const Text('删除后将清理这条工作台上下文，但不会删除原始笔记。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(confirmCtx, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(confirmCtx, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                child: const Text('删除'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) return;
+    try {
+      final r = await http.delete(
+        Uri.parse('$backendUrl/workspace/history/$conversationId'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (!mounted) return;
+      if (r.statusCode == 200) {
+        Navigator.of(dialogContext).pop();
+        messenger.showSnackBar(const SnackBar(content: Text('历史灵感已删除')));
+      } else {
+        messenger.showSnackBar(SnackBar(content: Text('删除失败：${r.statusCode}')));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('删除失败：$e')));
+    }
+  }
+
+  Future<void> _openWorkspaceHistoryFromLauncher() async {
+    final historyItems = await _fetchWorkspaceHistoryItems();
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760, maxHeight: 640),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '历史灵感',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _ink),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '可继续编辑未完成草稿，或重新打开之前的灵感工作台上下文。',
+                  style: TextStyle(fontSize: 13, color: _muted, height: 1.6),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: historyItems.isEmpty
+                      ? const Center(
+                          child: Text('还没有历史灵感草稿。', style: TextStyle(color: _muted)),
+                        )
+                      : ListView.separated(
+                          itemCount: historyItems.length,
+                          separatorBuilder: (_, __) =>
+                              Divider(height: 1, color: _line.withValues(alpha: 0.85)),
+                          itemBuilder: (_, index) {
+                            final item = historyItems[index];
+                            final inProgress = (item['status'] ?? '').toString() == 'open';
+                            final historyLabel = _normalizeHistoryWorkflowLabel(
+                              _text(item['workflow_label']),
+                              title: _text(item['note_title']),
+                            );
+                            final createdAt = _text(item['created_at']);
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    width: 68,
+                                    child: Text(
+                                      createdAt.length >= 10 ? createdAt.substring(5, 10) : '--',
+                                      style: const TextStyle(fontSize: 12, color: Color(0xFF999999)),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: [
+                                            _HistoryPill(label: historyLabel),
+                                            if (inProgress)
+                                              const _HistoryPill(label: '进行中', active: true),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          _text(item['note_title']).isEmpty
+                                              ? '未命名草稿'
+                                              : _text(item['note_title']),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: _ink,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          '联合笔记：${item['source_count'] ?? 1} 条',
+                                          style: const TextStyle(fontSize: 12, color: _muted),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 20),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      FilledButton(
+                                        onPressed: () => _resumeWorkspaceHistoryItem(item, dialogCtx),
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: _brand,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        child: const Text('继续编辑'),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      TextButton(
+                                        onPressed: () => _shareWorkspaceHistoryItem(item),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: const Color(0xFF666666),
+                                        ),
+                                        child: const Text('分享'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => _deleteWorkspaceHistoryItem(item, dialogCtx),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors.redAccent,
+                                        ),
+                                        child: const Text('删除'),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _openWorkspaceLauncher() async {
     String query = '';
     var selectedMode = _WorkspaceMode.universal;
@@ -716,14 +1011,44 @@ class _NotesPageState extends State<NotesPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        '灵感工作台',
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _ink),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '先选择工作流模式，再勾选一条或多条灵感素材，最后进入对应工作台。',
-                        style: TextStyle(fontSize: 13, color: _muted, height: 1.6),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '灵感工作台',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    color: _ink,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  '先选择工作流模式，再勾选一条或多条灵感素材，最后进入对应工作台。',
+                                  style: TextStyle(fontSize: 13, color: _muted, height: 1.6),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          OutlinedButton.icon(
+                            onPressed: _openWorkspaceHistoryFromLauncher,
+                            icon: const Icon(Icons.history, size: 18),
+                            label: const Text('历史灵感'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _brandDark,
+                              side: const BorderSide(color: _line),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 18),
                       Expanded(
