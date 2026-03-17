@@ -260,3 +260,15 @@
   - realtime recording
   - clipboard paste for images/files
   - real Notion sync/writeback
+
+## 2026-03-17 - Local Launcher Follow-up
+
+### What changed
+- Fixed the Windows local launcher URL-open step:
+  - replaced `start "" "http://127.0.0.1:8000/..."` with PowerShell `Start-Process`,
+  - avoids the recurring Windows "无法访问指定设备、路径或文件" error when opening the local test page.
+
+### Verification
+- Relaunched the local backend with the stable single-window mode.
+- Verified local health endpoint again:
+  - `GET /health -> {"status":"ok"}`

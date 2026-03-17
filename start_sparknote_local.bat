@@ -15,7 +15,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "try { $r = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8000/health -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }"
 if %errorlevel%==0 (
   echo [Sparknote] Server already running.
-  start "" "%URL%" >nul 2>nul
+  powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "try { Start-Process '%URL%' -ErrorAction Stop | Out-Null } catch {}"
   exit /b 0
 )
 
@@ -41,5 +42,6 @@ if %errorlevel% neq 0 (
 )
 
 echo [Sparknote] Ready: %URL%
-start "" "%URL%" >nul 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "try { Start-Process '%URL%' -ErrorAction Stop | Out-Null } catch {}"
 exit /b 0
