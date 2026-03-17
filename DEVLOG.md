@@ -469,3 +469,13 @@
   - result: no blocking compile errors from this change
 - Rebuilt the tested web bundle:
   - `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+
+## 2026-03-17 - Search Field Contrast Tuning
+
+### What changed
+- Standardized search-style inputs to use `#F2F3F2` so they remain visually distinct from surrounding white cards.
+- Applied this to the homepage search surfaces and the launcher modal note search input.
+
+### Verification
+- Rebuilt the tested web bundle:
+  - `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`

@@ -1907,7 +1907,7 @@ class _NotesPageState extends State<NotesPage> {
     return InputDecoration(
       hintText: hint,
       filled: true,
-      fillColor: _paper,
+      fillColor: const Color(0xFFF2F3F2),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
         borderSide: BorderSide.none,
