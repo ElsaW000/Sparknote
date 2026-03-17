@@ -433,3 +433,23 @@
 ### What changed
 - Renamed the homepage right-rail calendar section from `热力图` to `日历记录`.
 - Updated the collapsed right-rail tooltip and matching mobile copy so the naming stays consistent across layouts.
+
+## 2026-03-17 - Local Background Autostart
+
+### What changed
+- Added a dedicated hidden backend launcher:
+  - [run_sparknote_background.ps1](/d:/02-Projects/01-Sparknote/run_sparknote_background.ps1)
+  - keeps the backend singleton-style on `127.0.0.1:8000`
+  - writes PID and log files into the repo root
+- Added install/uninstall helpers for local autostart:
+  - [install_sparknote_autostart.bat](/d:/02-Projects/01-Sparknote/install_sparknote_autostart.bat)
+  - [uninstall_sparknote_autostart.bat](/d:/02-Projects/01-Sparknote/uninstall_sparknote_autostart.bat)
+- Updated [start_sparknote_local.bat](/d:/02-Projects/01-Sparknote/start_sparknote_local.bat) to reuse the new background launcher instead of duplicating startup logic.
+- Task Scheduler registration was blocked by Windows permissions on this machine, so the final autostart solution was installed through the current user Startup folder instead:
+  - `C:\Users\WJ\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\Sparknote Backend Autostart.bat`
+
+### Verification
+- Triggered the new background launcher manually:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File run_sparknote_background.ps1`
+- Confirmed local service health:
+  - `GET /health -> {"status":"ok"}`
