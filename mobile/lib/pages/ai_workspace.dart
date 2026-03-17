@@ -198,6 +198,15 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
     ];
   }
 
+  List<String> get _directoryNodes {
+    if (_isProductMode) return const ['用户场景', '核心功能', '技术点'];
+    if (_isWritingMode) return const ['开场', '章节推进', '人物线索', '情绪关键词'];
+    if (_isVideoMode) return const ['视频主题', '素材片段', '画面建议', 'BGM 气质'];
+    return const ['碎片素材', '延展方向', '总结重点'];
+  }
+
+  List<String> get _productPortraitTags => const ['产品画像', '用户场景', '关键功能'];
+
   Future<Map<String, String>?> _authHeaders({bool jsonBody = false}) async {
     final token = await _token();
     if (token == null || token.isEmpty) {
@@ -587,7 +596,7 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                             );
                             final createdAt = _text(item['created_at']);
                             return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -626,35 +635,34 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                                           '联合笔记：${item['source_count'] ?? 1} 条',
                                           style: const TextStyle(fontSize: 12, color: Color(0xFF60716F)),
                                         ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            FilledButton(
+                                              onPressed: () => _resumeWorkspaceHistoryItem(item, ctx),
+                                              style: FilledButton.styleFrom(
+                                                backgroundColor: _brand,
+                                                foregroundColor: Colors.white,
+                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                              ),
+                                              child: const Text('继续编辑'),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            TextButton(
+                                              onPressed: () => _shareWorkspaceHistoryItem(item),
+                                              style: TextButton.styleFrom(foregroundColor: const Color(0xFF666666)),
+                                              child: const Text('分享'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () => _deleteWorkspaceHistoryItem(item, ctx),
+                                              style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                                              child: const Text('删除'),
+                                            ),
+                                          ],
+                                        ),
                                       ],
                                     ),
-                                  ),
-                                  const SizedBox(width: 20),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      FilledButton(
-                                        onPressed: () => _resumeWorkspaceHistoryItem(item, ctx),
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: _brand,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                        ),
-                                        child: const Text('继续编辑'),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      TextButton(
-                                        onPressed: () => _shareWorkspaceHistoryItem(item),
-                                        style: TextButton.styleFrom(foregroundColor: const Color(0xFF666666)),
-                                        child: const Text('分享'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () => _deleteWorkspaceHistoryItem(item, ctx),
-                                        style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-                                        child: const Text('删除'),
-                                      ),
-                                    ],
                                   ),
                                 ],
                               ),
@@ -946,13 +954,6 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
   }
 
   Widget _buildDirectoryPanel() {
-    final structureChips = _isProductMode
-        ? const ['用户场景', '核心功能', '技术点']
-        : _isWritingMode
-            ? const ['章节跳转', '人物线索', '情绪关键词']
-            : _isVideoMode
-                ? const ['视频主题', '素材片段', '画面建议']
-                : const ['素材整理', '延展思路', '整合摘要'];
     return Container(
       width: 280,
       decoration: BoxDecoration(
@@ -1028,11 +1029,71 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                       _MetaPill(label: _resolvedWorkflowLabel),
                       if (widget.sourceNoteCount > 1)
                         _MetaPill(label: '整合 ${widget.sourceNoteCount} 条'),
-                      ...structureChips.map((chip) => _MetaPill(label: chip)),
+                      ..._directoryNodes.take(3).map((chip) => _MetaPill(label: chip)),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  if (_isWritingMode)
+                  if (_isProductMode) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FBF8),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: _line),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'PRD 结构树',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: _ink,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          ..._directoryNodes.map(
+                            (node) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: _brand,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    node,
+                                    style: const TextStyle(fontSize: 13, color: _ink),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FBF8),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: _line),
+                      ),
+                      child: const Text(
+                        '这里会承接需求截图、竞品资料和方案附件。',
+                        style: TextStyle(fontSize: 12, height: 1.6, color: Color(0xFF60716F)),
+                      ),
+                    ),
+                  ] else if (_isWritingMode)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
@@ -1175,7 +1236,10 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8FBF8),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: _isProductMode ? _brand.withValues(alpha: 0.24) : _line),
+                        border: Border.all(
+                          color: _brand.withValues(alpha: 0.22),
+                          style: BorderStyle.solid,
+                        ),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1184,7 +1248,7 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                             width: 26,
                             height: 26,
                             decoration: BoxDecoration(
-                              color: _brand.withValues(alpha: 0.12),
+                              color: _brand.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(Icons.bolt, size: 14, color: _brandDark),
@@ -1296,14 +1360,13 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                         children: [
                           Expanded(
                             flex: 3,
-                            child: Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: _paper,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: _line),
-                              ),
-                              child: editor,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(height: 1, color: _line.withValues(alpha: 0.75)),
+                                const SizedBox(height: 20),
+                                Expanded(child: editor),
+                              ],
                             ),
                           ),
                           const SizedBox(width: 18),
@@ -1344,23 +1407,47 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
-                              children: const [
-                                _HistoryTag(label: '产品画像'),
-                                _HistoryTag(label: '用户场景'),
-                                _HistoryTag(label: '关键功能'),
-                              ],
+                              children: _productPortraitTags
+                                  .map((tag) => _HistoryTag(label: tag))
+                                  .toList(),
+                            ),
+                            const SizedBox(height: 18),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FBF8),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '产品画像',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: _ink,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    '这里可以继续补充目标用户、使用场景、核心价值和成功指标。',
+                                    style: TextStyle(fontSize: 13, height: 1.6, color: Color(0xFF60716F)),
+                                  ),
+                                ],
+                              ),
                             ),
                             const SizedBox(height: 18),
                           ],
                           Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: _paper,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: _line),
-                              ),
-                              child: editor,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(height: 1, color: _line.withValues(alpha: 0.75)),
+                                const SizedBox(height: 20),
+                                Expanded(child: editor),
+                              ],
                             ),
                           ),
                         ],

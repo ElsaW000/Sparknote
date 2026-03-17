@@ -479,3 +479,24 @@
 ### Verification
 - Rebuilt the tested web bundle:
   - `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+
+## 2026-03-17 - Workspace Mode Layout Convergence
+
+### What changed
+- Refined the workspace page so the three-column roles are more mode-specific instead of sharing one generic shell.
+- Product mode:
+  - left rail now emphasizes `PRD 结构树`,
+  - center adds a lightweight `产品画像` block beneath the title,
+  - main writing area removes the heavy framed editor shell.
+- Writing mode:
+  - kept the narrowed immersive canvas with no outer heavy editor box.
+- Video mode:
+  - kept script-plus-visual-suggestion split, but removed the oversized framed writing shell on the main side.
+- History dialog:
+  - flattened the layout into a lighter list flow,
+  - actions now sit inline under each entry instead of feeling like nested cards.
+- Left-side suggestion cards were also visually softened so they no longer read as heavy green blocks.
+
+### Verification
+- Rebuilt the tested web bundle:
+  - `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
