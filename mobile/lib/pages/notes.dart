@@ -164,6 +164,7 @@ class _NotesPageState extends State<NotesPage> {
   static const double _expandedSideRailWidth = 280;
   static const double _collapsedLeftRailWidth = 92;
   static const double _collapsedRightRailWidth = 92;
+  static const double _rightRailHandleWidth = 18;
 
   @override
   void initState() {
@@ -2191,24 +2192,24 @@ class _NotesPageState extends State<NotesPage> {
           padding: EdgeInsets.fromLTRB(collapsed ? 14 : 20, 18, collapsed ? 14 : 20, 20),
           child: Column(
             crossAxisAlignment:
-                collapsed ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                collapsed ? CrossAxisAlignment.start : CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Container(
-                    width: collapsed ? 40 : 44,
-                    height: collapsed ? 40 : 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(collapsed ? 12 : 14),
-                    ),
-                    child: Icon(
-                      Icons.eco_outlined,
-                      color: _brandDark,
-                      size: collapsed ? 21 : 24,
-                    ),
-                  ),
                   if (!collapsed) ...[
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.eco_outlined,
+                        color: _brandDark,
+                        size: 24,
+                      ),
+                    ),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Column(
@@ -2231,7 +2232,7 @@ class _NotesPageState extends State<NotesPage> {
                       ),
                     ),
                   ] else
-                    const Spacer(),
+                    const SizedBox.shrink(),
                   IconButton(
                     tooltip: collapsed ? '展开侧栏' : '收起侧栏',
                     onPressed: () => setState(() => _leftRailCollapsed = !_leftRailCollapsed),
@@ -2663,14 +2664,6 @@ class _NotesPageState extends State<NotesPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: IconButton(
-                        tooltip: '收起右栏',
-                        onPressed: () => setState(() => _rightRailCollapsed = true),
-                        icon: const Icon(Icons.chevron_right_rounded, color: _brandDark),
-                      ),
-                    ),
                     _buildSearchUtilityCard(),
                     const SizedBox(height: 16),
                     Container(
@@ -2786,15 +2779,6 @@ class _NotesPageState extends State<NotesPage> {
                 padding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
                 child: Column(
                   children: [
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: IconButton(
-                        tooltip: '展开右栏',
-                        onPressed: () => setState(() => _rightRailCollapsed = false),
-                        icon: const Icon(Icons.chevron_left_rounded, color: _brandDark),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     _CollapsedRailButton(
                       icon: Icons.search_rounded,
                       tooltip: '展开搜索与回顾面板',
@@ -3040,7 +3024,7 @@ class _NotesPageState extends State<NotesPage> {
     if (isDesktop) {
       return Positioned(
         left: _leftRailWidth + 28,
-        right: _rightRailWidth + 28,
+        right: _rightRailWidth + _rightRailHandleWidth + 28,
         bottom: 18,
         child: SafeArea(
           minimum: const EdgeInsets.only(bottom: 18),
@@ -3077,6 +3061,41 @@ class _NotesPageState extends State<NotesPage> {
                   decoration: BoxDecoration(
                     color: _line,
                     borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: _rightRailHandleWidth,
+                child: Center(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => setState(() => _rightRailCollapsed = !_rightRailCollapsed),
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        width: 18,
+                        height: 82,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: _line),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x140E1A13),
+                              blurRadius: 12,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          _rightRailCollapsed
+                              ? Icons.chevron_left_rounded
+                              : Icons.chevron_right_rounded,
+                          color: _brandDark,
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),

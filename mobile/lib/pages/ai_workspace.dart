@@ -132,13 +132,71 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
     }
   }
 
-  List<String> get _localizedSuggestions =>
-      const [
-        '点击灵感提取，帮我拆出 3 个可扩展方向',
-        '提炼这一页的核心冲突和下一步转折',
-        '从当前笔记里抽取人物、主题和意象线索',
-        '从产品经理视角提炼问题、机会和下一步方案',
+  String get _resolvedWorkflowLabel {
+    final raw = _text(widget.workflowLabel).trim();
+    if (raw.isEmpty || RegExp(r'^\?+$').hasMatch(raw)) {
+      final title = _text(widget.noteTitle);
+      if (title.contains('产品')) return '产品灵感';
+      if (title.contains('视频') || title.contains('脚本')) return '视频灵感';
+      if (title.contains('写作') || title.contains('文章') || title.contains('小说')) {
+        return '写作灵感';
+      }
+      return '通用灵感';
+    }
+    return raw;
+  }
+
+  bool get _isProductMode => _resolvedWorkflowLabel.contains('产品');
+  bool get _isWritingMode => _resolvedWorkflowLabel.contains('写作');
+  bool get _isVideoMode => _resolvedWorkflowLabel.contains('视频');
+
+  String get _modePrefix =>
+      _isProductMode ? '产品灵感模式' : _isWritingMode ? '写作灵感模式' : _isVideoMode ? '视频灵感模式' : '通用灵感模式';
+
+  String get _directoryTitle =>
+      _isProductMode ? 'PRD 结构树' : _isWritingMode ? '大纲索引' : _isVideoMode ? '脚本素材' : '素材流';
+
+  String get _directoryDescription =>
+      _isProductMode
+          ? '围绕用户场景、核心功能与技术点组织当前草稿。'
+          : _isWritingMode
+              ? '只保留章节和关键词入口，让写作区更沉浸。'
+              : _isVideoMode
+                  ? '聚合选题、素材片段和画面建议，便于拆成分镜脚本。'
+                  : '把当前碎片灵感整理成可继续延展的工作流。';
+
+  List<String> get _localizedSuggestions {
+    if (_isProductMode) {
+      return const [
+        '按用户场景、核心功能、技术点拆成 PRD 初稿',
+        '提炼这一页的核心问题、机会点和下一步方案',
+        '从产品经理视角检查需求闭环和优先级',
+        '把当前草稿改成更像正式方案说明',
       ];
+    }
+    if (_isWritingMode) {
+      return const [
+        '按章节整理这份草稿，补一个更顺的结构',
+        '润色这一页的语气，让句子更自然',
+        '帮我提炼人物、主题和情绪关键词',
+        '给这一段补一个更有张力的转折',
+      ];
+    }
+    if (_isVideoMode) {
+      return const [
+        '把这份内容拆成视频脚本和镜头段落',
+        '给每一段补一条画面建议和景别',
+        '按节奏整理开场、主体和结尾的脚本',
+        '补 3 个适合这条视频的 BGM 气质方向',
+      ];
+    }
+    return const [
+      '点击灵感提取，帮我拆出 3 个可扩展方向',
+      '提炼这一页的核心冲突和下一步转折',
+      '从当前笔记里抽取人物、主题和意象线索',
+      '从产品经理视角提炼问题、机会和下一步方案',
+    ];
+  }
 
   Future<Map<String, String>?> _authHeaders({bool jsonBody = false}) async {
     final token = await _token();
@@ -403,9 +461,10 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
           noteId: item['note_id'] as int? ?? widget.noteId,
           noteTitle: _text(item['note_title']),
           noteContent: _text(item['note_content']),
-          workflowLabel: _text(item['workflow_label']).isEmpty
-              ? '通用灵感'
-              : _text(item['workflow_label']),
+          workflowLabel: _normalizeHistoryWorkflowLabel(
+            _text(item['workflow_label']),
+            title: _text(item['note_title']),
+          ),
           sourceNoteCount: item['source_count'] as int? ?? 1,
           conversationId: item['conversation_id'] as int?,
         ),
@@ -518,44 +577,27 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                         )
                       : ListView.separated(
                           itemCount: _workspaceHistory.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          separatorBuilder: (_, __) => Divider(height: 1, color: _line.withValues(alpha: 0.85)),
                           itemBuilder: (_, index) {
                             final item = _workspaceHistory[index] as Map<String, dynamic>;
                             final inProgress = (item['status'] ?? '').toString() == 'open';
-                            return Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: _line),
-                              ),
+                            final historyLabel = _normalizeHistoryWorkflowLabel(
+                              _text(item['workflow_label']),
+                              title: _text(item['note_title']),
+                            );
+                            final createdAt = _text(item['created_at']);
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    width: 54,
-                                    padding: const EdgeInsets.symmetric(vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: _brand.withValues(alpha: 0.08),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          _text(item['created_at']).length >= 10
-                                              ? _text(item['created_at']).substring(5, 10)
-                                              : '--',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: _brandDark,
-                                          ),
-                                        ),
-                                      ],
+                                  SizedBox(
+                                    width: 68,
+                                    child: Text(
+                                      createdAt.length >= 10 ? createdAt.substring(5, 10) : '--',
+                                      style: const TextStyle(fontSize: 12, color: Color(0xFF999999)),
                                     ),
                                   ),
-                                  const SizedBox(width: 14),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -563,51 +605,19 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                                         Wrap(
                                           spacing: 8,
                                           runSpacing: 8,
-                                          crossAxisAlignment: WrapCrossAlignment.center,
                                           children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                              decoration: BoxDecoration(
-                                                color: _brand.withValues(alpha: 0.10),
-                                                borderRadius: BorderRadius.circular(999),
-                                              ),
-                                              child: Text(
-                                                _text(item['workflow_label']).isEmpty
-                                                    ? '通用灵感'
-                                                    : _text(item['workflow_label']),
-                                                style: const TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: _brandDark,
-                                                ),
-                                              ),
-                                            ),
-                                            if (inProgress)
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                decoration: BoxDecoration(
-                                                  color: const Color(0xFFE7F5EC),
-                                                  borderRadius: BorderRadius.circular(999),
-                                                ),
-                                                child: const Text(
-                                                  '进行中',
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: _brand,
-                                                  ),
-                                                ),
-                                              ),
+                                            _HistoryTag(label: historyLabel),
+                                            if (inProgress) const _HistoryTag(label: '进行中', active: true),
                                           ],
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 10),
                                         Text(
                                           _text(item['note_title']).isEmpty ? '未命名草稿' : _text(item['note_title']),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(
                                             fontSize: 16,
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w600,
                                             color: _ink,
                                           ),
                                         ),
@@ -619,23 +629,29 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Column(
+                                  const SizedBox(width: 20),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      OutlinedButton(
+                                      FilledButton(
                                         onPressed: () => _resumeWorkspaceHistoryItem(item, ctx),
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: _brand,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
                                         child: const Text('继续编辑'),
                                       ),
-                                      const SizedBox(height: 8),
+                                      const SizedBox(width: 12),
                                       TextButton(
                                         onPressed: () => _shareWorkspaceHistoryItem(item),
+                                        style: TextButton.styleFrom(foregroundColor: const Color(0xFF666666)),
                                         child: const Text('分享'),
                                       ),
                                       TextButton(
                                         onPressed: () => _deleteWorkspaceHistoryItem(item, ctx),
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: Colors.redAccent,
-                                        ),
+                                        style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
                                         child: const Text('删除'),
                                       ),
                                     ],
@@ -809,7 +825,21 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
     Navigator.pushReplacementNamed(context, '/notes');
   }
 
+  String _normalizeHistoryWorkflowLabel(String raw, {String title = ''}) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty || RegExp(r'^\?+$').hasMatch(trimmed)) {
+      if (title.contains('产品')) return '产品灵感';
+      if (title.contains('视频') || title.contains('脚本')) return '视频灵感';
+      if (title.contains('写作') || title.contains('文章') || title.contains('小说')) {
+        return '写作灵感';
+      }
+      return '通用灵感';
+    }
+    return trimmed;
+  }
+
   Widget _buildWorkspaceHeader() {
+    final title = _text(widget.noteTitle).trim().isEmpty ? '灵感工作台' : _text(widget.noteTitle).trim();
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
       decoration: BoxDecoration(
@@ -838,7 +868,9 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _text(widget.noteTitle).trim().isEmpty ? '灵感工作台' : _text(widget.noteTitle),
+                  '[$_modePrefix] $title',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -914,6 +946,13 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
   }
 
   Widget _buildDirectoryPanel() {
+    final structureChips = _isProductMode
+        ? const ['用户场景', '核心功能', '技术点']
+        : _isWritingMode
+            ? const ['章节跳转', '人物线索', '情绪关键词']
+            : _isVideoMode
+                ? const ['视频主题', '素材片段', '画面建议']
+                : const ['素材整理', '延展思路', '整合摘要'];
     return Container(
       width: 280,
       decoration: BoxDecoration(
@@ -928,20 +967,20 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '项目目录',
+                  _directoryTitle,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: _ink,
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
-                  '按照 PRD 的三栏结构，把当前笔记放进灵感提取工作台。',
+                  _directoryDescription,
                   style: TextStyle(fontSize: 12, color: Color(0xFF60716F), height: 1.5),
                 ),
               ],
@@ -986,99 +1025,124 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _MetaPill(label: widget.workflowLabel),
+                      _MetaPill(label: _resolvedWorkflowLabel),
                       if (widget.sourceNoteCount > 1)
                         _MetaPill(label: '整合 ${widget.sourceNoteCount} 条'),
-                      const _MetaPill(label: 'AI Dialogue'),
-                      const _MetaPill(label: 'Live Draft'),
+                      ...structureChips.map((chip) => _MetaPill(label: chip)),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _uploadingAttachment
-                              ? null
-                              : () => _uploadAttachment(accept: 'image/*'),
-                          icon: const Icon(Icons.image_outlined, size: 16),
-                          label: const Text('上传图片'),
-                        ),
+                  if (_isWritingMode)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAF8),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: _line),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _uploadingAttachment
-                              ? null
-                              : () => _uploadAttachment(accept: '*/*'),
-                          icon: const Icon(Icons.attach_file_outlined, size: 16),
-                          label: const Text('上传文件'),
-                        ),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: const [
+                          _MetaPill(label: '开场'),
+                          _MetaPill(label: '人物关系'),
+                          _MetaPill(label: '转折'),
+                          _MetaPill(label: '文风'),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _uploadingAttachment ? null : _transcribeAudioToChat,
-                      icon: const Icon(Icons.mic_none_outlined, size: 16),
-                      label: const Text('导入音频转写'),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _paper,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _line),
-                    ),
-                    child: _attachments.isEmpty
-                        ? const Text(
-                            '还没有附件。当前版本已支持图片/文件上传；语音输入待接入转写链路。',
-                            style: TextStyle(fontSize: 12, height: 1.5, color: Color(0xFF60716F)),
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '当前附件（${_attachments.length}）',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: _ink,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: _attachments.map((item) {
-                                  final name = (item['file_name'] ?? '').toString();
-                                  final mime = (item['mime_type'] ?? '').toString();
-                                  return InputChip(
-                                    label: ConstrainedBox(
-                                      constraints: const BoxConstraints(maxWidth: 180),
-                                      child: Text(
-                                        name.isEmpty ? '未命名附件' : name,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    avatar: Icon(
-                                      mime.startsWith('image/')
-                                          ? Icons.image_outlined
-                                          : Icons.insert_drive_file_outlined,
-                                      size: 18,
-                                    ),
-                                    onDeleted: () => _deleteAttachment(item),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
+                    )
+                  else ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _uploadingAttachment
+                                ? null
+                                : () => _uploadAttachment(accept: 'image/*'),
+                            icon: const Icon(Icons.image_outlined, size: 16),
+                            label: const Text('上传图片'),
                           ),
-                  ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _uploadingAttachment
+                                ? null
+                                : () => _uploadAttachment(accept: '*/*'),
+                            icon: const Icon(Icons.attach_file_outlined, size: 16),
+                            label: const Text('上传文件'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _uploadingAttachment ? null : _transcribeAudioToChat,
+                        icon: const Icon(Icons.mic_none_outlined, size: 16),
+                        label: const Text('导入音频转写'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _paper,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: _line),
+                      ),
+                      child: _attachments.isEmpty
+                          ? Text(
+                              _isProductMode
+                                  ? '这里会承接需求截图、竞品资料和方案附件。'
+                                  : _isVideoMode
+                                      ? '这里会承接脚本资料、画面参考和视频素材说明。'
+                                      : '还没有附件。当前版本已支持图片/文件上传；语音输入待接入转写链路。',
+                              style: const TextStyle(fontSize: 12, height: 1.5, color: Color(0xFF60716F)),
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '当前附件（${_attachments.length}）',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: _ink,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _attachments.map((item) {
+                                    final name = (item['file_name'] ?? '').toString();
+                                    final mime = (item['mime_type'] ?? '').toString();
+                                    return InputChip(
+                                      label: ConstrainedBox(
+                                        constraints: const BoxConstraints(maxWidth: 180),
+                                        child: Text(
+                                          name.isEmpty ? '未命名附件' : name,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      avatar: Icon(
+                                        mime.startsWith('image/')
+                                            ? Icons.image_outlined
+                                            : Icons.insert_drive_file_outlined,
+                                        size: 18,
+                                      ),
+                                      onDeleted: () => _deleteAttachment(item),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -1109,9 +1173,9 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: const Color(0xFFF8FBF8),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: _line),
+                        border: Border.all(color: _isProductMode ? _brand.withValues(alpha: 0.24) : _line),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1150,6 +1214,23 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
   }
 
   Widget _buildEditorPanel() {
+    final title = _text(widget.noteTitle).trim().isEmpty ? '未命名草稿' : _text(widget.noteTitle).trim();
+    final editor = TextField(
+      controller: _contentCtrl,
+      maxLines: null,
+      expands: true,
+      decoration: const InputDecoration(
+        border: InputBorder.none,
+        hintText: '在这里整理你的草稿、章节、结构和 AI 插入内容...',
+      ),
+      style: const TextStyle(
+        fontFamily: 'Georgia',
+        fontSize: 17,
+        height: 1.85,
+        color: _ink,
+      ),
+    );
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(36, 28, 36, 32),
@@ -1163,7 +1244,7 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
-              widget.workflowLabel,
+              _resolvedWorkflowLabel,
               style: const TextStyle(
                 fontSize: 11,
                 color: _brandDark,
@@ -1173,8 +1254,10 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
             ),
           ),
           const SizedBox(height: 22),
-          SelectableText(
-            _text(widget.noteTitle).trim().isEmpty ? '未命名草稿' : _text(widget.noteTitle),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.displaySmall?.copyWith(
               fontFamily: 'Georgia',
               fontWeight: FontWeight.w700,
@@ -1182,35 +1265,106 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
-            '中间区域保持沉浸式编辑体验，AI 建议从右侧进入，再由你决定是否纳入正文。',
+          Text(
+            _isProductMode
+                ? '中间区域聚焦产品草稿，右侧负责问题分析、PRD 拆解和方案补全。'
+                : _isWritingMode
+                    ? '正文区切到更沉浸的长文模式，右侧负责润色、换词和章节建议。'
+                    : _isVideoMode
+                        ? '中间区域按文案与画面思路并排整理，右侧负责分镜、节奏与 BGM 建议。'
+                        : '中间区域保持沉浸式编辑体验，AI 建议从右侧进入，再由你决定是否纳入正文。',
             style: TextStyle(fontSize: 13, color: Color(0xFF60716F), height: 1.6),
           ),
           const SizedBox(height: 26),
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: _paper,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: _line),
-              ),
-              child: TextField(
-                controller: _contentCtrl,
-                maxLines: null,
-                expands: true,
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  hintText: '在这里整理你的草稿、章节、结构和 AI 插入内容...',
-                ),
-                style: const TextStyle(
-                  fontFamily: 'Georgia',
-                  fontSize: 17,
-                  height: 1.85,
-                  color: _ink,
-                ),
-              ),
-            ),
+            child: _isWritingMode
+                ? Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 720),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(height: 1, color: _line.withValues(alpha: 0.75)),
+                          const SizedBox(height: 24),
+                          Expanded(child: editor),
+                        ],
+                      ),
+                    ),
+                  )
+                : _isVideoMode
+                    ? Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: _paper,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: _line),
+                              ),
+                              child: editor,
+                            ),
+                          ),
+                          const SizedBox(width: 18),
+                          SizedBox(
+                            width: 240,
+                            child: Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FBF8),
+                                borderRadius: BorderRadius.circular(22),
+                                border: Border.all(color: _line),
+                              ),
+                              child: const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '画面建议',
+                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _ink),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text('分镜 1：开场钩子', style: TextStyle(fontSize: 12, color: Color(0xFF60716F))),
+                                  SizedBox(height: 8),
+                                  Text('景别：中景 / BGM：轻快推进', style: TextStyle(fontSize: 12, color: _ink)),
+                                  SizedBox(height: 16),
+                                  Text('分镜 2：主体信息', style: TextStyle(fontSize: 12, color: Color(0xFF60716F))),
+                                  SizedBox(height: 8),
+                                  Text('景别：特写 / 画面：素材拼贴', style: TextStyle(fontSize: 12, color: _ink)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_isProductMode) ...[
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: const [
+                                _HistoryTag(label: '产品画像'),
+                                _HistoryTag(label: '用户场景'),
+                                _HistoryTag(label: '关键功能'),
+                              ],
+                            ),
+                            const SizedBox(height: 18),
+                          ],
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: _paper,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: _line),
+                              ),
+                              child: editor,
+                            ),
+                          ),
+                        ],
+                      ),
           ),
         ],
       ),
@@ -1661,6 +1815,32 @@ class _MetaPill extends StatelessWidget {
           fontSize: 11,
           color: _AIWorkspacePageState._ink,
           fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryTag extends StatelessWidget {
+  final String label;
+  final bool active;
+
+  const _HistoryTag({required this.label, this.active = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFFE7F5EC) : const Color(0xFFF2F5F3),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: active ? _AIWorkspacePageState._brand : _AIWorkspacePageState._brandDark,
         ),
       ),
     );

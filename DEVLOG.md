@@ -380,3 +380,31 @@
 - Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
 - Verified local health endpoint again:
   - `GET /health -> {"status":"ok"}`
+
+## 2026-03-17 - Rail And Workspace Visual Convergence
+
+### What changed
+- Fixed desktop rail behavior and alignment:
+  - removed the extra leaf icon from the collapsed left rail top area,
+  - kept only the collapse/expand chevron there,
+  - moved the right-rail collapse control out of the panel content and onto the left divider line so it no longer overlays search, heatmap, or review modules.
+- Adjusted homepage desktop spacing to follow the new right-rail border handle:
+  - bottom quick composer now offsets from the rail plus the new handle width,
+  - side rails and content area align more predictably after collapse/expand.
+- Made AI workspace changes visible by workflow instead of keeping one generic screen:
+  - header title now shows a mode-prefixed single-line title with ellipsis,
+  - product mode now surfaces `PRD 结构树 / 用户场景 / 核心功能 / 技术点`,
+  - writing mode switches to a narrower, de-framed writing canvas,
+  - video mode adds a right-side visual guidance column for shot/scene suggestions.
+- Reworked `历史灵感` into a flatter list layout:
+  - date on the left,
+  - mode/status tags near the title,
+  - one-line title truncation,
+  - horizontal `继续编辑 / 分享 / 删除` actions instead of stacked buttons.
+- Added safer workflow-label fallback handling:
+  - if broken legacy labels such as `????` appear, the UI now infers a cleaner mode name from the note title instead of showing mojibake.
+
+### Verification
+- Local frontend build attempt:
+  - ran `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+  - current environment timed out repeatedly before completion, so this round is code-reviewed but not fully build-verified yet
