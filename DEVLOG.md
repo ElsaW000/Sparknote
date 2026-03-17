@@ -239,6 +239,11 @@
     - conversations are now bound to note drafts and workflow mode,
     - `今日回顾` items with an open workspace now reopen the same in-progress context,
     - added a `历史灵感` entry inside the workspace so unfinished drafts can be resumed later.
+  - Standardized the local test launcher:
+    - start script now runs the backend as a hidden singleton process,
+    - stale local backend instances are cleaned before relaunch,
+    - stop script now targets only the Sparknote backend instead of killing all Python processes.
+    - removed the extra Win32 process scan because it produced permission noise on the local machine.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`
