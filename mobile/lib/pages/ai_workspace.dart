@@ -49,8 +49,12 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
   ];
 
   late final TextEditingController _contentCtrl;
+  late final TextEditingController _productPortraitCtrl;
   late final TextEditingController _chatInputCtrl;
   final ScrollController _messageScrollCtrl = ScrollController();
+  final ScrollController _editorScrollCtrl = ScrollController();
+  final FocusNode _editorFocusNode = FocusNode();
+  final FocusNode _productPortraitFocusNode = FocusNode();
 
   Timer? _poller;
   List<dynamic> _messages = [];
@@ -74,6 +78,7 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
   void initState() {
     super.initState();
     _contentCtrl = TextEditingController(text: _text(widget.noteContent));
+    _productPortraitCtrl = TextEditingController(text: _deriveProductPortrait(widget.noteContent));
     _chatInputCtrl = TextEditingController();
     _messageScrollCtrl.addListener(_handleMessageScroll);
     _bootstrapWorkspace();
@@ -84,8 +89,12 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
     _poller?.cancel();
     _messageScrollCtrl.removeListener(_handleMessageScroll);
     _contentCtrl.dispose();
+    _productPortraitCtrl.dispose();
     _chatInputCtrl.dispose();
     _messageScrollCtrl.dispose();
+    _editorScrollCtrl.dispose();
+    _editorFocusNode.dispose();
+    _productPortraitFocusNode.dispose();
     super.dispose();
   }
 
@@ -206,6 +215,48 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
   }
 
   List<String> get _productPortraitTags => const ['产品画像', '用户场景', '关键功能'];
+
+  String _deriveProductPortrait(String rawContent) {
+    if (!_isProductMode) return '';
+    final normalized = _text(rawContent).trim();
+    if (normalized.isEmpty) return '';
+    final firstParagraph = normalized.split(RegExp(r'\n\s*\n')).first.trim();
+    return firstParagraph.length > 120 ? '${firstParagraph.substring(0, 120)}...' : firstParagraph;
+  }
+
+  String _composeWorkspaceContent() {
+    final body = _contentCtrl.text.trim();
+    if (!_isProductMode) return body;
+    final portrait = _productPortraitCtrl.text.trim();
+    if (portrait.isEmpty) return body;
+    if (body.isEmpty) return '【产品画像】\n$portrait';
+    return '【产品画像】\n$portrait\n\n$body';
+  }
+
+  void _focusMainEditor() {
+    _editorFocusNode.requestFocus();
+    if (_editorScrollCtrl.hasClients) {
+      _editorScrollCtrl.animateTo(
+        0,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _insertStructureNode(String node) {
+    if (_isProductMode && node == '用户场景') {
+      _productPortraitFocusNode.requestFocus();
+    } else {
+      _focusMainEditor();
+    }
+    final sectionTitle = '【$node】';
+    final current = _contentCtrl.text.trimRight();
+    if (!current.contains(sectionTitle)) {
+      _contentCtrl.text = current.isEmpty ? '$sectionTitle\n' : '$current\n\n$sectionTitle\n';
+      _contentCtrl.selection = TextSelection.collapsed(offset: _contentCtrl.text.length);
+    }
+  }
 
   Future<Map<String, String>?> _authHeaders({bool jsonBody = false}) async {
     final token = await _token();
@@ -700,7 +751,7 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
           'sender': 'user',
           'text': text,
           'note_title': _text(widget.noteTitle),
-          'note_content': _contentCtrl.text.trim(),
+          'note_content': _composeWorkspaceContent(),
           'attachment_labels': _attachments
               .map((item) {
                 final name = (item['file_name'] ?? '').toString();
@@ -744,7 +795,7 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
       final r = await http.patch(
         Uri.parse('$backendUrl/notes/${widget.noteId}'),
         headers: headers,
-        body: json.encode({'content': _contentCtrl.text.trim()}),
+        body: json.encode({'content': _composeWorkspaceContent()}),
       );
       if (!mounted) return;
       if (r.statusCode == 200) {
@@ -1008,12 +1059,19 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    _text(widget.noteTitle).trim().isEmpty ? '未命名笔记' : _text(widget.noteTitle),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: _ink,
+                  InkWell(
+                    onTap: _focusMainEditor,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        _text(widget.noteTitle).trim().isEmpty ? '未命名笔记' : _text(widget.noteTitle),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: _ink,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -1057,22 +1115,29 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                           ..._directoryNodes.map(
                             (node) => Padding(
                               padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: _brand,
-                                      shape: BoxShape.circle,
-                                    ),
+                              child: InkWell(
+                                onTap: () => _insertStructureNode(node),
+                                borderRadius: BorderRadius.circular(10),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: _brand,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        node,
+                                        style: const TextStyle(fontSize: 13, color: _ink),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    node,
-                                    style: const TextStyle(fontSize: 13, color: _ink),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
@@ -1281,6 +1346,8 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
     final title = _text(widget.noteTitle).trim().isEmpty ? '未命名草稿' : _text(widget.noteTitle).trim();
     final editor = TextField(
       controller: _contentCtrl,
+      focusNode: _editorFocusNode,
+      scrollController: _editorScrollCtrl,
       maxLines: null,
       expands: true,
       decoration: const InputDecoration(
@@ -1419,10 +1486,10 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                                 color: const Color(0xFFF8FBF8),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Column(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  const Text(
                                     '产品画像',
                                     style: TextStyle(
                                       fontSize: 14,
@@ -1430,10 +1497,27 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                                       color: _ink,
                                     ),
                                   ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    '这里可以继续补充目标用户、使用场景、核心价值和成功指标。',
-                                    style: TextStyle(fontSize: 13, height: 1.6, color: Color(0xFF60716F)),
+                                  const SizedBox(height: 8),
+                                  TextField(
+                                    controller: _productPortraitCtrl,
+                                    focusNode: _productPortraitFocusNode,
+                                    maxLines: 3,
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      hintText: '这里可以继续补充目标用户、使用场景、核心价值和成功指标。',
+                                      hintStyle: TextStyle(
+                                        fontSize: 13,
+                                        height: 1.6,
+                                        color: Color(0xFF60716F),
+                                      ),
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      height: 1.6,
+                                      color: _ink,
+                                    ),
                                   ),
                                 ],
                               ),

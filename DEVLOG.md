@@ -500,3 +500,17 @@
 ### Verification
 - Rebuilt the tested web bundle:
   - `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+
+## 2026-03-17 - Workspace Usability Fixes
+
+### What changed
+- Fixed the center workspace editor so it now has an explicit scroll controller and can keep scrolling while content grows.
+- Made the product-mode `产品画像` block directly editable instead of a static placeholder card.
+- Added left-rail interactions:
+  - tapping the current chapter title focuses the main editor,
+  - tapping `PRD 结构树` nodes inserts the related section heading into the draft and focuses the writing area.
+- Product portrait content is now included when saving the workspace draft and when sending the current draft context to AI.
+
+### Verification
+- Rebuilt the tested web bundle:
+  - `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
