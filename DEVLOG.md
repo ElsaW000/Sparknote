@@ -408,3 +408,22 @@
 - Local frontend build attempt:
   - ran `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
   - current environment timed out repeatedly before completion, so this round is code-reviewed but not fully build-verified yet
+
+## 2026-03-17 - Long-note Editor Visual Cleanup
+
+### What changed
+- Reworked the long-note editor fields toward a calmer `#F6F8FA`-style surface:
+  - title/content/tags now use the same quiet fill color,
+  - removed the previous multi-tone field treatment,
+  - kept the form visually lighter and flatter.
+- Moved `标题 / 正文 / 标签` labels out of the field border area:
+  - labels now sit above each field instead of feeling embedded in the input shell,
+  - label weight was increased to match the user-facing content hierarchy better.
+- Added a lightweight bottom tool row to the body editor area:
+  - tag, image, text, list, and mention-style affordances,
+  - plus a small floating AI action button to echo the reference layout direction.
+
+### Verification
+- Local API health still returns:
+  - `GET /health -> {"status":"ok"}`
+- This round focused on UI structure and did not complete a fresh Flutter web build because the local build process continued timing out in the current environment.

@@ -1181,37 +1181,111 @@ class _NotesPageState extends State<NotesPage> {
                               style: TextStyle(fontSize: 13, color: _muted, height: 1.6),
                             ),
                             const SizedBox(height: 20),
+                            const Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                '标题',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: _ink,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
                             TextField(
                               controller: titleCtrl,
-                              decoration: _editorFieldDecoration(
-                                label: '标题',
-                                hint: '标题（可选）',
-                                fillColor: const Color(0xFFF6F8FA),
-                                accentColor: const Color(0xFF5F7A6D),
-                                icon: Icons.title_rounded,
+                              decoration: _editorFieldDecoration(hint: '标题（可选）'),
+                            ),
+                            const SizedBox(height: 14),
+                            const Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                '正文',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: _ink,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF6F8FA),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              padding: const EdgeInsets.fromLTRB(0, 0, 0, 6),
+                              child: Column(
+                                children: [
+                                  TextField(
+                                    controller: contentCtrl,
+                                    maxLines: 8,
+                                    decoration: _editorFieldDecoration(hint: '正文（必填）'),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 2),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.tag, size: 20, color: _muted.withValues(alpha: 0.72)),
+                                        const SizedBox(width: 14),
+                                        Icon(Icons.image_outlined, size: 20, color: _muted.withValues(alpha: 0.72)),
+                                        const SizedBox(width: 14),
+                                        Container(
+                                          width: 1,
+                                          height: 18,
+                                          color: _line,
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Icon(Icons.text_fields_rounded, size: 20, color: _muted.withValues(alpha: 0.72)),
+                                        const SizedBox(width: 14),
+                                        Icon(Icons.format_list_bulleted_rounded, size: 20, color: _muted.withValues(alpha: 0.72)),
+                                        const SizedBox(width: 14),
+                                        Icon(Icons.alternate_email_rounded, size: 20, color: _muted.withValues(alpha: 0.72)),
+                                        const Spacer(),
+                                        Container(
+                                          width: 38,
+                                          height: 38,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                color: Color(0x16000000),
+                                                blurRadius: 10,
+                                                offset: Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: const Icon(
+                                            Icons.auto_awesome,
+                                            color: _brandDark,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(height: 14),
-                            TextField(
-                              controller: contentCtrl,
-                              maxLines: 8,
-                              decoration: _editorFieldDecoration(
-                                label: '正文',
-                                hint: '正文（必填）',
-                                fillColor: const Color(0xFFF7F8F6),
-                                accentColor: const Color(0xFF6E766C),
-                                icon: Icons.notes_rounded,
+                            const Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                '标签',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: _ink,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 8),
                             TextField(
                               controller: tagsCtrl,
                               decoration: _editorFieldDecoration(
-                                label: '标签',
                                 hint: '多个标签请用逗号分隔，如 产品, 测试, 文本',
-                                fillColor: const Color(0xFFF6F8FA),
-                                accentColor: const Color(0xFF667085),
-                                icon: Icons.sell_outlined,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -1518,30 +1592,16 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   InputDecoration _editorFieldDecoration({
-    required String label,
     required String hint,
-    required Color fillColor,
-    required Color accentColor,
-    required IconData icon,
   }) {
     return InputDecoration(
-      labelText: label,
       hintText: hint,
-      prefixIcon: Icon(icon, color: accentColor.withValues(alpha: 0.78), size: 20),
-      labelStyle: TextStyle(
-        color: accentColor.withValues(alpha: 0.82),
-        fontWeight: FontWeight.w600,
-      ),
-      floatingLabelStyle: TextStyle(
-        color: accentColor.withValues(alpha: 0.82),
-        fontWeight: FontWeight.w600,
-      ),
       hintStyle: const TextStyle(
         color: Color(0xFF8A949E),
         fontSize: 14,
       ),
       filled: true,
-      fillColor: fillColor,
+      fillColor: const Color(0xFFF6F8FA),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
         borderSide: BorderSide.none,
