@@ -83,6 +83,17 @@ def _ensure_legacy_schema() -> None:
             conversation_cols = _table_columns("conversation")
             if "user_id" not in conversation_cols:
                 conn.exec_driver_sql("ALTER TABLE conversation ADD COLUMN user_id INTEGER")
+            if "note_id" not in conversation_cols:
+                conn.exec_driver_sql("ALTER TABLE conversation ADD COLUMN note_id INTEGER")
+            if "workflow_label" not in conversation_cols:
+                conn.exec_driver_sql("ALTER TABLE conversation ADD COLUMN workflow_label TEXT")
+            if "source_note_ids" not in conversation_cols:
+                conn.exec_driver_sql("ALTER TABLE conversation ADD COLUMN source_note_ids TEXT")
+            if "created_at" not in conversation_cols:
+                conn.exec_driver_sql("ALTER TABLE conversation ADD COLUMN created_at TEXT")
+                conn.exec_driver_sql(
+                    "UPDATE conversation SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"
+                )
 
             message_cols = _table_columns("message")
             if "user_id" not in message_cols:
@@ -135,11 +146,18 @@ class Conversation(SQLModel, table=True):
     title: Optional[str] = None
     status: str = "open"
     user_id: int = Field(foreign_key="user.id")
+    note_id: Optional[int] = Field(default=None, foreign_key="note.id")
+    workflow_label: Optional[str] = None
+    source_note_ids: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class ConversationCreate(SQLModel):
     title: Optional[str] = None
     status: Optional[str] = None
+    note_id: Optional[int] = None
+    workflow_label: Optional[str] = None
+    source_note_ids: List[int] = Field(default_factory=list)
 
 
 class Message(SQLModel, table=True):
@@ -178,6 +196,10 @@ class NoteRead(SQLModel):
     created_at: datetime
     tags: List[str] = Field(default_factory=list)
     attachments: List["NoteAttachmentRead"] = Field(default_factory=list)
+    workspace_conversation_id: Optional[int] = None
+    workspace_status: Optional[str] = None
+    workspace_mode: Optional[str] = None
+    workspace_source_count: int = 0
 
 
 class NoteAttachmentRead(SQLModel):
@@ -194,6 +216,18 @@ class NoteAttachmentCreate(SQLModel):
     file_name: str
     mime_type: Optional[str] = None
     content_base64: str
+
+
+class WorkspaceHistoryItem(SQLModel):
+    conversation_id: int
+    note_id: int
+    note_title: str
+    note_preview: str
+    note_content: str
+    workflow_label: str
+    status: str
+    source_count: int
+    created_at: datetime
 
 
 NoteRead.update_forward_refs(NoteAttachmentRead=NoteAttachmentRead)
@@ -607,7 +641,24 @@ def _get_note_attachments(session: Session, note_id: int, user_id: int) -> List[
     ]
 
 
+def _get_note_workspace(session: Session, note_id: int, user_id: int) -> Optional[Conversation]:
+    return session.exec(
+        select(Conversation)
+        .where(
+            (Conversation.user_id == user_id)
+            & (Conversation.note_id == note_id)
+        )
+        .order_by(Conversation.id.desc())
+    ).first()
+
+
 def _to_note_read(session: Session, note: Note) -> NoteRead:
+    workspace = _get_note_workspace(session, note.id, note.user_id)
+    source_ids = [
+        item.strip()
+        for item in (workspace.source_note_ids or "").split(",")
+        if item.strip()
+    ] if workspace else []
     return NoteRead(
         id=note.id,
         title=note.title,
@@ -616,6 +667,10 @@ def _to_note_read(session: Session, note: Note) -> NoteRead:
         created_at=note.created_at,
         tags=_get_note_tags(session, note.id, note.user_id),
         attachments=_get_note_attachments(session, note.id, note.user_id),
+        workspace_conversation_id=workspace.id if workspace else None,
+        workspace_status=workspace.status if workspace else None,
+        workspace_mode=workspace.workflow_label if workspace else None,
+        workspace_source_count=max(len(source_ids), 1) if workspace else 0,
     )
 
 
@@ -1266,13 +1321,79 @@ def create_conversation(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    if payload.note_id is not None:
+        note = session.get(Note, payload.note_id)
+        if not note or note.user_id != current_user.id:
+            raise HTTPException(status_code=404, detail="note not found")
+        existing = session.exec(
+            select(Conversation)
+            .where(
+                (Conversation.user_id == current_user.id)
+                & (Conversation.note_id == payload.note_id)
+                & (Conversation.status == "open")
+            )
+            .order_by(Conversation.id.desc())
+        ).first()
+        if existing:
+            if payload.title:
+                existing.title = payload.title
+            if payload.workflow_label:
+                existing.workflow_label = payload.workflow_label
+            if payload.source_note_ids:
+                existing.source_note_ids = ",".join(str(i) for i in payload.source_note_ids)
+            session.add(existing)
+            session.commit()
+            session.refresh(existing)
+            return existing
+
     conv = Conversation(
-        title=payload.title, status=payload.status or "open", user_id=current_user.id
+        title=payload.title,
+        status=payload.status or "open",
+        user_id=current_user.id,
+        note_id=payload.note_id,
+        workflow_label=payload.workflow_label,
+        source_note_ids=",".join(str(i) for i in payload.source_note_ids),
     )
     session.add(conv)
     session.commit()
     session.refresh(conv)
     return conv
+
+
+@app.get("/workspace/history", response_model=List[WorkspaceHistoryItem])
+def workspace_history(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    conversations = session.exec(
+        select(Conversation)
+        .where(
+            (Conversation.user_id == current_user.id)
+            & (Conversation.note_id != None)
+        )
+        .order_by(Conversation.id.desc())
+    ).all()
+    items: List[WorkspaceHistoryItem] = []
+    for conv in conversations:
+        note = session.get(Note, conv.note_id)
+        if not note or note.user_id != current_user.id:
+            continue
+        source_ids = [item.strip() for item in (conv.source_note_ids or "").split(",") if item.strip()]
+        preview = (note.content or "").strip().replace("\n", " ")
+        items.append(
+            WorkspaceHistoryItem(
+                conversation_id=conv.id,
+                note_id=note.id,
+                note_title=note.title or "未命名草稿",
+                note_preview=preview[:120],
+                note_content=note.content,
+                workflow_label=conv.workflow_label or "通用灵感",
+                status=conv.status,
+                source_count=max(len(source_ids), 1),
+                created_at=note.created_at,
+            )
+        )
+    return items
 
 
 @app.post("/conversations/{cid}/message")

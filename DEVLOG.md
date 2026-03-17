@@ -235,6 +235,10 @@
     - widened and realigned the long-note editor so attachment actions sit on the same visual grid as the form,
     - replaced the heavy static workspace block with a floating workspace launcher,
     - upgraded the workspace launcher into a mode-and-source selector that supports single-note entry and multi-note merge drafts.
+  - Closed the workspace-resume loop:
+    - conversations are now bound to note drafts and workflow mode,
+    - `今日回顾` items with an open workspace now reopen the same in-progress context,
+    - added a `历史灵感` entry inside the workspace so unfinished drafts can be resumed later.
 
 ### Verification
 - Ran: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .\.venv\Scripts\python.exe -m pytest backend\tests -q`

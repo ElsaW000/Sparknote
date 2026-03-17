@@ -282,7 +282,20 @@ class _NotesPageState extends State<NotesPage> {
       if (!mounted) return;
       if (resp.statusCode == 200) {
         final note = json.decode(_decodeResponse(resp)) as Map<String, dynamic>;
-        await _openNoteEditor(note: note);
+        final workspaceCid = note['workspace_conversation_id'] as int?;
+        final workspaceStatus = (note['workspace_status'] ?? '').toString();
+        if (workspaceCid != null && workspaceStatus == 'open') {
+          _openWorkspaceForNote(
+            note,
+            workflowLabel: _text(note['workspace_mode']).isEmpty
+                ? '通用灵感'
+                : _text(note['workspace_mode']),
+            sourceNoteCount: note['workspace_source_count'] as int? ?? 1,
+            conversationId: workspaceCid,
+          );
+        } else {
+          await _openNoteEditor(note: note);
+        }
         return;
       }
     } catch (_) {}
@@ -545,7 +558,12 @@ class _NotesPageState extends State<NotesPage> {
     Map<String, dynamic> note, {
     String workflowLabel = '通用灵感',
     int sourceNoteCount = 1,
+    int? conversationId,
   }) {
+    final derivedConversationId =
+        conversationId ?? ((note['workspace_status'] ?? '').toString() == 'open'
+            ? note['workspace_conversation_id'] as int?
+            : null);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -553,8 +571,11 @@ class _NotesPageState extends State<NotesPage> {
           noteId: note['id'] as int? ?? 0,
           noteTitle: _text(note['title'] ?? ''),
           noteContent: _text(note['content'] ?? ''),
-          workflowLabel: workflowLabel,
-          sourceNoteCount: sourceNoteCount,
+          workflowLabel: _text(note['workspace_mode']).isNotEmpty
+              ? _text(note['workspace_mode'])
+              : workflowLabel,
+          sourceNoteCount: note['workspace_source_count'] as int? ?? sourceNoteCount,
+          conversationId: derivedConversationId,
         ),
       ),
     );
@@ -1639,14 +1660,38 @@ class _NotesPageState extends State<NotesPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        item is Map<String, dynamic> ? _displayTitle(item) : '未命名灵感',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: _ink,
-                        ),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            item is Map<String, dynamic> ? _displayTitle(item) : '未命名灵感',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: _ink,
+                            ),
+                          ),
+                          if (item is Map<String, dynamic> &&
+                              (item['workspace_status'] ?? '').toString() == 'open')
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE7F5EC),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: const Text(
+                                '进行中',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: _brand,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -2311,120 +2356,172 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   Widget _buildRightPanel({required double width}) {
+    final compactRail = width < 340;
+    final outerPadding = compactRail ? 14.0 : 18.0;
+    final cardPadding = compactRail ? 16.0 : 18.0;
+
     return Container(
       width: width,
       color: _panel,
       child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSearchUtilityCard(),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: _line),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(outerPadding, 20, outerPadding, 116),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSearchUtilityCard(),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: EdgeInsets.fromLTRB(cardPadding, cardPadding, cardPadding, cardPadding + 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: _line),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         const Text(
                           '记录热力图',
-                          style: TextStyle(
-                        fontSize: _sectionTitleSize,
-                        fontWeight: FontWeight.w700,
-                        color: _ink,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '近 35 天的记录强度，越深表示当天沉淀越多。',
-                      style: TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
-                    ),
-                    if (_selectedDate != null) ...[
-                      const SizedBox(height: 10),
-                      InkWell(
-                        onTap: () => setState(() => _selectedDate = null),
-                        child: Text(
-                          '当前筛选：$_selectedDate · 点击清除',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: _brand,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-                    _buildHeatmapSection(),
-                    const SizedBox(height: 12),
-                    const Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _HeatmapLegendDot(color: Color(0xFFD9D9D9), label: '0'),
-                        _HeatmapLegendDot(color: Color(0xFF95D5B2), label: '低'),
-                        _HeatmapLegendDot(color: Color(0xFF40916C), label: '中'),
-                        _HeatmapLegendDot(color: Color(0xFF2D6A4F), label: '高'),
-                        _HeatmapLegendDot(color: Color(0xFF1B4332), label: '峰值'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: _line),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.auto_awesome, color: _brandDark, size: 18),
-                        SizedBox(width: 8),
-                        Text(
-                          '今日回顾',
                           style: TextStyle(
                             fontSize: _sectionTitleSize,
                             fontWeight: FontWeight.w700,
                             color: _ink,
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '近 35 天的记录强度，越深表示当天沉淀越多。',
+                          style: TextStyle(
+                            fontSize: _bodySize,
+                            color: Color(0xFF666666),
+                            height: _bodyHeight,
+                          ),
+                        ),
+                        if (_selectedDate != null) ...[
+                          const SizedBox(height: 10),
+                          InkWell(
+                            onTap: () => setState(() => _selectedDate = null),
+                            child: Text(
+                              '当前筛选：$_selectedDate · 点击清除',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: _brand,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 20),
+                        _buildHeatmapSection(),
+                        const SizedBox(height: 12),
+                        const Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _HeatmapLegendDot(color: Color(0xFFD9D9D9), label: '0'),
+                            _HeatmapLegendDot(color: Color(0xFF95D5B2), label: '低'),
+                            _HeatmapLegendDot(color: Color(0xFF40916C), label: '中'),
+                            _HeatmapLegendDot(color: Color(0xFF2D6A4F), label: '高'),
+                            _HeatmapLegendDot(color: Color(0xFF1B4332), label: '峰值'),
+                          ],
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      margin: const EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                        color: _brand.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        _dailyReviewSummary(),
-                        style: const TextStyle(
-                          fontSize: _bodySize,
-                          color: _ink,
-                          height: _bodyHeight,
-                        ),
-                      ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: EdgeInsets.all(cardPadding),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: _line),
                     ),
-                    _buildDailyReviewSection(),
-                  ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.auto_awesome, color: _brandDark, size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              '今日回顾',
+                              style: TextStyle(
+                                fontSize: _sectionTitleSize,
+                                fontWeight: FontWeight.w700,
+                                color: _ink,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: _brand.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            _dailyReviewSummary(),
+                            style: const TextStyle(
+                              fontSize: _bodySize,
+                              color: _ink,
+                              height: _bodyHeight,
+                            ),
+                          ),
+                        ),
+                        _buildDailyReviewSection(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              right: outerPadding,
+              bottom: 18,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _openWorkspaceLauncher,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: _brandDark,
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x221A3C34),
+                          blurRadius: 18,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                        SizedBox(width: 10),
+                        Text(
+                          '灵感工作台',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -2621,65 +2718,6 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
-  Widget _buildWorkspaceFab({required bool isDesktop}) {
-    final fab = Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: _openWorkspaceLauncher,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          decoration: BoxDecoration(
-            color: _brandDark,
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x221A3C34),
-                blurRadius: 18,
-                offset: Offset(0, 10),
-              ),
-            ],
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.auto_awesome, color: Colors.white, size: 18),
-              SizedBox(width: 10),
-              Text(
-                '灵感工作台',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (isDesktop) {
-      return Positioned(
-        right: _rightPanelWidth + 28,
-        bottom: 136,
-        child: SafeArea(
-          minimum: const EdgeInsets.only(bottom: 20),
-          child: fab,
-        ),
-      );
-    }
-
-    return Positioned(
-      right: 18,
-      bottom: 124,
-      child: SafeArea(
-        minimum: const EdgeInsets.only(bottom: 10),
-        child: fab,
-      ),
-    );
-  }
-
   Widget _buildDesktopLayout() {
     return Scaffold(
       backgroundColor: _paper,
@@ -2696,7 +2734,7 @@ class _NotesPageState extends State<NotesPage> {
                   onHorizontalDragUpdate: (details) {
                     setState(() {
                       _rightPanelWidth =
-                          (_rightPanelWidth - details.delta.dx).clamp(356.0, 520.0);
+                          (_rightPanelWidth - details.delta.dx).clamp(300.0, 520.0);
                     });
                   },
                   child: Container(
@@ -2718,7 +2756,6 @@ class _NotesPageState extends State<NotesPage> {
             ],
           ),
           _buildQuickComposer(isDesktop: true),
-          _buildWorkspaceFab(isDesktop: true),
         ],
       ),
     );
@@ -2876,7 +2913,6 @@ class _NotesPageState extends State<NotesPage> {
             ],
           ),
           _buildQuickComposer(isDesktop: false),
-          _buildWorkspaceFab(isDesktop: false),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(

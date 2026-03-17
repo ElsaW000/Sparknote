@@ -16,6 +16,7 @@ class AIWorkspacePage extends StatefulWidget {
   final String noteContent;
   final String workflowLabel;
   final int sourceNoteCount;
+  final int? conversationId;
 
   const AIWorkspacePage({
     super.key,
@@ -24,6 +25,7 @@ class AIWorkspacePage extends StatefulWidget {
     required this.noteContent,
     this.workflowLabel = '通用灵感',
     this.sourceNoteCount = 1,
+    this.conversationId,
   });
 
   @override
@@ -64,6 +66,8 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
   String? _workspaceError;
   String? _statusNote;
   _WorkspaceLayoutMode _layoutMode = _WorkspaceLayoutMode.editorFocus;
+
+  List<dynamic> _workspaceHistory = [];
 
   @override
   void initState() {
@@ -294,32 +298,42 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
         return;
       }
 
-      final r = await http.post(
-        Uri.parse('$backendUrl/conversations'),
-        headers: headers,
-        body: json.encode({
-          'title': widget.noteTitle.trim().isEmpty ? '灵感工作台会话' : widget.noteTitle,
-        }),
-      );
-      if (!mounted) return;
+      if (widget.conversationId != null) {
+        _conversationId = widget.conversationId;
+      } else {
+        final r = await http.post(
+          Uri.parse('$backendUrl/conversations'),
+          headers: headers,
+          body: json.encode({
+            'title': widget.noteTitle.trim().isEmpty ? '灵感工作台会话' : widget.noteTitle,
+            'note_id': widget.noteId,
+            'workflow_label': widget.workflowLabel,
+            'source_note_ids': List.generate(widget.sourceNoteCount, (_) => widget.noteId),
+          }),
+        );
+        if (!mounted) return;
 
-      if (r.statusCode != 200) {
-        setState(() {
-          _workspaceError = '创建 AI 会话失败：${r.statusCode}';
-          _initializing = false;
-        });
-        return;
+        if (r.statusCode != 200) {
+          setState(() {
+            _workspaceError = '创建 AI 会话失败：${r.statusCode}';
+            _initializing = false;
+          });
+          return;
+        }
+
+        final data = json.decode(_decodeResponse(r)) as Map<String, dynamic>;
+        _conversationId = data['id'] as int?;
       }
-
-      final data = json.decode(_decodeResponse(r)) as Map<String, dynamic>;
-      _conversationId = data['id'] as int?;
       await _fetchAttachments();
       _startPolling();
       await _fetchMessages();
+      await _fetchWorkspaceHistory();
       if (!mounted) return;
       setState(() {
         _initializing = false;
-        _statusNote = '灵感工作台已连接到真实后端会话。';
+        _statusNote = widget.conversationId == null
+            ? '灵感工作台已连接到真实后端会话。'
+            : '已恢复上次的灵感工作台上下文。';
       });
     } catch (e) {
       if (!mounted) return;
@@ -363,6 +377,192 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
         }
       }
     } catch (_) {}
+  }
+
+  Future<void> _fetchWorkspaceHistory() async {
+    try {
+      final headers = await _authHeaders();
+      if (headers == null) return;
+      final r = await http.get(
+        Uri.parse('$backendUrl/workspace/history'),
+        headers: headers,
+      );
+      if (!mounted) return;
+      if (r.statusCode == 200) {
+        setState(() => _workspaceHistory = json.decode(_decodeResponse(r)) as List<dynamic>);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _openWorkspaceHistory() async {
+    await _fetchWorkspaceHistory();
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760, maxHeight: 640),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '历史灵感',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _ink),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '可继续编辑未完成草稿，或重新打开之前的灵感工作台上下文。',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF60716F), height: 1.6),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: _workspaceHistory.isEmpty
+                      ? const Center(
+                          child: Text('还没有历史灵感草稿。', style: TextStyle(color: Color(0xFF60716F))),
+                        )
+                      : ListView.separated(
+                          itemCount: _workspaceHistory.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (_, index) {
+                            final item = _workspaceHistory[index] as Map<String, dynamic>;
+                            final inProgress = (item['status'] ?? '').toString() == 'open';
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: _line),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 54,
+                                    padding: const EdgeInsets.symmetric(vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: _brand.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          _text(item['created_at']).length >= 10
+                                              ? _text(item['created_at']).substring(5, 10)
+                                              : '--',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: _brandDark,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          crossAxisAlignment: WrapCrossAlignment.center,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                              decoration: BoxDecoration(
+                                                color: _brand.withValues(alpha: 0.10),
+                                                borderRadius: BorderRadius.circular(999),
+                                              ),
+                                              child: Text(
+                                                _text(item['workflow_label']).isEmpty
+                                                    ? '通用灵感'
+                                                    : _text(item['workflow_label']),
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: _brandDark,
+                                                ),
+                                              ),
+                                            ),
+                                            if (inProgress)
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFE7F5EC),
+                                                  borderRadius: BorderRadius.circular(999),
+                                                ),
+                                                child: const Text(
+                                                  '进行中',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: _brand,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          _text(item['note_title']).isEmpty ? '未命名草稿' : _text(item['note_title']),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            color: _ink,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          '联合笔记：${item['source_count'] ?? 1} 条',
+                                          style: const TextStyle(fontSize: 12, color: Color(0xFF60716F)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    children: [
+                                      OutlinedButton(
+                                        onPressed: () {
+                                          Navigator.pop(ctx);
+                                          Navigator.of(context).pushReplacement(
+                                            MaterialPageRoute(
+                                              builder: (_) => AIWorkspacePage(
+                                                noteId: item['note_id'] as int? ?? widget.noteId,
+                                                noteTitle: _text(item['note_title']),
+                                                noteContent: _text(item['note_content']),
+                                                workflowLabel: _text(item['workflow_label']).isEmpty
+                                                    ? '通用灵感'
+                                                    : _text(item['workflow_label']),
+                                                sourceNoteCount: item['source_count'] as int? ?? 1,
+                                                conversationId: item['conversation_id'] as int?,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: const Text('继续编辑'),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _sendMessage({String? preset}) async {
@@ -563,6 +763,12 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                 ),
               ],
             ),
+          ),
+          const SizedBox(width: 12),
+          OutlinedButton.icon(
+            onPressed: _openWorkspaceHistory,
+            icon: const Icon(Icons.history, size: 18),
+            label: const Text('历史灵感'),
           ),
           SegmentedButton<_WorkspaceLayoutMode>(
             segments: const [
@@ -1015,8 +1221,10 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
     return Container(
       width: width,
       decoration: BoxDecoration(
-        color: _panel.withValues(alpha: 0.30),
-        border: Border(left: BorderSide(color: Colors.grey.shade300)),
+        color: const Color(0xFFF4F7F4),
+        border: Border(
+          left: BorderSide(color: _brand.withValues(alpha: 0.24)),
+        ),
       ),
       child: Column(
         children: [
@@ -1190,6 +1398,11 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
         ),
         title: const Text('灵感工作台'),
         actions: [
+          IconButton(
+            onPressed: _openWorkspaceHistory,
+            icon: const Icon(Icons.history),
+            tooltip: '历史灵感',
+          ),
           PopupMenuButton<_WorkspaceLayoutMode>(
             tooltip: '版面布局',
             onSelected: (mode) => setState(() => _layoutMode = mode),
