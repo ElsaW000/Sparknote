@@ -1942,6 +1942,11 @@ class _NotesPageState extends State<NotesPage> {
         .map((e) => e.toString())
         .toList();
     final visibleTags = tags.take(2).toList();
+    final compactActionHeight = compact ? 38.0 : 42.0;
+    final compactIconSize = compact ? 16.0 : 17.0;
+    final compactActionPadding = compact
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 0)
+        : const EdgeInsets.symmetric(horizontal: 14, vertical: 0);
 
     return Container(
       margin: EdgeInsets.only(bottom: compact ? 22 : 28),
@@ -2053,24 +2058,43 @@ class _NotesPageState extends State<NotesPage> {
                     );
                   }),
                 OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size(0, compactActionHeight),
+                    padding: compactActionPadding,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    visualDensity: const VisualDensity(horizontal: -1, vertical: -2),
+                  ),
                   onPressed: () => _openNoteEditor(note: note),
-                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  icon: Icon(Icons.edit_outlined, size: compactIconSize),
                   label: const Text('\u7f16\u8f91'),
                 ),
                 FilledButton.icon(
                   style: FilledButton.styleFrom(
                     backgroundColor: _brand,
                     foregroundColor: Colors.white,
+                    minimumSize: Size(0, compactActionHeight),
+                    padding: compactActionPadding,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    visualDensity: const VisualDensity(horizontal: -1, vertical: -2),
                   ),
                   onPressed: () {
                     _openWorkspaceForNote(note);
                   },
-                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  icon: Icon(Icons.auto_awesome, size: compactIconSize),
                   label: const Text('灵感工作台'),
                 ),
                 IconButton.filledTonal(
+                  style: IconButton.styleFrom(
+                    minimumSize: Size(compactActionHeight, compactActionHeight),
+                    padding: EdgeInsets.zero,
+                    visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+                  ),
                   onPressed: () => _deleteNote(note['id'] as int),
-                  icon: const Icon(Icons.delete_outline),
+                  icon: Icon(Icons.delete_outline, size: compactIconSize + 1),
                   tooltip: '删除',
                 ),
               ],
@@ -2103,8 +2127,16 @@ class _NotesPageState extends State<NotesPage> {
                 ),
                 const SizedBox(width: 12),
                 OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: Size(0, compactActionHeight),
+                    padding: compactActionPadding,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    visualDensity: const VisualDensity(horizontal: -1, vertical: -2),
+                  ),
                   onPressed: () => _openNoteEditor(note: note),
-                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  icon: Icon(Icons.edit_outlined, size: compactIconSize),
                   label: const Text('\u7f16\u8f91'),
                 ),
                 const SizedBox(width: 8),
@@ -2112,17 +2144,28 @@ class _NotesPageState extends State<NotesPage> {
                   style: FilledButton.styleFrom(
                     backgroundColor: _brand,
                     foregroundColor: Colors.white,
+                    minimumSize: Size(0, compactActionHeight),
+                    padding: compactActionPadding,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    visualDensity: const VisualDensity(horizontal: -1, vertical: -2),
                   ),
                   onPressed: () {
                     _openWorkspaceForNote(note);
                   },
-                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  icon: Icon(Icons.auto_awesome, size: compactIconSize),
                   label: const Text('灵感工作台'),
                 ),
                 const SizedBox(width: 8),
                 IconButton.filledTonal(
+                  style: IconButton.styleFrom(
+                    minimumSize: Size(compactActionHeight, compactActionHeight),
+                    padding: EdgeInsets.zero,
+                    visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+                  ),
                   onPressed: () => _deleteNote(note['id'] as int),
-                  icon: const Icon(Icons.delete_outline),
+                  icon: Icon(Icons.delete_outline, size: compactIconSize + 1),
                   tooltip: '删除',
                 ),
               ],

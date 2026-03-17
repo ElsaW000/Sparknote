@@ -365,3 +365,18 @@
 - Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
 - Verified local health endpoint again:
   - `GET /health -> {"status":"ok"}`
+
+## 2026-03-17 - Homepage Action Button Compression
+
+### What changed
+- Reduced the visual weight of homepage note-card actions:
+  - smaller button heights,
+  - tighter horizontal padding,
+  - smaller icons,
+  - slightly tighter rounded corners.
+- Applied the same lighter sizing to `编辑 / 灵感工作台 / 删除` so the action row no longer dominates each card.
+
+### Verification
+- Rebuilt frontend: `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+- Verified local health endpoint again:
+  - `GET /health -> {"status":"ok"}`
