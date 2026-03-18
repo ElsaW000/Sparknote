@@ -542,3 +542,7 @@
 ### Verification
 - Code changes reviewed locally.
 - Attempted local tool verification, but both `dart format` / `dart analyze` and broader Flutter analysis timed out in the current environment before returning a result.
+
+### Next focus
+- The next delivery step is not another feature expansion round.
+- Priority should shift to a full manual desktop regression pass, issue collection, and MVP stability cleanup before starting streaming AI, realtime recording, or deeper integrations.
