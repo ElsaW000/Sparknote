@@ -514,3 +514,31 @@
 ### Verification
 - Rebuilt the tested web bundle:
   - `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+
+## 2026-03-17 - Full Editor Column Scroll Fix
+
+### What changed
+- Changed the center workspace area from local text-box scrolling to full editor-column scrolling.
+- Reduced the workspace title size so the header no longer crowds out the visible writing area.
+- The main writing area now behaves more like a real document surface: header, helper blocks, and body move together in one scroll flow.
+
+### Verification
+- Rebuilt the tested web bundle:
+  - `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000`
+
+## 2026-03-18 - Workspace Editor Canvas Follow-up
+
+### What changed
+- Continued the workspace editor convergence after the first full-column scroll pass.
+- Reworked the center editing area into a more stable document-style canvas:
+  - writing mode now keeps a narrower long-form reading width,
+  - product/general modes use a bounded centered canvas,
+  - video mode keeps the script-plus-visual-guidance split while aligning the main draft area to the same canvas system.
+- Added auto-follow behavior after workspace insert actions:
+  - inserting an AI reply into the draft now refocuses the editor and scrolls the editor column toward the new content,
+  - inserting left-rail structure nodes now also nudges the editor viewport so the appended section is visible.
+- Kept the outer editor column as the single scroll surface so title, helper copy, product portrait, and main draft continue moving together.
+
+### Verification
+- Code changes reviewed locally.
+- Attempted local tool verification, but both `dart format` / `dart analyze` and broader Flutter analysis timed out in the current environment before returning a result.

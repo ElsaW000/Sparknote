@@ -244,6 +244,17 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
     }
   }
 
+  void _scrollEditorToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_editorScrollCtrl.hasClients) return;
+      _editorScrollCtrl.animateTo(
+        _editorScrollCtrl.position.maxScrollExtent + 120,
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
   void _insertStructureNode(String node) {
     if (_isProductMode && node == '用户场景') {
       _productPortraitFocusNode.requestFocus();
@@ -255,6 +266,7 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
     if (!current.contains(sectionTitle)) {
       _contentCtrl.text = current.isEmpty ? '$sectionTitle\n' : '$current\n\n$sectionTitle\n';
       _contentCtrl.selection = TextSelection.collapsed(offset: _contentCtrl.text.length);
+      _scrollEditorToBottom();
     }
   }
 
@@ -874,6 +886,8 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
       );
       _statusNote = '已将 AI 内容插入编辑区。';
     });
+    _focusMainEditor();
+    _scrollEditorToBottom();
   }
 
   void _backToNotes() {
@@ -1344,86 +1358,115 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
 
   Widget _buildEditorPanel() {
     final title = _text(widget.noteTitle).trim().isEmpty ? '未命名草稿' : _text(widget.noteTitle).trim();
-    final editor = TextField(
-      controller: _contentCtrl,
-      focusNode: _editorFocusNode,
-      scrollController: _editorScrollCtrl,
-      maxLines: null,
-      expands: true,
-      decoration: const InputDecoration(
-        border: InputBorder.none,
-        hintText: '在这里整理你的草稿、章节、结构和 AI 插入内容...',
+    final maxContentWidth = _isWritingMode ? 760.0 : _isVideoMode ? 1080.0 : 920.0;
+    final editorCanvas = Container(
+      width: double.infinity,
+      constraints: BoxConstraints(minHeight: _isWritingMode ? 640 : 560),
+      padding: EdgeInsets.fromLTRB(_isWritingMode ? 8 : 26, 20, _isWritingMode ? 8 : 26, 32),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFBFCFA),
+        borderRadius: BorderRadius.circular(_isWritingMode ? 0 : 28),
+        border: Border.all(color: _line.withValues(alpha: _isWritingMode ? 0.0 : 0.85)),
+        boxShadow: _isWritingMode
+            ? const []
+            : const [
+                BoxShadow(
+                  color: Color(0x140B1F17),
+                  blurRadius: 24,
+                  offset: Offset(0, 10),
+                ),
+              ],
       ),
-      style: const TextStyle(
-        fontFamily: 'Georgia',
-        fontSize: 17,
-        height: 1.85,
-        color: _ink,
+      child: TextField(
+        controller: _contentCtrl,
+        focusNode: _editorFocusNode,
+        minLines: _isWritingMode ? 22 : 18,
+        maxLines: null,
+        keyboardType: TextInputType.multiline,
+        textAlignVertical: TextAlignVertical.top,
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          hintText: '在这里整理你的草稿、章节、结构和 AI 插入内容...',
+        ),
+        style: const TextStyle(
+          fontFamily: 'Georgia',
+          fontSize: 17,
+          height: 1.85,
+          color: _ink,
+        ),
       ),
     );
 
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(36, 28, 36, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _brand.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              _resolvedWorkflowLabel,
-              style: const TextStyle(
-                fontSize: 11,
-                color: _brandDark,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final headerAndBody = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _brand.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  _resolvedWorkflowLabel,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: _brandDark,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 22),
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-              fontFamily: 'Georgia',
-              fontWeight: FontWeight.w700,
-              color: _ink,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            _isProductMode
-                ? '中间区域聚焦产品草稿，右侧负责问题分析、PRD 拆解和方案补全。'
-                : _isWritingMode
-                    ? '正文区切到更沉浸的长文模式，右侧负责润色、换词和章节建议。'
-                    : _isVideoMode
-                        ? '中间区域按文案与画面思路并排整理，右侧负责分镜、节奏与 BGM 建议。'
-                        : '中间区域保持沉浸式编辑体验，AI 建议从右侧进入，再由你决定是否纳入正文。',
-            style: TextStyle(fontSize: 13, color: Color(0xFF60716F), height: 1.6),
-          ),
-          const SizedBox(height: 26),
-          Expanded(
-            child: _isWritingMode
-                ? Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 720),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(height: 1, color: _line.withValues(alpha: 0.75)),
-                          const SizedBox(height: 24),
-                          Expanded(child: editor),
-                        ],
-                      ),
+              const SizedBox(height: 18),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: 'Georgia',
+                  fontSize: 30,
+                  fontWeight: FontWeight.w700,
+                  color: _ink,
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                _isProductMode
+                    ? '中间区域聚焦产品草稿，右侧负责问题分析、PRD 拆解和方案补全。'
+                    : _isWritingMode
+                        ? '正文区切到更沉浸的长文模式，右侧负责润色、换词和章节建议。'
+                        : _isVideoMode
+                            ? '中间区域按文案与画面思路并排整理，右侧负责分镜、节奏与 BGM 建议。'
+                            : '中间区域保持沉浸式编辑体验，AI 建议从右侧进入，再由你决定是否纳入正文。',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF60716F), height: 1.6),
+              ),
+              const SizedBox(height: 24),
+              if (_isWritingMode)
+                Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxContentWidth),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(height: 1, color: _line.withValues(alpha: 0.75)),
+                        const SizedBox(height: 24),
+                        editorCanvas,
+                      ],
                     ),
-                  )
-                : _isVideoMode
-                    ? Row(
+                  ),
+                )
+              else if (_isVideoMode)
+                Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxContentWidth),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             flex: 3,
@@ -1432,7 +1475,7 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                               children: [
                                 Container(height: 1, color: _line.withValues(alpha: 0.75)),
                                 const SizedBox(height: 20),
-                                Expanded(child: editor),
+                                editorCanvas,
                               ],
                             ),
                           ),
@@ -1466,78 +1509,92 @@ class _AIWorkspacePageState extends State<AIWorkspacePage> {
                             ),
                           ),
                         ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_isProductMode) ...[
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _productPortraitTags
-                                  .map((tag) => _HistoryTag(label: tag))
-                                  .toList(),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxContentWidth),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_isProductMode) ...[
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _productPortraitTags.map((tag) => _HistoryTag(label: tag)).toList(),
+                          ),
+                          const SizedBox(height: 18),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FBF8),
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                            const SizedBox(height: 18),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF8FBF8),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    '产品画像',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: _ink,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  TextField(
-                                    controller: _productPortraitCtrl,
-                                    focusNode: _productPortraitFocusNode,
-                                    maxLines: 3,
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
-                                      hintText: '这里可以继续补充目标用户、使用场景、核心价值和成功指标。',
-                                      hintStyle: TextStyle(
-                                        fontSize: 13,
-                                        height: 1.6,
-                                        color: Color(0xFF60716F),
-                                      ),
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.zero,
-                                    ),
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      height: 1.6,
-                                      color: _ink,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-                          ],
-                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(height: 1, color: _line.withValues(alpha: 0.75)),
-                                const SizedBox(height: 20),
-                                Expanded(child: editor),
+                                const Text(
+                                  '产品画像',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: _ink,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: _productPortraitCtrl,
+                                  focusNode: _productPortraitFocusNode,
+                                  maxLines: 3,
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: '这里可以继续补充目标用户、使用场景、核心价值和成功指标。',
+                                    hintStyle: TextStyle(
+                                      fontSize: 13,
+                                      height: 1.6,
+                                      color: Color(0xFF60716F),
+                                    ),
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    height: 1.6,
+                                    color: _ink,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
+                          const SizedBox(height: 18),
                         ],
-                      ),
-          ),
-        ],
+                        Container(height: 1, color: _line.withValues(alpha: 0.75)),
+                        const SizedBox(height: 20),
+                        editorCanvas,
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          );
+
+          return Scrollbar(
+            controller: _editorScrollCtrl,
+            thumbVisibility: true,
+            child: SingleChildScrollView(
+              controller: _editorScrollCtrl,
+              padding: const EdgeInsets.fromLTRB(36, 28, 36, 32),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight - 60),
+                child: headerAndBody,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
