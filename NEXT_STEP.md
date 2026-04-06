@@ -1,7 +1,7 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：手动回归测试 pending 已超 20 天，当前无代码层面阻塞
+- 当前步骤：手动回归测试 pending 已超 21 天，当前无代码层面阻塞
 
 ## 下一步任务
 - 执行桌面端完整用户流程的手动回归测试（Login → Notes → Workspace → AI对话）
@@ -15,5 +15,5 @@
   4. 记录发现的问题到 `memory/2026-04-07.md` 和 DEVLOG
 
 ## 人工测试
-- 桌面端完整用户流程（Login → Notes → Workspace → AI对话）：pending（~20+ 天）
+- 桌面端完整用户流程（Login → Notes → Workspace → AI对话）：pending（~21+ 天）
 - 功能已完成，等待人工测试/体验，不自动推进新功能
