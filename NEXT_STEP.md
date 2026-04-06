@@ -1,29 +1,19 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：方向不明确 — 手动回归测试 pending 超过 19 天，新增 PRD 文档未同步
+- 当前步骤：手动回归测试 pending 已超 20 天，当前无代码层面阻塞
 
 ## 下一步任务
-- 当前任务不明确，需要人工指定下一步方向
-- 建议选项：
-  - **选项A**：执行手动回归测试（Login → Notes → Workspace → AI对话完整流程）
-  - **选项B**：同步新 PRD 文档（03-new-positioning.md, 06-agent-customization.md, 07-agent-design.md）与代码
-  - **选项C**：确认"个人AI Agent"功能的落地优先级和实现范围
+- 执行桌面端完整用户流程的手动回归测试（Login → Notes → Workspace → AI对话）
 
 ## 阻塞点与补救
-- 阻塞点：
-  - 手动回归测试 pending 已 19 天以上
-  - 新增 PRD 文档未与代码状态同步
-  - 02-product-prd.md 新增"个人AI Agent"概念，需要确认实现计划
+- 阻塞点：无技术阻塞，手动回归测试长期 pending（上次执行约 3 月中旬）
 - 补救动作：
-  - 等待 Jie 明确指示下一步方向后，再执行对应的任务
+  1. 确认后端运行：`powershell -NoProfile -ExecutionPolicy Bypass -File run_sparknote_background.ps1`
+  2. 浏览器访问 `http://127.0.0.1:8000` 或 `http://localhost:8000`
+  3. 完整流程测试：注册/登录 → 创建笔记 → 进入灵感工作台 → AI对话
+  4. 记录发现的问题到 `memory/2026-04-07.md` 和 DEVLOG
 
 ## 人工测试
-- 待执行：桌面端完整用户流程（Login → Notes → Workspace → AI对话）
-- 状态：pending（已超过 19 天）
-
-## 最近变更（截至本次检查）
-- Git 状态（本地未提交）：
-  - modified: NEXT_STEP.md, PRD/02-product-prd.md
-  - untracked 新增: PRD/03-new-positioning.md, PRD/06-agent-customization.md, PRD/07-agent-design.md, PRD/brainstorm/, marketing/, uploads/
-- 本次检查时间：2026-04-06 19:18
+- 桌面端完整用户流程（Login → Notes → Workspace → AI对话）：pending（~20+ 天）
+- 功能已完成，等待人工测试/体验，不自动推进新功能
