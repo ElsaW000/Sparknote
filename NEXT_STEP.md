@@ -1,36 +1,29 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：功能开发已完成，基础测试通过，当前处于手动 QA 等待阶段（自 2026-03-18 起已持续 25+ 天）
+- 当前步骤：MVP 功能开发已完成，等待人工测试验证
 
 ## 下一步任务
-- 等待人工测试/体验，不自动推进新功能
+- 功能已完成，等待人工测试/体验，不自动推进新功能
 
 ## 阻塞点与补救
-- 阻塞点：需要人工执行端到端 UI 测试
+- 阻塞点：无技术阻塞，功能待人工验证
 - 补救动作：
-  - 已完成后端 pytest（17 passed）
-  - 已完成 Flutter build web 构建
-  - 需要人工在桌面浏览器中验证：
-    1. 登录/注册流程（包含身份定位选择）
-    2. 笔记列表（灵感流）访问
-    3. 灵感工作台对话
-    4. 标签颜色映射（小说-蓝、产品-绿、内容-橙）
-    5. 搜索笔记功能
-    6. 附件上传功能
-    7. 音频转写功能
-    8. Notion 配置与同步
+  1. 如果 Jie 有时间 → 手动测试完整流程（register -> login -> notes CRUD -> workspace conversation）
+  2. 如果需要继续开发 → 明确告知具体任务方向（如修复 bug / 添加新功能 / 做回归测试）
 
 ## 人工测试
-- 已完成后端测试：pytest 17 passed
+- 已完成后端测试：18 passed
 - 已完成前端构建：flutter build web 成功
 - 等待人工测试：桌面端完整流程
 
-## 最近代码改动（2026-04-12 02:20）
-- git status 显示：无核心代码变更（backend/ 和 mobile/ 目录无改动）
-- 最近 git 提交：2026-04-10（cron update NEXT_STEP）
-- 项目处于等待人工测试/QA 状态已超过 3 周
-- 结论：功能已完成，等待人工指定下一步方向
+## 最近代码改动（2026-04-13 15:12）
+- Git status: 无新改动，最后提交仍为 2026-04-12 02:20 UTC
+- 最近 10 分钟内无代码变更
+- 项目仍停留在 2026-03-18 的最后开发状态
+
+## 上次 DEVLOG 指引（2026-03-18）
+- "Priority should shift to a full manual desktop regression pass, issue collection, and MVP stability cleanup before starting streaming AI, realtime recording, or deeper integrations."
 
 ------
-*Last review: 2026-04-12 02:20 - 状态不变，功能已完成，等待人工测试*
+*Last review: 2026-04-13 15:12 - 功能已完成，等待人工测试，不自动推进新功能*
