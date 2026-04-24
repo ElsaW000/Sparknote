@@ -1,29 +1,25 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：MVP 功能开发已完成，等待人工测试验证
+- 当前步骤：人工桌面端回归测试未启动（自3月18日进入此阶段，已约37天）
 
 ## 下一步任务
-- 功能已完成，等待人工测试/体验，不自动推进新功能
+- 执行人工桌面端回归测试，或明确下一步方向
 
 ## 阻塞点与补救
-- 阻塞点：无技术阻塞，功能待人工验证
+- 阻塞点：人工回归测试长期未执行；同时存在新的产品定位文档（03-new-positioning.md）待评估是否要基于新方向重构
 - 补救动作：
-  1. 如果 Jie 有时间 → 手动测试完整流程（register -> login -> notes CRUD -> workspace conversation）
-  2. 如果需要继续开发 → 明确告知具体任务方向（如修复 bug / 添加新功能 / 做回归测试）
+  1. **短期**：启动本地后端 + Flutter web build，人工验证现有MVP流程是否正常
+  2. **中期**：Jie 确认是基于现有MVP继续迭代，还是基于 03-new-positioning.md 的新定位重新规划
 
 ## 人工测试
-- 已完成后端测试：18 passed
-- 已完成前端构建：flutter build web 成功
-- 等待人工测试：桌面端完整流程
+- 等待人工测试
 
-## 最近代码改动（2026-04-13 15:12）
-- Git status: 无新改动，最后提交仍为 2026-04-12 02:20 UTC
-- 最近 10 分钟内无代码变更
-- 项目仍停留在 2026-03-18 的最后开发状态
+---
 
-## 上次 DEVLOG 指引（2026-03-18）
-- "Priority should shift to a full manual desktop regression pass, issue collection, and MVP stability cleanup before starting streaming AI, realtime recording, or deeper integrations."
-
-------
-*Last review: 2026-04-13 15:12 - 功能已完成，等待人工测试，不自动推进新功能*
+*Last review: 2026-04-24 17:34 - 人工QA阶段已持续约37天，状态无变化*
+*自动测试: 18 passed ✅*
+*最近代码提交: 2026-04-13 15:12 (11天前)*
+*Git状态: 无功能代码变更；新增 PRD 文档待评估（03-new-positioning.md, 06-agent-customization.md, 07-agent-design.md）*
+*说明: MVP功能已完成但人工测试阶段持续延迟；新产品定位方向已出文档，需决策是否采纳*
+*Cron: c7dc4282-567b-4839-8aa8-5d5f9fad42bf*
