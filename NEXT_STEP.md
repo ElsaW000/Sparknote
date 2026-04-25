@@ -1,31 +1,18 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**等待产品方向决策**，距上次代码提交（2026-03-18）已 38+ 天
-- 代码状态：后端 18 passed，前端可构建，功能齐全
-- 本次检查：无新代码改动，状态与上次相同
+- 当前步骤：编辑器 UI 优化代码已完成，但 Flutter build 超时未完成验证
 
 ## 下一步任务
-- **等待 Jie 决策 PRD 方向**，不建议在没有清晰 PRD 的情况下继续实现
+- 执行本地手动桌面回归测试（启动 Flutter web/Win32 build，验证核心流程），收集问题清单
 
 ## 阻塞点与补救
-- 阻塞点：PRD 目录存在新方向草稿尚未审阅：
-  - `PRD/01-product-brief.md` — 产品简介
-  - `PRD/02-product-prd.md` — 现有 PRD
-  - `PRD/03-new-positioning.md` — "碎片激活 + 创作生成"方向
-  - `PRD/06-agent-customization.md` — Agent 自定义功能规格
-  - `PRD/07-agent-design.md` — Agent 设计定位
-- 补救动作：
-  1. Jie 优先 review PRD 草稿，确认下一步方向
-  2. 确认方向后，Echo 制定实现计划并执行
-  3. 如需有事做，可执行手动回归测试（登录 → 笔记 CRUD → 工作台 → 附件/音频）
+- 阻塞点：Flutter build 在当前环境持续超时，无法通过自动化验证完成确认
+- 补救动作：手动运行 `flutter build windows` 或 `flutter run -d windows` 进行桌面端验证，记录未通过的步骤/报错
 
 ## 人工测试
-- 功能已完成，基础测试通过（pytest 18 passed，flutter build 成功）
-- 建议 Jie 人工体验后确认功能正常，再决定下一步方向
-- 测试路径：启动后端 → `flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000` → 浏览器
+- 等待人工测试/体验
 
 ---
-
-*Generated at 2026-04-25 12:45 CST*
-*Git: 无新功能代码变更，10分钟内无变化*
+*Generated at 2026-04-25 13:35 CST*
+*Git: NEXT_STEP.md 有未提交改动，无其他新功能代码变更*
