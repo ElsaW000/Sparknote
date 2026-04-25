@@ -3,15 +3,16 @@
 ## 当前判断
 - 当前步骤：**等待产品方向决策**，距上次代码提交（2026-03-18）已 38+ 天
 - 代码状态：后端 18 passed，前端可构建，功能齐全
-- 本次检查：无新改动，状态与上次相同
+- 本次检查：无新代码改动，状态与上次相同
 
 ## 下一步任务
 - **等待 Jie 决策 PRD 方向**，不建议在没有清晰 PRD 的情况下继续实现
 
 ## 阻塞点与补救
 - 阻塞点：PRD 目录存在新方向草稿尚未审阅：
-  - `PRD/00-产品愿景.md` — 产品愿景文档（2026-04-25 新增）
-  - `PRD/03-new-positioning.md` — "碎片激活 + 创作生成"方向（2026-04-02）
+  - `PRD/01-product-brief.md` — 产品简介
+  - `PRD/02-product-prd.md` — 现有 PRD
+  - `PRD/03-new-positioning.md` — "碎片激活 + 创作生成"方向
   - `PRD/06-agent-customization.md` — Agent 自定义功能规格
   - `PRD/07-agent-design.md` — Agent 设计定位
 - 补救动作：
@@ -26,6 +27,5 @@
 
 ---
 
-*Generated at 2026-04-25 12:35 CST*
+*Generated at 2026-04-25 12:45 CST*
 *Git: 无新功能代码变更，10分钟内无变化*
-*Backend: running*
