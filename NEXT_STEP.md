@@ -1,27 +1,24 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**等待 Jie 产品方向决策** - 未完成
-- 2026-04-25 已发布 Phase 2 新 PRD（4 个 P0 模块），但尚未开始编码实现
+- 当前步骤：项目闲置，无活跃开发任务
+- 状态：最近10分钟无代码改动（cron例行更新 NEXT_STEP.md）
+- 最新PRD文件：PRD/03-new-positioning.md、PRD/06-agent-customization.md、PRD/07-agent-design.md
+- MVP backend 测试最后验证：2026-03-18（18 passed）
+- Git 状态：仅 cron 自动提交 NEXT_STEP.md，无人工代码提交
 
 ## 下一步任务
-- **需要 Jie 从以下 4 个 P0 模块中指定首个开发模块**：
-  1. **知识库** - 导入文章、素材库、文章理解、标签分类
-  2. **个性化 Agent** - 风格学习、声音定制、预设角色、自定义角色
-  3. **生产型输出** - 脚本生成、文案生成、PRD 生成、内容扩展
-  4. **创作工作台** - AI对话、快捷输入、历史追溯、多轮创作
+- 当前任务不明确，需要 Jie 指定 Phase 2 方向
+- Phase 2 候选方向（根据现有 PRD 文件）：
+  1. **Agent 定制模块** — 实现 PRD/06-agent-customization.md 和 PRD/07-agent-design.md（角色切换、自定义 Prompt）
+  2. **新创作流程"碎片激活"** — 实现 PRD/03-new-positioning.md（碎片 + 创作方向 → AI 生成新内容）
 
 ## 阻塞点与补救
-- 阻塞点：无技术阻塞，项目正常运行
-- 补救动作：**等待 Jie 明确首个开发模块的优先级**
+- 阻塞点：无活跃开发任务，项目处于等待状态
+- 补救动作：等待 Jie 分配具体 Phase 2 任务
 
 ## 人工测试
-- MVP 功能：register → login → notes CRUD → conversation → close 全链路通过
-- Backend 健康：`GET /health -> {"status":"ok"}`
-- 新功能开发：尚未启动
+- MVP 手动桌面端回归测试待安排
 
-## Cron 检查记录
-- 检查时间：2026-04-26 04:56
-- 10 分钟内变更：无新代码提交
-- Git commit: 87fe2f3 (2026-04-26 00:05)
-- 结论：**持续等待产品方向决策**
+---
+*Last review: 2026-04-26 09:16 UTC+8*
