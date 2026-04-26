@@ -1,49 +1,41 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：无技术阻塞，等待确认 Phase 2 第一个 Sprint 切入点
-- 最近 10 分钟：无代码变更（backend/、mobile/lib/ 无改动）
-- 最近有效 commit：edf15b3（2026-04-26 21:10 UTC+8）
-- 最近 NEXT_STEP 更新：当前（2026-04-26 22:09 UTC+8）
-- 重大更新：PRD 已重构为"个性化创作 Agent 平台"，Phase 1 的灵感工作台 MVP 是更大愿景的基础层
-- 状态：无技术阻塞，等待 Jie 决策 Phase 2 第一个 Sprint 切入点
+- 当前步骤：**Phase 2 方向待 Jie 决策，项目静默约 40 天，无新活动**
 
 ## 下一步任务
-**PRD 方向已明确（PRD/02-product-prd.md，2026-04-25 更新），需要 Jie 确认第一个 Sprint 切入点。**
+**等待 Jie 确认 Phase 2 启动方向。**
 
-根据 PRD，Phase 2 MVP 范围：
-
-| 功能 | 描述 | 建议优先级 |
-|------|------|-----------|
-| 用户注册 + 角色选择 | 注册时选角色（自媒体创作者/产品经理/写作搭子） | P0 |
-| 知识库：导入文章 | 用户可导入 5 篇历史文章作为风格学习素材 | P0 |
-| 风格学习 | AI 分析导入文章，提取写作风格特征 | P1 |
-| 脚本生成 | 基于知识库和角色输出可用的短视频脚本 | P0 |
-| 对话式创作 | 基于知识库和 Agent 风格进行多轮创作对话 | P0 |
-
-**建议第一个 Sprint 从「用户注册 + 角色选择 + 基础对话」切入**，原因：
-1. 已有 Phase 1 的笔记和对话基础设施可复用
-2. 角色系统和知识库导入是新核心增量，范围最小
-3. 可验证性强，能快速产出可演示的端到端流程
-
-Phase 1 现有能力（可复用）：
-- 笔记 CRUD、搜索、标签 → 可作为知识库导入的素材来源
-- 对话工作台 → 可扩展为角色对话流
-- 附件上传 + 音频转写 → 可服务于内容导入
-
-Phase 2 新增（需实现）：
-- 用户角色选择（注册流程改造）
-- 知识库导入（导入历史文章/链接）
-- 风格分析（调用 AI 提取写作特征）
-- 角色 Agent 配置（预设角色 + 系统提示词）
-- 脚本/文案生成（生产型输出）
+Phase 2 的 MVP 方向已在 `PRD/03-new-positioning.md` 中明确（碎片导入 + AI 创作生成）。另有 `PRD/06-agent-customization.md`、`PRD/07-agent-design.md` 及 `PRD/backend-python/p0~p2/` 等待审查。
 
 ## 阻塞点与补救
-- 阻塞点：无技术阻塞，等待 Jie 决策第一个 Sprint 从哪个功能点切入
-- 补救动作：Jie 确认切入点后，立即开始技术设计和实现
+- 阻塞点：
+  1. Phase 2 PRD 已有初步方向，但 Jie 未给出明确"可以开始"或"需要调整"的意见
+  2. `PRD/` 目录下大量文件未 commit（超过 40 天未处理）
+  3. DEVLOG 最后一次真实开发记录停在 2026-03-18，项目处于完全等待态
+- 补救动作：
+  1. **Jie 需审查** `PRD/03-new-positioning.md` 等文件，给出 Phase 2 启动决策
+  2. **Echo 建议**：先将 `PRD/` 目录下文件 git commit，避免丢失（Jie 确认后 Echo 立即执行）
+  3. Phase 2 Sprint A 范围：后端碎片收集 API + 前端导入 UI + AI 生成触发流程
 
 ## 人工测试
-- MVP 手动桌面端回归测试待安排（Phase 1 收敛后未完整验收）
+-
+
+## 当前项目状态备忘
+- Phase 1 完成时间：2026-03-18（DEVLOG 记录）
+- Phase 2 PRD 初稿已生成（未 commit）：`PRD/03-new-positioning.md`、`PRD/06-agent-customization.md`、`PRD/07-agent-design.md`、`PRD/backend-python/p0~p2/`、`PRD/brainstorm/`、`marketing/`、`uploads/`
+- 未 commit 文件清单（git status）：
+  - M  NEXT_STEP.md
+  - ?? $null
+  - ?? .cron_log
+  - ?? .tmp_backend.pid
+  - ?? .tmp_ui02.zip / .tmp_ui02/
+  - ?? PRD/（多个文件）
+  - ?? marketing/ / uploads/
+- 项目静默时长：约 40 天
 
 ---
-*Last review: 2026-04-26 22:09 UTC+8*
+
+*Last review: 2026-04-27 05:49 UTC+8 (cron) — 无新活动，仍等待 Jie Phase 2 决策；建议尽快 commit PRD 目录*
+
+*Next review: ~05:59 UTC+8*
