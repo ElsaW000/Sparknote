@@ -6,7 +6,7 @@
 ## 下一步任务
 **等待 Jie 确认 Phase 2 启动方向。**
 
-Phase 2 的 MVP 方向已在 `PRD/03-new-positioning.md` 中明确（碎片导入 + AI 创作生成）。另有 `PRD/06-agent-customization.md`、`PRD/07-agent-design.md` 及 `PRD/backend-python/p0~p2/` 等待审查。
+Phase 2 MVP 核心已在 `PRD/03-new-positioning.md` 中明确（碎片导入 + AI 创作生成）。另有 `PRD/06-agent-customization.md`、`PRD/07-agent-design.md` 及 `PRD/backend-python/p0~p2/` 等待审查。
 
 ## 阻塞点与补救
 - 阻塞点：
@@ -36,6 +36,6 @@ Phase 2 的 MVP 方向已在 `PRD/03-new-positioning.md` 中明确（碎片导�
 
 ---
 
-*Last review: 2026-04-27 05:49 UTC+8 (cron) — 无新活动，仍等待 Jie Phase 2 决策；建议尽快 commit PRD 目录*
+*Last review: 2026-04-27 06:29 UTC+8 (cron) — 无新活动，仍等待 Jie Phase 2 决策；建议尽快 commit PRD 目录*
 
-*Next review: ~05:59 UTC+8*
+*Next review: ~06:39 UTC+8*
