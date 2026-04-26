@@ -25,16 +25,14 @@ Phase 2 MVP 核心已在 `PRD/03-new-positioning.md` 中明确（碎片导入 + 
 - Phase 1 完成时间：2026-03-18（DEVLOG 记录）
 - Phase 2 PRD 初稿已生成（未 commit）：`PRD/03-new-positioning.md`、`PRD/06-agent-customization.md`、`PRD/07-agent-design.md`、`PRD/backend-python/p0~p2/`、`PRD/brainstorm/`、`marketing/`、`uploads/`
 - 未 commit 文件清单（git status）：
-  - ?? $null
-  - ?? .cron_log
-  - ?? .tmp_backend.pid
-  - ?? .tmp_ui02.zip / .tmp_ui02/
   - ?? PRD/（多个文件）
   - ?? marketing/ / uploads/
+  - ?? .tmp_ui02/ / .tmp_ui02.zip
+  - ?? .cron_log / .tmp_backend.pid
 - 项目静默时长：约 40 天
 
 ---
 
-*Last review: 2026-04-27 06:59 UTC+8 (cron) — 无新活动，仍等待 Jie Phase 2 决策；PRD 目录仍待 commit*
+*Last review: 2026-04-27 07:19 UTC+8 (cron) — 无新活动，仍等待 Jie Phase 2 决策；PRD 目录仍待 commit*
 
-*Next review: ~07:09 UTC+8*
+*Next review: ~07:29 UTC+8*
