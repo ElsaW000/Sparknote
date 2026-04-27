@@ -1,31 +1,31 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**等待 Phase 2 Sprint A 启动指令** — 无新代码变更，距上次检查约 10 分钟
+- 当前步骤：**Phase 2 PRD 已就绪，等待 Jie 启动指令**
 
 ## 下一步任务
-- **等 Jie 给出 Phase 2 Sprint A 首个任务的启动信号**，明确 P0 任务顺序后 Echo 立即开始执行
+- **基于已提交的 Phase 2 PRD 文档（03-new-positioning.md / 06-agent-customization.md / 07-agent-design.md），启动 Agent 系统的后端实现**
+- 建议首个任务：**Agent 预设模板管理（后端 CRUD + 预设数据初始化）**
+  - 数据模型：`agent_templates` 表（name, description, system_prompt, icon）
+  - API：`GET /agents/templates`（列出预设）、`GET /agents/templates/{id}`（详情）
+  - 需先读取 `PRD/06-agent-customization.md` 和 `PRD/07-agent-design.md` 完整内容，确认字段设计
+- 另一个可选方向（取决于 Jie 优先级）：**用户 Agent 配置**（User 表扩展 agent_name / agent_prompt / agent_template）
 
 ## 阻塞点与补救
-- 阻塞点：Phase 2 PRD 和 todo_plan.md 已就绪，所有 P0 任务均为未实现状态，Echo 无法自行判断优先级顺序
-- 补救动作：
-  1. **Jie 需要**：从 Phase 2 P0 列表中确认首个任务，例如：
-     - "先做身份定位选择"
-     - "先做搜索笔记"
-     - "先做标签颜色映射"
-     - 或指定 Agent 个性化模块先行
-  2. **Echo 待命**：Jie 回复确认后立即进入执行态，开始后端 API 设计和落地
+- 阻塞点：无阻塞。Phase 2 PRD 已 commit（`4f75b03`），代码与 PRD 之间无阻碍。
+- 补救动作：Jie 确认 Phase 2 从哪个子任务开始（Agent模板？用户配置？前端Agent聊天界面？），Echo 立即执行。
 
 ## 人工测试
--
+- 待 Agent 后端 API 实现完成后，需验证：
+  1. `GET /agents/templates` 返回预设模板列表
+  2. 用户可选择/切换 Agent 模板
+  3. 切换模板后，AI 对话行为符合对应模板定义
 
-## 上下文记录
-- Phase 1 完成日期：2026-03-18
-- Phase 2 PRD 最后提交：2026-04-27 13:17
-- 过去 10 分钟内无代码变更，仅 cron 更新了本文件
-- 当前所有 P0 任务状态均为 **未实现**
-- 已等待 Jie Sprint A 启动指令超过 24 小时
+## 背景
+- 最近代码变更：无（代码静止于 2026-03-18）
+- Phase 2 PRD 进展：4f75b03 commit 已提交 `03-new-positioning.md`、`06-agent-customization.md`、`07-agent-design.md`
+- PRD 核心方向：**"把碎片激活成新创意"**，新增 Agent 模板系统，允许用户自定义 AI 灵魂
+- Phase 2 首个任务待 Jie 指派
 
----
-
-*Last review: 2026-04-27 17:27 UTC+8 (cron) — 无变化，等待 Jie Phase 2 Sprint A 启动指令*
+----
+*Last review: 2026-04-27 20:37 UTC+8 (cron) — Phase 2 PRD 已就绪，等待 Jie 启动指令*
