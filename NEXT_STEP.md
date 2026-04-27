@@ -1,39 +1,28 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：代码静止（无新改动），等待 Jie 确认启动 Phase 2 实现
+- 当前步骤：代码静止（无新改动），Phase 2 PRD 已就绪，等待 Jie 启动指令
 
 ## 下一步任务
-- **实现 Agent 预设模板系统的后端部分**（一旦 Jie 确认启动）
-- 具体范围（基于 PRD/06-agent-customization.md + PRD/07-agent-design.md）：
-  1. 数据库：User 表增加 `agent_name`、`agent_prompt`、`agent_template` 字段；新建 `agent_templates` 预设模板表
-  2. API：
-     - `GET /agent/templates` — 返回预设角色列表（creator/coach/brainstorm/editor/custom）
-     - `GET /agent/config` — 返回当前用户的 Agent 配置
-     - `PUT /agent/config` — 更新用户的 Agent 配置
-  3. AI 调用改造：`_ai_reply` / `chat_completion` 注入用户选定的 system_prompt
-  4. 初始化预设模板数据（4个预设角色）
-- 不包含：前端 Agent 设置页面、对话导出、角色创建
+- **Phase 2 启动确认**：与 Jie 对齐，确认 MVP 第一版启动方向
+- PRD 核心方向：**"个性化创作 Agent 平台"**（Phase 2）
+- MVP 第一版范围建议：
+  1. 知识库后端（文章导入/解析/存储）
+  2. 个性化 Agent（风格学习 + 预设角色）
+  3. 脚本生成功能（前端 + 后端）
+  4. 创作工作台（对话式交互完善）
 
 ## 阻塞点与补救
-- 阻塞点：无技术阻塞。PRD 字段设计清晰，API 数量少且标准。
-- 补救动作：等待 Jie 明确说"启动"，然后按以下顺序执行：
-  1. Echo 读取 backend/main.py 的 User model 和 AI 调用逻辑
-  2. 确认现有数据库结构，设计 migration
-  3. 依次实现 API endpoints → 数据模型 → AI 注入 → 种子数据
-  4. 写 API tests 覆盖
+- 阻塞点：PRD 已就绪，代码未启动，等待 Jie 确认优先级和启动指令
+- 补救动作：Jie 回复后，Echo 立即按优先级拆解 MVP 实现步骤
 
 ## 人工测试
-- 待 Agent 后端完成后验证：
-  1. `GET /agent/templates` 返回 4 个预设角色
-  2. `PUT /agent/config` 切换模板后，`POST /conversations/{id}/message` 使用对应 system prompt
-  3. 用户未配置时默认使用 `creator`
+- 待新版 MVP 功能完成后进行端到端验证
 
 ## 背景
 - 代码静止于：2026-03-18（workspace editor scroll convergence）
-- Phase 2 PRD commit: `4f75b03`（已就绪）
-- 核心方向：**"把碎片激活成新创意"** — Agent 模板系统让用户定制 AI 灵魂
-- 当前状态：PRD 就绪，代码未开始，**等待 Jie 确认启动**
+- Phase 2 PRD 就绪：2026-04-27
+- 当前状态：**等待 Jie 确认启动方向**
 
 ----
-*Last review: 2026-04-28 03:17 UTC+8 (cron) — Phase 2 PRD ready, no code changes since last review, awaiting Jie start signal*
+*Last review: 2026-04-28 04:17 UTC+8 (cron) — 无新改动，状态同上，等待 Jie 启动 Phase 2*
