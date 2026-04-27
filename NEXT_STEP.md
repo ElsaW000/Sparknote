@@ -1,10 +1,10 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**Phase 2 PRD 就绪（commit 4f75b03），代码无新变动，继续等待 Jie 启动 Agent 系统实现**
+- 当前步骤：代码静止（无新改动），等待 Jie 确认启动 Agent 模板系统实现
 
 ## 下一步任务
-- **实现 Agent 预设模板系统的后端部分**
+- **实现 Agent 预设模板系统的后端部分**（一旦 Jie 确认启动）
 - 具体范围（基于 PRD/06-agent-customization.md + PRD/07-agent-design.md）：
   1. 数据库：User 表增加 `agent_name`、`agent_prompt`、`agent_template` 字段；新建 `agent_templates` 预设模板表
   2. API：
@@ -17,7 +17,7 @@
 
 ## 阻塞点与补救
 - 阻塞点：无技术阻塞。PRD 字段设计清晰，API 数量少且标准。
-- 补救动作：
+- 补救动作：等待 Jie 明确说"启动"，然后按以下顺序执行：
   1. Echo 读取 backend/main.py 的 User model 和 AI 调用逻辑
   2. 确认现有数据库结构，设计 migration
   3. 依次实现 API endpoints → 数据模型 → AI 注入 → 种子数据
@@ -33,7 +33,7 @@
 - 代码静止于：2026-03-18（workspace editor scroll convergence）
 - PRD 静止于：2026-04-27（Phase 2 PRD commit `4f75b03`）
 - 核心方向：**"把碎片激活成新创意"** — Agent 模板系统让用户定制 AI 灵魂
-- 当前状态：PRD 就绪，代码未开始，等待 Jie 确认启动
+- 当前状态：PRD 就绪，代码未开始，**等待 Jie 确认启动**
 
 ----
-*Last review: 2026-04-27 21:47 UTC+8 (cron) — Phase 2 PRD ready, no code changes since last review, awaiting Jie start*
+*Last review: 2026-04-27 23:57 UTC+8 (cron) — Phase 2 PRD ready, no code changes since last review, awaiting Jie start signal*
