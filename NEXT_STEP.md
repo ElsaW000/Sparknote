@@ -1,26 +1,31 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**Phase 2 PRD 已 commit，仍在等待 Jie 启动决策** — 无新进展（已等待 >24h）
+- 当前步骤：**等待 Phase 2 Sprint A 启动指令** — 无新代码变更，距上次检查约 10 分钟
 
 ## 下一步任务
-- 待 Jie 明确 Phase 2 Sprint A 的具体启动方向后开始执行
+- **等 Jie 给出 Phase 2 Sprint A 首个任务的启动信号**，明确 P0 任务顺序后 Echo 立即开始执行
 
 ## 阻塞点与补救
-- 阻塞点：Phase 2 PRD 已就绪，但 Jie 尚未给出优先级/启动指令
+- 阻塞点：Phase 2 PRD 和 todo_plan.md 已就绪，所有 P0 任务均为未实现状态，Echo 无法自行判断优先级顺序
 - 补救动作：
-  1. **Jie 需要**：确认 Phase 2 Sprint A 的三个 P0 任务（知识库 API、卡片 UI、权限体系）哪个先启动，或给出整体方向
-  2. **Echo 待命**：Sprint A 启动方向确认后，立即进入执行态
+  1. **Jie 需要**：从 Phase 2 P0 列表中确认首个任务，例如：
+     - "先做身份定位选择"
+     - "先做搜索笔记"
+     - "先做标签颜色映射"
+     - 或指定 Agent 个性化模块先行
+  2. **Echo 待命**：Jie 回复确认后立即进入执行态，开始后端 API 设计和落地
 
 ## 人工测试
 -
 
 ## 上下文记录
 - Phase 1 完成日期：2026-03-18
-- Phase 2 PRD commit：`4f75b03`，cron NEXT_STEP commit：`690ecfc`
-- 过去 10 分钟无代码变更，git status 有未提交 NEXT_STEP.md
-- 距 Phase 2 决策等待已超过 1 天（PRD 完成于 2026-04-27 10:xx 前后）
+- Phase 2 PRD 最后提交：2026-04-27 13:17
+- 过去 10 分钟内无代码变更，仅 cron 更新了本文件
+- 当前所有 P0 任务状态均为 **未实现**
+- 已等待 Jie Sprint A 启动指令超过 24 小时
 
 ---
 
-*Last review: 2026-04-27 13:47 UTC+8 (cron) — 无变化，等待 Jie Phase 2 启动指令*
+*Last review: 2026-04-27 17:27 UTC+8 (cron) — 无变化，等待 Jie Phase 2 Sprint A 启动指令*
