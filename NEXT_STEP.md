@@ -21,8 +21,8 @@
 
 ## 背景
 - 代码静止于：2026-03-18（workspace editor scroll convergence）
-- Phase 2 PRD 就绪：2026-04-27
-- 当前状态：**等待 Jie 确认启动方向**
+- Phase 2 PRD 就绪：2026-04-25
+- 当前状态：**等待 Jie 确认启动 Phase 2**
 
 ----
-*Last review: 2026-04-28 04:17 UTC+8 (cron) — 无新改动，状态同上，等待 Jie 启动 Phase 2*
+*Last review: 2026-04-28 05:07 UTC+8 (cron) — 无新改动，状态同上，等待 Jie 启动 Phase 2*
