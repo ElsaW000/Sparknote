@@ -1,7 +1,7 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：代码静止（无新改动），等待 Jie 确认启动 Agent 模板系统实现
+- 当前步骤：代码静止（无新改动），等待 Jie 确认启动 Phase 2 实现
 
 ## 下一步任务
 - **实现 Agent 预设模板系统的后端部分**（一旦 Jie 确认启动）
@@ -31,9 +31,9 @@
 
 ## 背景
 - 代码静止于：2026-03-18（workspace editor scroll convergence）
-- PRD 静止于：2026-04-27（Phase 2 PRD commit `4f75b03`）
+- Phase 2 PRD commit: `4f75b03`（已就绪）
 - 核心方向：**"把碎片激活成新创意"** — Agent 模板系统让用户定制 AI 灵魂
 - 当前状态：PRD 就绪，代码未开始，**等待 Jie 确认启动**
 
 ----
-*Last review: 2026-04-27 23:57 UTC+8 (cron) — Phase 2 PRD ready, no code changes since last review, awaiting Jie start signal*
+*Last review: 2026-04-28 01:37 UTC+8 (cron) — Phase 2 PRD ready, no code changes since last review, awaiting Jie start signal*
