@@ -12,7 +12,7 @@ PRD Phase 2 核心方向（`PRD/02-product-prd.md`）：
 - 生产型输出（脚本生成 P0、文案生成 P0、PRD 生成 P0）
 - Phase 1 已完成：登录注册、笔记 CRUD、AI 工作台（基础版）
 
-另有 `PRD/06-agent-customization.md`、`PRD/07-agent-design.md` 及 `PRD/backend-python/p0~p2/` 待审查。
+另有 `PRD/06-agent-customization.md`、`PRD/07-agent-design.md`、`PRD/03-new-positioning.md`（2026-04-02 新版定位：碎片激活创意生成器）待审查。
 
 ## 阻塞点与补救
 - 阻塞点：
@@ -20,7 +20,7 @@ PRD Phase 2 核心方向（`PRD/02-product-prd.md`）：
   2. PRD 目录下大量文件未 git commit（距上次开发记录已 40 天）
   3. 后端/前端代码自 2026-03-18 后无任何改动，项目完全等待态
 - 补救动作：
-  1. **Jie 需审查** `PRD/02-product-prd.md` 等文件，给出 Phase 2 启动决策
+  1. **Jie 需审查** `PRD/02-product-prd.md` 和 `PRD/03-new-positioning.md`，给出 Phase 2 启动决策
   2. **Echo 建议**：Jie 确认后，Echo 立即 commit PRD 文件并开始 Sprint A（知识库导入 API + 前端 UI）
   3. Sprint A 推荐范围：URL/文本导入 API → 前端导入页 → 素材库列表
 
@@ -40,6 +40,6 @@ PRD Phase 2 核心方向（`PRD/02-product-prd.md`）：
 
 ---
 
-*Last review: 2026-04-27 09:09 UTC+8 (cron) — 无新活动，仍等待 Jie Phase 2 决策；PRD 已更新至 2026-04-25 版本但仍待 commit*
+*Last review: 2026-04-27 10:46 UTC+8 (cron) — 无新活动，仍等待 Jie Phase 2 决策；PRD 文件仍未 commit*
 
-*Next review: ~09:19 UTC+8*
+*Next review: ~10:56 UTC+8*
