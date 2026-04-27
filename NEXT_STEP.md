@@ -6,22 +6,23 @@
 ## 下一步任务
 **等待 Jie 确认 Phase 2 启动方向。**
 
-PRD 已在 2026-04-25 更新至最新版本（`PRD/02-product-prd.md`），Phase 2 核心方向：
-- 知识库（文章导入、素材库、风格学习）
-- 个性化 Agent（学用户风格）
-- 生产型输出（脚本、文案、PRD 生成）
+PRD Phase 2 核心方向（`PRD/02-product-prd.md`）：
+- 知识库（文章导入 P0、素材库 P0、文章理解 P0）
+- 个性化 Agent（风格学习 P0、声音定制 P0、预设角色 P0）
+- 生产型输出（脚本生成 P0、文案生成 P0、PRD 生成 P0）
+- Phase 1 已完成：登录注册、笔记 CRUD、AI 工作台（基础版）
 
-另有 `PRD/06-agent-customization.md`、`PRD/07-agent-design.md` 及 `PRD/backend-python/p0~p2/` 等待审查。
+另有 `PRD/06-agent-customization.md`、`PRD/07-agent-design.md` 及 `PRD/backend-python/p0~p2/` 待审查。
 
 ## 阻塞点与补救
 - 阻塞点：
-  1. Phase 2 PRD 方向已初步明确（知识库 + 个性化 Agent + 生产型输出），但 Jie 未给出明确"可以开始"或"需要调整"的意见
-  2. 大量 PRD 文件已更新但未 git commit（距上次开发记录已 40 天）
-  3. 后端/前端代码自 2026-03-18 后无任何改动，项目处于完全等待态
+  1. Phase 2 PRD 方向已明确，但 Jie 未给出"可以开始"或"需要调整"的意见
+  2. PRD 目录下大量文件未 git commit（距上次开发记录已 40 天）
+  3. 后端/前端代码自 2026-03-18 后无任何改动，项目完全等待态
 - 补救动作：
   1. **Jie 需审查** `PRD/02-product-prd.md` 等文件，给出 Phase 2 启动决策
-  2. **Echo 建议**：先 commit PRD 目录下的更新文件（Jie 确认后 Echo 立即执行），避免 40 天积累的文档丢失风险
-  3. Phase 2 Sprint A 建议范围：知识库碎片导入 API + 前端导入 UI + 风格学习触发流程
+  2. **Echo 建议**：Jie 确认后，Echo 立即 commit PRD 文件并开始 Sprint A（知识库导入 API + 前端 UI）
+  3. Sprint A 推荐范围：URL/文本导入 API → 前端导入页 → 素材库列表
 
 ## 人工测试
 -
@@ -39,6 +40,6 @@ PRD 已在 2026-04-25 更新至最新版本（`PRD/02-product-prd.md`），Phase
 
 ---
 
-*Last review: 2026-04-27 08:39 UTC+8 (cron) — 无新活动，仍等待 Jie Phase 2 决策；PRD 已更新至 2026-04-25 版本但仍待 commit*
+*Last review: 2026-04-27 09:09 UTC+8 (cron) — 无新活动，仍等待 Jie Phase 2 决策；PRD 已更新至 2026-04-25 版本但仍待 commit*
 
-*Next review: ~08:49 UTC+8*
+*Next review: ~09:19 UTC+8*
