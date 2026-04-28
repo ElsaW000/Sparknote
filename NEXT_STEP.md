@@ -4,7 +4,7 @@
 - 当前步骤：**Phase 2 未启动，仍在等待 Jie 发出 Phase 2 开始信号。** Phase 1 MVP 在 2026-03-17 前后完成基础测试，Phase 2 PRD 已就绪（`PRD/02-product-prd.md`，日期 2026-04-25），但 Jie 尚未给出开始指令。
 
 ## 下一步任务
-- **等待 Jie 确认 Phase 2 开始**
+- **等待 Jie 确认 Phase 2 启动**
 - Phase 2 P0 范围已明确定义在 `PRD/backend-python/p0/README.md`，包含：
   - AUTH-04 注册(邮箱密码)、AUTH-02 登录
   - CAP-01 输入捕捉、TAG-02 hashtag 标签、CAL-01 日/周/月视图
@@ -23,7 +23,7 @@
 - 在 Phase 2 开始前，如有 Phase 1 的 bug 或体验问题，请通过 Issue 或 Telegram 反馈
 
 ## 备注
-- 更新时间：2026-04-29 01:55
-- 最近 git 提交：Phase 2 持续等待中（自 2026-04-28 17:05 起）
+- 更新时间：2026-04-29 04:05 (UTC 2026-04-28 20:05)
+- 最近 git 提交：无新代码变更，Phase 2 持续等待中
 - Phase 2 PRD 路径：`PRD/02-product-prd.md`，最后更新约 2026-04-25
-- Git 无待提交变更（仅 NEXT_STEP.md 变更），每次 cron 自动更新时间戳
+- Git 无新变更（仅 NEXT_STEP.md 自身更新），每次 cron 自动更新时间戳
