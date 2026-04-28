@@ -1,24 +1,24 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**等待 Phase 2 启动信号** — Phase 1 MVP 已完成，Phase 2 PRD 框架已就绪（PRD 02-product-prd.md，第二版功能：风格学习自动化、多角色切换、PRD 生成、素材自动抓取），最后实际代码变更：2026-04-27 13:17，距今约 34 小时，Jie 尚未发出开始指令。
+- 当前步骤：**Phase 1 MVP 已完成，Phase 2 尚未开始**，项目处于待命状态（无新代码活动）
 
 ## 下一步任务
-- Phase 2 尚未开始，无需推进新功能开发。
-- 等待 Jie 确认 Phase 2 启动后，按 Issue 系统分配任务。
+- **Phase 2 尚未启动，等待 Jie 发出开始信号。**
+- Phase 2 PRD 定义在 `PRD/02-product-prd.md`，核心是：知识库导入、风格学习、个性化 Agent、生产型输出（脚本/PR 文案生成）。
+- 如 Jie 给出方向，Echo 将：
+  1. 读取 Phase 2 PRD 拆解任务
+  2. 创建 Issue 分配给对应 Agent
+  3. 开始工程执行
 
 ## 阻塞点与补救
-- 阻塞点：Phase 2 无阻塞，PRD 已完成，等待 Jie 决策。
-- 补救动作：Jie 在准备好时，通过聊天/Telegram 告知 Echo 启动 Phase 2，或在 `D:\00-Career\My_AI\data\OpenClaw_Data\workspace\multi-agent\shared\issues\open/` 下创建 Issue 分配给 echo。
+- 阻塞点：**无技术阻塞，Phase 2 方向已定义，需 Jie 决策启动**
+- 补救动作：Jie 确认 Phase 2 优先级和第一个切入点（建议从 P0 功能中选择一个作为 Phase 2 首个交付目标）
 
 ## 人工测试
-- Phase 1 MVP 功能已完成，Flutter web 可本地验证。
-- 如需人工体验，可运行：
-  - `cd D:\02-Projects\01-Sparknote\backend; .venv\Scripts\activate; uvicorn main:app --reload`
-  - `cd D:\02-Projects\01-Sparknote\mobile; flutter run -d chrome`
-  或直接用已构建的 web bundle（backend URL 指向 127.0.0.1:8000）。
+- Phase 1 MVP 功能已就绪（登录、笔记、灵感工作台对话、附件、音频转写、Notion 配置），如需人工验收可随时进行。
 
-## 备注
-- 当前 git 分支无新代码提交（最近一次实际代码变更：2026-04-27 — Phase 1 收尾工作）。
-- Phase 2 目标功能（PRD 第二版）：风格学习自动化、多角色切换、PRD 生成、素材自动抓取，待 Issue 分配后执行。
-- 本次更新：2026-04-28 22:05
+## 元信息
+- 本次更新：2026-04-28 23:05
+- 最近代码提交：2026-03-17（Phase 1 最后实际代码提交）
+- 本轮检查：无新代码活动，状态同上轮
