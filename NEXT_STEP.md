@@ -1,29 +1,35 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**Phase 2 未启动，仍在等待 Jie 发出 Phase 2 开始信号。** Phase 1 MVP 在 2026-03-17 前后完成基础测试，Phase 2 PRD 已就绪（`PRD/02-product-prd.md`，日期 2026-04-25），但 Jie 尚未给出开始指令。
+- 当前步骤：**Phase 1 MVP 已完成（2026-03-18），Phase 2 未启动。**
+- 产品方向已更新：存在 2026-04 版 PRD（`PRD/02-product-prd.md`），核心方向从「灵感记录+AI续写」转向「个性化创作 Agent 平台（知识库+风格学习+生产型输出）」。
+- 旧 Phase 2 范围（`PRD/backend-python/p0/README.md`，基于 AUTH-04/02、CAP-01、TAG-02、CAL-01）与新 PRD 方向存在较大偏差，不应直接沿用。
 
 ## 下一步任务
-- **等待 Jie 确认 Phase 2 启动**
-- Phase 2 P0 范围已明确定义在 `PRD/backend-python/p0/README.md`，包含：
-  - AUTH-04 注册(邮箱密码)、AUTH-02 登录
-  - CAP-01 输入捕捉、TAG-02 hashtag 标签、CAL-01 日/周/月视图
-  - L1-01 输入捕捉、L1-02 组织与标签、L1-04 回顾与可视化
-- Jie 给出开始信号后，Echo 将根据 Phase 2 PRD 为 P0 功能创建对应 Issue，分配给各 Agent
+- **需要 Jie 决策：明确下一步产品方向**
+  - 选项 A：继续沿用 Phase 1 MVP 方向，优先做 Phase 1 人工验收和稳定性清理
+  - 选项 B：转向 2026-04 PRD 方向，重新规划 Phase 2 功能范围
+  - 选项 C：混合推进（Phase 1 收尾 + Phase 2 新 PRD 启动）
 
 ## 阻塞点与补救
-- 阻塞点：Phase 2 的启动需要 Jie 明确授权，Echo 无法自行决定优先级和开始时机
+- 阻塞点：
+  1. 产品方向存在版本断裂（旧 MVP → 新 PRD，中间无明确衔接）
+  2. Phase 2 范围待重新对齐到 2026-04 PRD
+  3. Phase 1 人工完整回归测试尚未进行
 - 补救动作：
-  1. Jie 确认 Phase 2 启动后，Echo 读取 `PRD/02-product-prd.md` + `PRD/backend-python/p0/README.md`
-  2. Echo 按 P0 功能清单创建 Issue（via tbc-db），分配给对应 Agent
-  3. 各 Agent 执行 P0 任务，Echo 追踪进度
+  1. Jie 确认方向后，Echo 更新 `NEXT_STEP.md` 并启动相应工作
+  2. 若选 A：按 Phase 1 验收清单做人工回归
+  3. 若选 B/C：Echo 重新读取 `PRD/02-product-prd.md`，输出新的 Phase 2 计划
 
 ## 人工测试
-- Phase 1 MVP 功能已完成并经过基础测试，仍在等待 Jie 人工体验和反馈
-- 在 Phase 2 开始前，如有 Phase 1 的 bug 或体验问题，请通过 Issue 或 Telegram 反馈
+- Phase 1 MVP 功能（注册登录/笔记 CRUD/标签/热力图/AI 工作台）本地测试已通过
+- 人工完整回归测试仍未进行，建议在推进新功能前先完成验收
 
 ## 备注
-- 更新时间：2026-04-29 04:55 (UTC 2026-04-28 20:55)
-- 最近 git 提交：无新代码变更，Phase 2 持续等待中
-- Phase 2 PRD 路径：`PRD/02-product-prd.md`，最后更新约 2026-04-25
-- Git 状态：`M NEXT_STEP.md`，其余均为 untracked 临时文件，无实质代码变更
+- 更新时间：2026-04-29 07:35 (UTC 2026-04-28 23:35)
+- 最近 git 提交：无新代码变更（最近提交：bfd219a 2026-04-29 04:55 UTC）
+- 本次更新：仅刷新时间戳，无代码/产品状态变化
+- 仍为 untracked：`PRD/` 目录（新 PRD）、`backend/run.bat`、`.tmp_ui02/`、`.cron_log`
+- 2026-04 PRD 位置：`PRD/02-product-prd.md`
+- 旧 Phase 2 文档（已过时）：`PRD/backend-python/p0/README.md`
+- 建议：Jie 在确认方向前不要触发大规模 Phase 2 开发，避免资源浪费
