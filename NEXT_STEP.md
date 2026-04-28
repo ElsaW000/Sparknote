@@ -1,33 +1,32 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**Phase 1 MVP 已完成，等待 Phase 2 启动信号**
-- 项目现状：
-  - 后端测试全绿（18 passed），Phase 1 MVP 核心功能已交付
-  - 最后代码提交：2026-04-28 10:14，距今约 2 小时 10 分钟，无新活动
-  - 本次检查（12:24）：无新代码活动，唯一变更来自上次 cron 写入了 NEXT_STEP.md
-  - DEVLOG 最终结论（2026-03-18）："下个交付步骤不是功能扩展，而是完整的人工桌面端回归 + 问题收集 + MVP 稳定性清理"
+- 当前步骤：**无活跃开发任务**，Phase 2 尚未开工
+- 本次检查（17:05）：git 仅 NEXT_STEP.md 有更新，无其他代码变更
+- Phase 1 MVP 状态：backend 测试 18 passed，Flutter web 构建可用，基础流程完整
+- Phase 2 PRD 已就绪（`PRD/02-product-prd.md` 2026-04版），产品方向明确：「个性化创作 Agent 平台」
 
 ## 下一步任务
-- **Phase 2 启动前，需要先完成一轮 MVP 人工 QA**
-  - 路径：`docs/testing/mvp_checklist.md`
-  - 范围：登录 → 笔记 → 灵感工作台 → 退出 全链路
-  - 目标：记录真实问题（UI bug / 接口异常 / 体验断点），供 Phase 2 使用
-  - **下一步任务**：Jie 指定 Phase 2 第一个 issue，或 Jie/Echo 执行桌面端回归测试并收集问题
+- **唯一明确的下一步**：「导入文章」作为 Phase 2 首个 P0 交付
+  - PRD 路径：`PRD/02-product-prd.md` → 3.1 知识库 → 导入文章
+  - 功能：用户批量导入历史创作内容（微信文章/博客/文档），供后续风格学习使用
+  - 是「风格学习」「预设角色」等功能的数据基础，不可跳过
+  - ⚠️ 已连续多次提示，如 Jie 有其他优先级请直接告知；否则请创建 Issue 分配给 Echo
 
 ## 阻塞点与补救
-- 阻塞点：无代码阻塞，Phase 1 交付物已就位，等待人工 QA + Phase 2 方向确认
+- 阻塞点：Phase 2 无 Issue 分配给 Echo，Echo 无法自行推进（按 TBC 规则，需通过 Issue 接收任务）
 - 补救动作：
-  1. Jie 手动执行一次桌面端全链路体验（参考 mvp_checklist.md 手动测试列）
-  2. 或 Jie 指定 Echo 以自动化方式完成部分回归
-  3. Jie 给出 Phase 2 第一个 issue，Echo 即可开始执行
+  1. Jie 在 `D:\00-Career\My_AI\data\OpenClaw_Data\workspace\multi-agent\shared\issues\open\` 创建 Issue，分配给 `echo`
+  2. Issue 内容：基于 `PRD/02-product-prd.md` → 知识库「导入文章」功能说明
+  3. Echo 收到 Issue 后可立即开工（预计范围：URL 解析 / 文本提取 / 批量导入界面 / backend 存储）
+  4. 如「导入文章」暂不优先，Jie 也可指定其他 Phase 2 P0 任务（如「预设角色」「脚本生成」）先行
 
 ## 人工测试
-- **必须执行**：桌面端 MVP 回归测试
-  - 参考 `docs/testing/mvp_checklist.md` 中的手动测试列
-  - 重点：登录 → 笔记 CRUD → 灵感工作台对话 → 附件上传 → 退出
-  - 建议输出：问题清单或"全通过"确认
+- Phase 1 MVP 基础流程（注册→登录→笔记→灵感工作台）仍可用
+- 当前无活跃开发，无需人工测试确认
 
-## 最近变更记录
-- 12:24 无新代码活动，项目状态与上次（10:14）一致
-- 核心判断：Phase 1 已完成，Phase 2 前需要先完成一轮人工 QA + 方向确认
+## 最近代码变更记录
+- 最后代码提交：2026-03-17（UI 收敛 pass）
+- PRD 最近更新：2026-04-25（新版产品方向「个性化创作 Agent 平台」）
+- 无新代码变更，项目处于规划→执行过渡期
+- 待 Jie 确认 Phase 2 首个任务后 Echo 即可开工
