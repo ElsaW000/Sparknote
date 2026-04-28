@@ -1,28 +1,24 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：代码静止（无新改动），Phase 2 PRD 已就绪，等待 Jie 启动指令
+- 当前步骤：**Phase 1 已完成，Phase 2 规划文件已就位，等待启动指令**
+- 项目现状：
+  - 后端测试全绿（18 passed），MVP 核心功能已交付
+  - Phase 2 PRD 已新增：`PRD/phases/05-feature-benchmark-and-prd-expansion.md`，包含 8 项 P0 功能清单（AUTH-04/05, TAG-03, NOTE-07/08/09/10, CAL-02）
+  - 最近代码提交：2026-03-18，距今约 40 天
 
 ## 下一步任务
-- **Phase 2 启动确认**：与 Jie 对齐，确认 MVP 第一版启动方向
-- PRD 核心方向：**"个性化创作 Agent 平台"**（Phase 2）
-- MVP 第一版范围建议：
-  1. 知识库后端（文章导入/解析/存储）
-  2. 个性化 Agent（风格学习 + 预设角色）
-  3. 脚本生成功能（前端 + 后端）
-  4. 创作工作台（对话式交互完善）
+- **Phase 2 启动**：由 Jie 确认 P0 优先级顺序，选定首个实现功能后开始实施
+  - 当前 P0 待办：注册验证码(AUTH-04) / 邮箱验证(AUTH-05) / 常用标签(TAG-03) / 全局搜索(NOTE-07) / 组合筛选(NOTE-08) / 置顶收藏(NOTE-09) / 模板笔记(NOTE-10) / 智能文件夹(CAL-02)
+  - 建议首个功能：从 `AUTH-04 注册验证码` 或 `NOTE-07 全局搜索` 开始（均不依赖外部邮件服务）
 
 ## 阻塞点与补救
-- 阻塞点：PRD 已就绪，代码未启动，等待 Jie 确认优先级和启动指令
-- 补救动作：Jie 回复后，Echo 立即按优先级拆解 MVP 实现步骤
+- 阻塞点：无代码阻塞，Phase 2 PRD 已有，等待 Jie 拍板启动
+- 补救动作：等待 Jie 给出"开始 Phase 2"或指定首个任务
 
 ## 人工测试
-- 待新版 MVP 功能完成后进行端到端验证
+- MVP 全链路桌面端回归仍待系统执行（登录 → 笔记 → 工作台 → 退出），建议 Phase 2 推进前先完成一轮基础 QA
 
-## 背景
-- 代码静止于：2026-03-18（workspace editor scroll convergence）
-- Phase 2 PRD 就绪：2026-04-25
-- 当前状态：**等待 Jie 确认启动 Phase 2**
-
-----
-*Last review: 2026-04-28 06:07 UTC+8 (cron) — 无新改动，状态同上，等待 Jie 启动 Phase 2*
+## 最近变更记录
+- 08:58 无新代码活动，项目状态与上次一致
+- Phase 2 PRD `PRD/phases/05-feature-benchmark-and-prd-expansion.md` 已就位，等待启动指令
