@@ -1,27 +1,29 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**Phase 1 MVP 已完成，Phase 2 尚未启动，等待 Jie 发令**
+- 当前步骤：**Phase 2 未启动，仍在等待 Jie 发出 Phase 2 开始信号。** Phase 1 MVP 在 2026-03-17 前后完成基础测试，Phase 2 PRD 已就绪（`PRD/02-product-prd.md`，日期 2026-04-25），但 Jie 尚未给出开始指令。
 
 ## 下一步任务
-- **等待 Jie 发出 Phase 2 启动指令**
-- Phase 2 PRD 已就绪（`PRD/02-product-prd.md`，最后更新 2026-04-25）
-- Phase 2 P0 功能：知识库导入、风格学习自动化、多角色切换、PRD 生成、素材自动抓取
-- Jie 确认开始后，Echo 可按 PRD 拆解 Issue 并启动执行
+- **等待 Jie 确认 Phase 2 开始**
+- Phase 2 P0 范围已明确定义在 `PRD/backend-python/p0/README.md`，包含：
+  - AUTH-04 注册(邮箱密码)、AUTH-02 登录
+  - CAP-01 输入捕捉、TAG-02 hashtag 标签、CAL-01 日/周/月视图
+  - L1-01 输入捕捉、L1-02 组织与标签、L1-04 回顾与可视化
+- Jie 给出开始信号后，Echo 将根据 Phase 2 PRD 为 P0 功能创建对应 Issue，分配给各 Agent
 
 ## 阻塞点与补救
-- 阻塞点：Phase 2 尚未开始，无活跃任务
+- 阻塞点：Phase 2 的启动需要 Jie 明确授权，Echo 无法自行决定优先级和开始时机
 - 补救动作：
-  1. Jie 确认 Phase 2 启动范围（是否全部 P0 或有取舍）
-  2. Echo 读取 Phase 2 PRD，按 P0 优先级拆解 Issue 分配给各 Agent
-  3. 开始执行第一个 Phase 2 P0 功能
+  1. Jie 确认 Phase 2 启动后，Echo 读取 `PRD/02-product-prd.md` + `PRD/backend-python/p0/README.md`
+  2. Echo 按 P0 功能清单创建 Issue（via tbc-db），分配给对应 Agent
+  3. 各 Agent 执行 P0 任务，Echo 追踪进度
 
 ## 人工测试
-- Phase 1 MVP 功能基本完成，等待 Jie 手动体验和反馈
-- 如有测试发现的问题，通过 Issue 系统记录
+- Phase 1 MVP 功能已完成并经过基础测试，仍在等待 Jie 人工体验和反馈
+- 在 Phase 2 开始前，如有 Phase 1 的 bug 或体验问题，请通过 Issue 或 Telegram 反馈
 
-## 元信息
-- 更新时间：2026-04-29 01:35
-- 上次实际开发活动：2026-03-17（Phase 1 收尾）
-- Phase 2 PRD 就绪（`PRD/02-product-prd.md`，更新于 2026-04-25），等待 Jie 决策
-- Git 状态：仅 NEXT_STEP.md 有未提交变更（时间戳更新），无功能代码变更
+## 备注
+- 更新时间：2026-04-29 01:55
+- 最近 git 提交：Phase 2 持续等待中（自 2026-04-28 17:05 起）
+- Phase 2 PRD 路径：`PRD/02-product-prd.md`，最后更新约 2026-04-25
+- Git 无待提交变更（仅 NEXT_STEP.md 变更），每次 cron 自动更新时间戳
