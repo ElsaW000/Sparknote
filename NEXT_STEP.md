@@ -1,32 +1,24 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**无活跃开发任务**，Phase 2 尚未开工
-- 本次检查（17:05）：git 仅 NEXT_STEP.md 有更新，无其他代码变更
-- Phase 1 MVP 状态：backend 测试 18 passed，Flutter web 构建可用，基础流程完整
-- Phase 2 PRD 已就绪（`PRD/02-product-prd.md` 2026-04版），产品方向明确：「个性化创作 Agent 平台」
+- 当前步骤：**等待 Phase 2 启动信号** — Phase 1 MVP 已完成，Phase 2 PRD 已就绪，最后实际代码变更：2026-04-27 13:17，距今约 33 小时，Jie 尚未发出开始指令。
 
 ## 下一步任务
-- **唯一明确的下一步**：「导入文章」作为 Phase 2 首个 P0 交付
-  - PRD 路径：`PRD/02-product-prd.md` → 3.1 知识库 → 导入文章
-  - 功能：用户批量导入历史创作内容（微信文章/博客/文档），供后续风格学习使用
-  - 是「风格学习」「预设角色」等功能的数据基础，不可跳过
-  - ⚠️ 已连续多次提示，如 Jie 有其他优先级请直接告知；否则请创建 Issue 分配给 Echo
+- Phase 2 尚未开始，无需推进新功能开发。
+- 等待 Jie 确认 Phase 2 启动后，按 Issue 系统分配任务。
 
 ## 阻塞点与补救
-- 阻塞点：Phase 2 无 Issue 分配给 Echo，Echo 无法自行推进（按 TBC 规则，需通过 Issue 接收任务）
-- 补救动作：
-  1. Jie 在 `D:\00-Career\My_AI\data\OpenClaw_Data\workspace\multi-agent\shared\issues\open\` 创建 Issue，分配给 `echo`
-  2. Issue 内容：基于 `PRD/02-product-prd.md` → 知识库「导入文章」功能说明
-  3. Echo 收到 Issue 后可立即开工（预计范围：URL 解析 / 文本提取 / 批量导入界面 / backend 存储）
-  4. 如「导入文章」暂不优先，Jie 也可指定其他 Phase 2 P0 任务（如「预设角色」「脚本生成」）先行
+- 阻塞点：Phase 2 无阻塞，PRD 已完成，等待 Jie 决策。
+- 补救动作：Jie 在准备好时，通过聊天/Telegram 告知 Echo 启动 Phase 2，或在 `D:\00-Career\My_AI\data\OpenClaw_Data\workspace\multi-agent\shared\issues\open/` 下创建 Issue 分配给 echo。
 
 ## 人工测试
-- Phase 1 MVP 基础流程（注册→登录→笔记→灵感工作台）仍可用
-- 当前无活跃开发，无需人工测试确认
+- Phase 1 MVP 功能已完成，Flutter web 可本地验证。
+- 如需人工体验，可运行：
+  - `cd D:\02-Projects\01-Sparknote\backend; .venv\Scripts\activate; uvicorn main:app --reload`
+  - `cd D:\02-Projects\01-Sparknote\mobile; flutter run -d chrome`
+  或直接用已构建的 web bundle（backend URL 指向 127.0.0.1:8000）。
 
-## 最近代码变更记录
-- 最后代码提交：2026-03-17（UI 收敛 pass）
-- PRD 最近更新：2026-04-25（新版产品方向「个性化创作 Agent 平台」）
-- 无新代码变更，项目处于规划→执行过渡期
-- 待 Jie 确认 Phase 2 首个任务后 Echo 即可开工
+## 备注
+- 当前 git 分支无新代码提交（最近一次实际代码变更：2026-04-27 commit 4f75b03 — Phase 2 PRD docs & uploads）。
+- Phase 2 第一个任务预计是「用户内容管理 - 笔记增删改查」（PRD 3.1 用户创作），待 Issue 分配。
+- 本次更新：2026-04-28 20:35
