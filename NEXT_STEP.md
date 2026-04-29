@@ -1,32 +1,30 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**Phase 1 方向待 Jie 确认**，距上次 cron（03:08 UTC+8）无代码活动，无新人工指令
+- 当前步骤：**Phase 1 整体暂停。Jie 尚未明确优先级**，等待 Jie 确认后解除暂停
 
 ## 下一步任务
-- **等待 Jie 确认 Phase 1 启动方向**，需从以下两条路中选一条（或给出其他指示）：
-  1. **方向 A**：新版 PRD 路线 —— 启动"知识库-导入文章"或"个性化 Agent-预设角色"二选一作为第一个 P0
-  2. **方向 B**：现有功能补全路线 —— 推进 `PRD/phases/05-feature-benchmark-and-prd-expansion.md` 中的 8 个 P0 story（注册验证码、邮箱验证、全局搜索、组合筛选、置顶收藏、模板创建笔记、智能文件夹）
+- 等待 Jie 确认 Phase 1 的子任务方向：
+  1. **Phase 1A**：审核现有 PRD，找出"用户-智能笔记-AI对话"核心流程中的 8 个 P0 story，交付给 AI-O Agent
+  2. **Phase 1B**：生成 benchmark PRD，扩展到 `PRD/phases/05-feature-benchmark-and-prd-expansion.md` 中的 8 个 P0 story
 
 ## 阻塞点与补救
-- 阻塞点：
-  1. Phase 1 方向未确认，无法拆解任务
-  2. `PRD/phases/05-feature-benchmark-and-prd-expansion.md` 已明确 8 个 P0 功能差距清单，可作为方向 B 的执行基准
-  3. `PRD/02-product-prd.md` 已更新为 2026-04 版（产品定位："个性化创作 Agent 平台"），方向 A 的 P0 功能也已列出
-  4. `PRD/todo_plan.md` 更新于 2026-03-11，与新版 PRD 存在矛盾，需人工确认基准
+- 阻塞点：Phase 1 的任务方向选择权在 Jie，Echo 无法自行拍板选择 A 还是 B，或两者并行
 - 补救动作：
-  1. Echo 备好两条方向的详细拆解方案，待 Jie 确认方向后可立即输出
-  2. 建议优先清理/更新 `PRD/todo_plan.md` 避免后续开发误判
+  1. 等待 Jie 回复确认 Phase 1 优先级方向
+  2. Jie 确认后，Echo 可立即接手执行 Phase 1A 或 Phase 1B
 
 ## 人工测试
-- 旧版 MVP 功能（灵感记录 + 灵感工作台）基础测试通过（18 passed pytest），产品方向调整后，需等新方向确认后再决定是否需要人工回归
+- 无新功能待测试
 
 ---
 
-## 备注
-- PRD 最后更新：2026-04-25（2026-04版，产品定位："个性化创作 Agent 平台"）
-- DEVLOG 最后记录：2026-03-18（手动桌面回归测试建议，与新版方向存在差距）
-- `PRD/phases/05-feature-benchmark-and-prd-expansion.md` 已提供 8 个 P0 功能差距清单（认证安全、笔记组织、检索筛选方向）
-- git status：无实质代码变更（仅 NEXT_STEP.md 自身 + 临时文件），最近一次代码提交为 2026-04-29 22:18
-- 本次更新：2026-04-30 03:18 (Asia/Shanghai)
-- 状态：距上次 cron 无变化，维持原判，等待 Jie 确认方向
+## 参考状态
+- PRD 最后更新：2026-04-25（Phase 2 benchmark PRD 已生成）
+- DEVLOG 最后更新：2026-03-18（Phase 1 相关功能开发暂停，等待 PRD 落地）
+- `PRD/phases/05-feature-benchmark-and-prd-expansion.md` 包含 8 个 P0 story，待人工审核确认方向
+- git 状态（2026-04-30 07:08）：
+  - 本次 cron 更新了 NEXT_STEP.md（唯一变更）
+  - 无新代码变更
+  - 临时文件：.cron_log、.tmp_backend.pid、.tmp_ui02/ 等，无需关注
+- 最后更新：2026-04-30 07:18 (Asia/Shanghai)
