@@ -175,6 +175,7 @@ class _NotesPageState extends State<NotesPage> {
   List<dynamic> _notes = [];
   List<PickedLocalFile> _quickAttachments = [];
   List<dynamic> _tagSuggestions = [];
+  List<dynamic> _frequentTags = [];
   List<dynamic> _heatmap = [];
   List<dynamic> _dailyReview = [];
   bool _loading = false;
@@ -239,6 +240,7 @@ class _NotesPageState extends State<NotesPage> {
     await Future.wait([
       _fetchNotes(),
       _fetchTagSuggestions(),
+      _fetchFrequentTags(),
       _fetchHeatmap(),
       _fetchDailyReview(),
     ]);
@@ -322,6 +324,23 @@ class _NotesPageState extends State<NotesPage> {
       if (!mounted) return;
       if (r.statusCode == 200) {
         setState(() => _tagSuggestions = json.decode(_decodeResponse(r)) as List<dynamic>);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _fetchFrequentTags() async {
+    final token = await _token();
+    if (token == null || token.isEmpty) return;
+
+    try {
+      final r = await http.get(
+        Uri.parse('$backendUrl/tags/frequent'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (!mounted) return;
+      if (r.statusCode == 200) {
+        final list = json.decode(_decodeResponse(r)) as List<dynamic>;
+        setState(() => _frequentTags = list.take(10).toList());
       }
     } catch (_) {}
   }
@@ -1855,10 +1874,13 @@ class _NotesPageState extends State<NotesPage> {
         ? <Map<String, dynamic>>[]
         : (note['attachments'] as List<dynamic>? ?? [])
             .whereType<Map>()
-            .map((item) => Map<String, dynamic>.from(item as Map))
+            .map((item) => Map<String, dynamic>.from(item))
             .toList();
     var pendingAttachments = <PickedLocalFile>[];
     var pickingEditorAttachment = false;
+    var localFrequentTags = _frequentTags.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    // Pre-fetch frequent tags so they're available when the dialog opens
+    _fetchFrequentTags();
     final titleCtrl = TextEditingController(
       text: (note?['title'] ?? templateTitle ?? '').toString(),
     );
@@ -2025,6 +2047,44 @@ class _NotesPageState extends State<NotesPage> {
                               ),
                             ),
                             const SizedBox(height: 8),
+                            if (localFrequentTags.isNotEmpty) ...[
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: localFrequentTags.map((item) {
+                                  final tag = item['tag']?.toString() ?? '';
+                                  if (tag.isEmpty) return const SizedBox.shrink();
+                                  final recent = item['recent'] == true;
+                                  return FilterChip(
+                                    label: Text(
+                                      '#$tag',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: recent ? Colors.white : _brandDark,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    backgroundColor: recent ? _brand : const Color(0xFFE7F5EC),
+                                    selectedColor: _brand,
+                                    checkmarkColor: Colors.white,
+                                    onSelected: (_) {
+                                      final current = tagsCtrl.text.trim();
+                                      final newTag = tag;
+                                      if (current.isEmpty) {
+                                        tagsCtrl.text = newTag;
+                                      } else {
+                                        // Avoid duplicates
+                                        final existing = _parseTagInput(current);
+                                        if (!existing.contains(newTag)) {
+                                          tagsCtrl.text = '$current, $newTag';
+                                        }
+                                      }
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 10),
+                            ],
                             TextField(
                               controller: tagsCtrl,
                               decoration: _editorFieldDecoration(
