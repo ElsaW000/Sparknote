@@ -240,12 +240,20 @@ class NoteRead(SQLModel):
     pinned_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
-    tags: List[str] = Field(default_factory=list)
+    tags: List["TagItem"] = Field(default_factory=list)
     attachments: List["NoteAttachmentRead"] = Field(default_factory=list)
     workspace_conversation_id: Optional[int] = None
     workspace_status: Optional[str] = None
     workspace_mode: Optional[str] = None
     workspace_source_count: int = 0
+
+
+class TagItem(SQLModel):
+    """Schema for a tag item used in frequent-tag suggestions and note tag lists (TAG-03)."""
+    id: int          # minimal notetag.id for this user's this tag name
+    name: str        # tag display name
+    count: int = 0   # usage count (for /tags/frequent)
+    recent: bool = False  # has at least one note in last 7 days (for /tags/frequent)
 
 
 class NoteAttachmentRead(SQLModel):
@@ -305,7 +313,7 @@ class NoteSearchResult(SQLModel):
     user_id: int
     created_at: datetime
     updated_at: datetime
-    tags: List[str] = Field(default_factory=list)
+    tags: List["TagItem"] = Field(default_factory=list)
     match_type: str = "content"  # "title", "content", "tag"
 
 
@@ -735,11 +743,18 @@ def _merge_tags(manual_tags: Optional[List[str]], content: Optional[str]) -> Lis
     return _normalize_tags((manual_tags or []) + _extract_tags_from_content(content))
 
 
-def _get_note_tags(session: Session, note_id: int, user_id: int) -> List[str]:
+def _get_note_tags(session: Session, note_id: int, user_id: int) -> List[TagItem]:
     rows = session.exec(
         select(NoteTag).where((NoteTag.note_id == note_id) & (NoteTag.user_id == user_id))
     ).all()
-    return [r.tag for r in rows]
+    # Return TagItem list with minimal id per tag name (deterministic)
+    seen_names: set = set()
+    result: List[TagItem] = []
+    for r in rows:
+        if r.tag not in seen_names:
+            seen_names.add(r.tag)
+            result.append(TagItem(id=r.id, name=r.tag, count=0, recent=False))
+    return result
 
 
 def _set_note_tags(session: Session, note_id: int, user_id: int, tags: Optional[List[str]]) -> None:
@@ -1293,7 +1308,7 @@ def search_notes(
         title_lower = (note.title or "").lower()
         if kw_lower in title_lower:
             match_type = "title"
-        elif any(kw_lower in tag.lower() for tag in tags):
+        elif any(kw_lower in tag.name.lower() for tag in tags):
             match_type = "tag"
         results.append(NoteSearchResult(
             id=note.id,
@@ -1405,13 +1420,71 @@ def delete_note_attachment(
     return {"ok": True, "deleted_attachment_id": attachment_id}
 
 
+@app.get("/tags/frequent")
+def frequent_tags(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Return top-used tags with id, name, count, and recent flag (TAG-03)."""
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+
+    # Get tag name -> minimal notetag.id per user per tag name
+    min_id_sub = (
+        select(NoteTag.tag, func.min(NoteTag.id).label("min_id"))
+        .where(NoteTag.user_id == current_user.id)
+        .group_by(NoteTag.tag)
+    ).subquery()
+
+    # Count usage and check "recent" flag per tag name
+    rows = session.exec(
+        select(
+            NoteTag.tag,
+            func.count().label("cnt"),
+        )
+        .where(NoteTag.user_id == current_user.id)
+        .group_by(NoteTag.tag)
+        .order_by(func.count().desc())
+        .limit(20)
+    ).all()
+
+    # Check recent per tag name (has at least one note in last 7 days)
+    recent_tags = set(
+        row.tag
+        for row in session.exec(
+            select(NoteTag.tag)
+            .join(Note, Note.id == NoteTag.note_id)
+            .where(
+                (NoteTag.user_id == current_user.id)
+                & (Note.created_at >= seven_days_ago)
+            )
+            .distinct()
+        ).all()
+    )
+
+    result: List[TagItem] = []
+    for r in rows:
+        # Look up the minimal id for this tag name
+        min_id_row = session.exec(
+            select(func.min(NoteTag.id)).where(
+                (NoteTag.user_id == current_user.id) & (NoteTag.tag == r.tag)
+            )
+        ).one_or_none()
+        result.append(TagItem(
+            id=min_id_row or 0,
+            name=r.tag,
+            count=r.cnt,
+            recent=r.tag in recent_tags,
+        ))
+    return result
+
+
 @app.get("/tags/suggest")
 def suggest_tags(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Return top-used tags by frequency, limited to 20 (TAG-03)."""
-    # Aggregate tag usage count
+    """Legacy endpoint kept for backward compat (TAG-03). Prefer /tags/frequent for new UI."""
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
     rows = session.exec(
         select(NoteTag.tag, func.count().label("cnt"))
         .where(NoteTag.user_id == current_user.id)
@@ -1433,8 +1506,8 @@ def related_notes(
     if not note or note.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="note not found")
     
-    # Get current note's tags
-    current_tags = set(_get_note_tags(session, note_id, current_user.id))
+    # Get current note's tag names (TagItem is not hashable for set)
+    current_tag_names = set(t.name for t in _get_note_tags(session, note_id, current_user.id))
     
     # Find directly related notes via NoteRelation
     direct_relations = session.exec(
@@ -1454,12 +1527,12 @@ def related_notes(
         related_scores[other_id] = score
     
     # Find notes with shared tags
-    if current_tags:
+    if current_tag_names:
         tag_related = session.exec(
             select(NoteTag.note_id, func.count().label("shared_count"))
             .where(
                 (NoteTag.user_id == current_user.id) &
-                (NoteTag.tag.in_(current_tags)) &
+                (NoteTag.tag.in_(current_tag_names)) &
                 (NoteTag.note_id != note_id)
             )
             .group_by(NoteTag.note_id)
@@ -1753,7 +1826,8 @@ def update_note(
     if payload.tags is not None or payload.content is not None:
         current_tags = payload.tags
         if current_tags is None:
-            current_tags = _get_note_tags(session, note.id, current_user.id)
+            # _get_note_tags returns List[TagItem]; extract names for _merge_tags
+            current_tags = [t.name for t in _get_note_tags(session, note.id, current_user.id)]
         merged_tags = _merge_tags(current_tags, note.content)
         _set_note_tags(session, note.id, current_user.id, merged_tags)
     session.add(note)

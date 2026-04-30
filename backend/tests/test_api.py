@@ -45,7 +45,7 @@ def test_manual_tags():
     assert r.status_code == 200
     note = r.json()
     # normalization should remove leading # and dedupe; case is preserved so X and x are distinct
-    assert note["tags"] == ["X", "Y", "x"]
+    assert [t["name"] for t in note["tags"]] == ["X", "Y", "x"]
 
 
 def test_sync_since_filter():
@@ -515,25 +515,25 @@ def test_note_auto_extract_hashtags():
         "/notes",
         json={
             "title": "Tag Test",
-            "content": "capture #idea and #å·¥ä½œ and keep #work-log",
+            "content": "capture #idea and #工作 and keep #work-log",
             "tags": ["manual", "#idea"],
         },
         headers=headers,
     )
     assert r.status_code == 200
     note = r.json()
-    assert set(note["tags"]) == {"manual", "idea", "å·¥ä½œ", "work-log"}
+    assert set(t["name"] for t in note["tags"]) == {"manual", "idea", "工作", "work-log"}
 
     note_id = note["id"]
     r = client.patch(
         f"/notes/{note_id}",
-        json={"content": "updated content with #newtag and #å·¥ä½œ"},
+        json={"content": "updated content with #newtag and #工作"},
         headers=headers,
     )
     assert r.status_code == 200
     updated = r.json()
-    assert "newtag" in updated["tags"]
-    assert "å·¥ä½œ" in updated["tags"]
+    assert "newtag" in [t["name"] for t in updated["tags"]]
+    assert "工作" in [t["name"] for t in updated["tags"]]
 
 
 def test_note_search():
@@ -704,7 +704,7 @@ def test_create_note_from_template():
     assert r.status_code == 200
     note = r.json()
     assert "产品评审" in note["title"]
-    assert "会议" in note["tags"]
+    assert "会议" in [t["name"] for t in note["tags"]]
     assert "本次评审重点讨论 MVP 上线计划" in note["content"]
 
 
