@@ -1432,7 +1432,82 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
-  Future<void> _openNoteEditor({Map<String, dynamic>? note}) async {
+  // NOTE-10: Open template selector dialog, then pre-fill the note editor.
+  // NOTE-10: Open template selector dialog, then pre-fill the note editor.
+  Future<void> _openTemplateSelector() async {
+    final token = await _token();
+    if (!mounted || token == null || token.isEmpty) return;
+
+    // Step 1: Fetch templates
+    List<dynamic> templates = [];
+    try {
+      final resp = await http.get(
+        Uri.parse('$backendUrl/templates'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (resp.statusCode == 200) {
+        templates = json.decode(_decodeResponse(resp)) as List<dynamic>;
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('加载模板失败：$e')),
+      );
+      return;
+    }
+    if (templates.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('暂无可用模板')),
+      );
+      return;
+    }
+
+    // Step 2: Show template selection dialog
+    final selected = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => _TemplateSelectorDialog(templates: templates),
+    );
+    if (selected == null || !mounted) return;
+
+    // Step 3: Preview the template (auto-fills {date})
+    String title = selected['name'] as String;
+    String content = '';
+    try {
+      final resp = await http.post(
+        Uri.parse('$backendUrl/templates/preview'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({'template_id': selected['id'], 'variables': {}}),
+      );
+      if (resp.statusCode == 200) {
+        final preview = json.decode(_decodeResponse(resp)) as Map<String, dynamic>;
+        title = (preview['title'] as String?) ?? title;
+        content = (preview['content'] as String?) ?? '';
+      }
+    } catch (e) {
+      // Fall back to template content_template on preview failure
+      content = (selected['content_template'] as String?) ?? '';
+      title = (selected['title_template'] as String?) ?? title;
+    }
+
+    // Step 4: Open editor with pre-filled content
+    final templateId = selected['id'] as int?;
+    await _openNoteEditor(
+      templateTitle: title,
+      templateContent: content,
+      templateId: templateId,
+    );
+  }
+
+  Future<void> _openNoteEditor({
+    Map<String, dynamic>? note,
+    String? templateTitle,
+    String? templateContent,
+    int? templateId,
+  }) async {
     final existingAttachments = note == null
         ? <Map<String, dynamic>>[]
         : (note['attachments'] as List<dynamic>? ?? [])
@@ -1442,10 +1517,10 @@ class _NotesPageState extends State<NotesPage> {
     var pendingAttachments = <PickedLocalFile>[];
     var pickingEditorAttachment = false;
     final titleCtrl = TextEditingController(
-      text: (note?['title'] ?? '').toString(),
+      text: (note?['title'] ?? templateTitle ?? '').toString(),
     );
     final contentCtrl = TextEditingController(
-      text: (note?['content'] ?? '').toString(),
+      text: (note?['content'] ?? templateContent ?? '').toString(),
     );
     final tagsCtrl = TextEditingController(
       text: note == null
@@ -1778,11 +1853,16 @@ class _NotesPageState extends State<NotesPage> {
     }
 
     try {
-      final body = json.encode({
+      final bodyJson = {
         'title': titleCtrl.text.trim().isEmpty ? null : titleCtrl.text.trim(),
         'content': content,
         'tags': _parseTagInput(tagsCtrl.text),
-      });
+      };
+      if (templateId != null) {
+        bodyJson['template_id'] = templateId;
+        bodyJson['template_variables'] = {};
+      }
+      final body = json.encode(bodyJson);
 
       final uri = note == null
           ? Uri.parse('$backendUrl/notes')
@@ -2949,6 +3029,20 @@ class _NotesPageState extends State<NotesPage> {
                       icon: const Icon(Icons.add),
                       label: const Text('新建长笔记'),
                     ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _brand,
+                        side: BorderSide(color: _brand.withAlpha(128)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                      onPressed: _openTemplateSelector,
+                      icon: const Icon(Icons.dashboard_customize_outlined, size: 18),
+                      label: const Text('从模板'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -3647,12 +3741,29 @@ class _NotesPageState extends State<NotesPage> {
           _buildQuickComposer(isDesktop: false),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: _brand,
-        foregroundColor: Colors.white,
-        onPressed: () => _openNoteEditor(),
-        icon: const Icon(Icons.add),
-        label: const Text('长笔记'),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: FloatingActionButton.small(
+              heroTag: 'template',
+              backgroundColor: _brand.withAlpha(25),
+              foregroundColor: _brand,
+              onPressed: _openTemplateSelector,
+              child: const Icon(Icons.dashboard_customize_outlined),
+            ),
+          ),
+          FloatingActionButton.extended(
+            heroTag: 'new',
+            backgroundColor: _brand,
+            foregroundColor: Colors.white,
+            onPressed: () => _openNoteEditor(),
+            icon: const Icon(Icons.add),
+            label: const Text('长笔记'),
+          ),
+        ],
       ),
     );
   }
@@ -3672,6 +3783,152 @@ class _QuickInputPayload {
     required this.title,
     required this.content,
   });
+}
+
+// NOTE-10: Template selection dialog shown when user taps "从模板".
+class _TemplateSelectorDialog extends StatelessWidget {
+  static const _brand = Color(0xFF2D6A4F);
+  static const _ink = Color(0xFF263238);
+  static const _muted = Color(0xFF60716F);
+  static const _line = Color(0xFFC6D6CD);
+
+  final List<dynamic> templates;
+
+  const _TemplateSelectorDialog({required this.templates});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.white,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 600),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '选择模板',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: _ink,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                '选择一个模板，预览效果后再创建笔记。',
+                style: TextStyle(fontSize: 13, color: _muted, height: 1.6),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: templates.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (itemContext, i) {
+                    final t = templates[i] as Map<String, dynamic>;
+                    final name = (t['name'] ?? '') as String;
+                    final icon = (t['icon'] ?? 'note') as String;
+                    final contentTemplate = (t['content_template'] ?? '') as String;
+                    // Preview: show first 3 lines of content_template
+                    final previewLines = contentTemplate.split('\n').take(3).join('\n');
+                    final iconWidget = _templateIcon(icon);
+
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => Navigator.pop(itemContext, t),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: _line),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: _brand.withAlpha(25),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: iconWidget,
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: _ink,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    previewLines.isEmpty
+                                        ? '点击选择此模板'
+                                        : previewLines,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: _muted,
+                                      height: 1.4,
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right, color: _muted, size: 20),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('取消'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _templateIcon(String icon) {
+    IconData data;
+    switch (icon) {
+      case 'meeting':
+        data = Icons.groups_outlined;
+        break;
+      case 'bulb':
+        data = Icons.lightbulb_outline;
+        break;
+      case 'review':
+        data = Icons.rate_review_outlined;
+        break;
+      default:
+        data = Icons.note_outlined;
+    }
+    return Icon(data, color: _brand, size: 22);
+  }
 }
 
 
