@@ -35,10 +35,21 @@
 | NOTE-10 | 模板笔记 | done | done |
 | CAL-02 | 智能文件夹/保存筛选 | — | 未开始 |
 
-## 本次操作记录（生成时间：2026-05-01 06:45 Asia/Shanghai）
+## 本次操作记录（生成时间：2026-05-01 07:15 Asia/Shanghai）
 
-- 无新 git 提交（最后代码提交 e44672a 于 2026-05-01 01:26，约 5 小时 19 分前）
-- git 状态显示仅有 untracked 调试脚本和临时文件，无核心代码变更
+- 无新 git 提交（最后代码提交 e44672a 于 2026-05-01 01:26，约 5 小时 39 分前）
+- 源码层无新变更（最近修改文件：mobile/lib/pages/notes.dart, backend/main.py, backend/tests/test_api.py，均为 04-30 或更早）
 - NEXT_STEP.md 自身为唯一 tracked 变更（本次更新）
 - 当前等待：人工验收 TAG-03 功能
 - 下一步功能方向：AUTH-05 邮箱验证
+
+ec8f123 cron: update NEXT_STEP timestamp 2026-05-01 07:15 - no changes, TAG-03 still awaiting
+193a4ca cron: update NEXT_STEP timestamp 2026-05-01 06:35 - no changes, TAG-03 still awaiting
+bc137da cron: update NEXT_STEP timestamp 2026-05-01 06:15 - no changes, TAG-03 still awaiting
+65de723 cron: update NEXT_STEP 2026-05-01 04:35 - no changes, TAG-03 still awaiting manual acceptance
+b530c41 cron: update NEXT_STEP timestamp 2026-05-01 03:45
+2565c16 cron: TAG-03 frontend committed (e44672a), flutter build web OK, awaiting manual acceptance
+e44672a feat(TAG-03): 常用标签前端 - frequent tag chips, click-to-add interaction
+e2eeea7 feat(TAG-03): 常用标签后端 - TagItem schema, /tags/frequent endpoint, NoteRead.tags升级
+cc3b64c cron: update NEXT_STEP 2026-04-30 21:55 - TAG-03 backend schema plan confirmed, noteTag has id, recent needs join note
+9698ecf cron: AUTH-04 confirmed done, set TAG-03 as next step (2026-04-30 21:15)
