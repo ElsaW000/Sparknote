@@ -76,6 +76,23 @@ def _ensure_legacy_schema() -> None:
                 conn.exec_driver_sql(
                     "UPDATE note SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL"
                 )
+            if "is_pinned" not in note_cols:
+                conn.exec_driver_sql("ALTER TABLE note ADD COLUMN is_pinned INTEGER DEFAULT 0")
+            if "pinned_at" not in note_cols:
+                conn.exec_driver_sql("ALTER TABLE note ADD COLUMN pinned_at TEXT")
+
+            # NOTE-09: index for pinned ordering
+            try:
+                existing_pinned_idx = conn.exec_driver_sql(
+                    "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_notes_user_pinned'"
+                ).fetchall()
+                if not existing_pinned_idx:
+                    conn.exec_driver_sql(
+                        "CREATE INDEX IF NOT EXISTS idx_notes_user_pinned "
+                        "ON note(user_id, is_pinned DESC, pinned_at DESC)"
+                    )
+            except Exception:
+                pass
 
             user_cols = _table_columns("user")
             if "identity" not in user_cols:
@@ -135,6 +152,8 @@ class Note(SQLModel, table=True):
     title: Optional[str] = None
     content: str
     user_id: int = Field(foreign_key="user.id")
+    is_pinned: bool = Field(default=False)
+    pinned_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -209,6 +228,8 @@ class NoteRead(SQLModel):
     title: Optional[str] = None
     content: str
     user_id: int
+    is_pinned: bool = False
+    pinned_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     tags: List[str] = Field(default_factory=list)
@@ -705,6 +726,8 @@ def _to_note_read(session: Session, note: Note) -> NoteRead:
         title=note.title,
         content=note.content,
         user_id=note.user_id,
+        is_pinned=note.is_pinned,
+        pinned_at=note.pinned_at,
         created_at=note.created_at,
         updated_at=note.updated_at,
         tags=_get_note_tags(session, note.id, note.user_id),
@@ -918,11 +941,14 @@ def list_notes(
     since: Optional[datetime] = None,
     tag: Optional[str] = None,
     q: Optional[str] = None,
+    filter: Optional[str] = "all",
 ):
     """List notes for the current user.
     Optional `since` query param (ISO datetime) filters notes created after the given time.
     Optional `tag` query param filters notes containing the exact tag (TAG-04).
     Optional `q` query param searches note title and content case-insensitively.
+    Optional `filter` query param: `all` (default), `pinned`, `unpinned`.
+    Results are ordered by pinned first, then updated_at desc.
     """
     query = select(Note).where(Note.user_id == current_user.id)
     if since is not None:
@@ -938,7 +964,11 @@ def list_notes(
                 func.lower(Note.content).like(keyword),
             )
         )
-    query = query.order_by(Note.created_at.desc())
+    if filter == "pinned":
+        query = query.where(Note.is_pinned == True)
+    elif filter == "unpinned":
+        query = query.where(Note.is_pinned == False)
+    query = query.order_by(Note.is_pinned.desc(), Note.updated_at.desc())
     notes = session.exec(query).all()
     return [_to_note_read(session, n) for n in notes]
 
@@ -1423,6 +1453,44 @@ def billing_checkout(
 ):
     # return fake url
     return CheckoutResponse(checkout_url=f"https://pay.example.com/{payload.plan}")
+
+
+@app.post("/notes/{note_id}/pin")
+def pin_note(
+    note_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Set a note as pinned (NOTE-09)."""
+    note = session.get(Note, note_id)
+    if not note or note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="note not found")
+    note.is_pinned = True
+    note.pinned_at = datetime.utcnow()
+    note.updated_at = datetime.utcnow()
+    session.add(note)
+    session.commit()
+    session.refresh(note)
+    return {"id": note.id, "is_pinned": note.is_pinned, "pinned_at": note.pinned_at}
+
+
+@app.delete("/notes/{note_id}/pin")
+def unpin_note(
+    note_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Unpin a note (NOTE-09)."""
+    note = session.get(Note, note_id)
+    if not note or note.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="note not found")
+    note.is_pinned = False
+    note.pinned_at = None
+    note.updated_at = datetime.utcnow()
+    session.add(note)
+    session.commit()
+    session.refresh(note)
+    return {"id": note.id, "is_pinned": note.is_pinned, "pinned_at": None}
 
 
 @app.patch("/notes/{note_id}", response_model=NoteRead)

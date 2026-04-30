@@ -591,3 +591,69 @@ def test_note_search():
     assert resp["total"] == 0
 
 
+def test_note_pin_unpin():
+    """NOTE-09: pin/unpin a note, verify ordering and filter."""
+    headers = _auth_headers("pinuser@example.com", "pass1234")
+
+    # Create three notes
+    r1 = client.post("/notes", json={"content": "first note"}, headers=headers)
+    assert r1.status_code == 200
+    id1 = r1.json()["id"]
+
+    r2 = client.post("/notes", json={"content": "second note"}, headers=headers)
+    assert r2.status_code == 200
+    id2 = r2.json()["id"]
+
+    r3 = client.post("/notes", json={"content": "third note"}, headers=headers)
+    assert r3.status_code == 200
+    id3 = r3.json()["id"]
+
+    # Verify no note is pinned initially
+    notes = client.get("/notes", headers=headers).json()
+    assert all(n["is_pinned"] == False for n in notes)
+
+    # Pin note 2
+    r = client.post(f"/notes/{id2}/pin", headers=headers)
+    assert r.status_code == 200
+    assert r.json()["is_pinned"] == True
+    assert r.json()["pinned_at"] is not None
+
+    # Note 2 should be first in default ordering (pinned first)
+    notes = client.get("/notes", headers=headers).json()
+    assert notes[0]["id"] == id2
+    assert notes[0]["is_pinned"] == True
+
+    # Filter: pinned only
+    pinned = client.get("/notes", params={"filter": "pinned"}, headers=headers).json()
+    assert len(pinned) == 1
+    assert pinned[0]["id"] == id2
+
+    # Filter: unpinned only
+    unpinned = client.get("/notes", params={"filter": "unpinned"}, headers=headers).json()
+    ids = {n["id"] for n in unpinned}
+    assert id1 in ids
+    assert id3 in ids
+    assert id2 not in ids
+
+    # Unpin note 2
+    r = client.delete(f"/notes/{id2}/pin", headers=headers)
+    assert r.status_code == 200
+    assert r.json()["is_pinned"] == False
+    assert r.json()["pinned_at"] is None
+
+    # After unpin, all should be unpinned
+    notes = client.get("/notes", headers=headers).json()
+    assert all(n["is_pinned"] == False for n in notes)
+
+    # Pin two notes
+    client.post(f"/notes/{id1}/pin", headers=headers)
+    client.post(f"/notes/{id3}/pin", headers=headers)
+
+    # Both pinned, ordered by pinned_at desc (most recently pinned first)
+    notes = client.get("/notes", params={"filter": "pinned"}, headers=headers).json()
+    assert len(notes) == 2
+    ids_pinned = {n["id"] for n in notes}
+    assert id1 in ids_pinned
+    assert id3 in ids_pinned
+
+
