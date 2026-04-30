@@ -2,6 +2,7 @@
 
 ## 当前判断
 - 当前步骤：AUTH-04（认证令牌刷新）尚未开始，仍处于等待执行状态
+- 距上次功能提交（fd9faf2 NOTE-08 完成，18:35）已超过 1 小时 20 分钟，无新代码提交
 
 ## 下一步任务
 - **实现 AUTH-04 认证令牌刷新**（backend）
@@ -15,7 +16,6 @@
     2. `POST /auth/refresh` 端点：用 refresh_token 换新 access_token
     3. `POST /auth/login` 时同时返回 access_token + refresh_token
     4. Token 路由中捕获 `JWTError` 并返回 400 + "令牌已过期"
-  - 建议先与 Elisa 确认刷新流程细节（refresh_token 有效期、是否需要 revoke 机制）
   - 参考 `PRD/backend-python/p0/` 下已有 spec 格式，可照此格式写 AUTH-04 spec
 
 ## 阻塞点与补救
@@ -43,10 +43,9 @@
 | NOTE-10 | 模板笔记 | ✅ | ✅ 已完成 |
 | CAL-02 | 日历到期提醒 | — | 未认领 |
 
-## 本次操作记录（生成时间：2026-04-30 19:35 Asia/Shanghai）
+## 本次操作记录（生成时间：2026-04-30 19:55 Asia/Shanghai）
 
-- 检测到最近 ~60 分钟内无新 git 提交（最后提交 18:35）
-- 存在少量 untracked 临时文件（debug脚本、zip等），不属于功能代码
-- NOTE-08 已完成（18:35 commit），AUTH-04 顺延为下一个目标
-- Backend 已有基础 JWT 过期逻辑（AUTH-04 需补充 refresh 机制）
-- 无新的功能代码改动，仅 NEXT_STEP.md 自身有未提交变更（本次更新）
+- 检测到最近 ~80 分钟内无新 git 提交（最后功能提交 fd9faf2 于 18:35）
+- Backend 状态需人工确认（上次确认 19:45 健康）
+- AUTH-04 描述清晰，无阻塞，仍是当前唯一下一步目标
+- 存在少量 untracked 临时文件（debug脚本、zip等），不属于功能代码，不影响主流程
