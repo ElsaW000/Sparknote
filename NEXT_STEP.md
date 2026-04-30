@@ -1,45 +1,41 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：NOTE-08 组合筛选 — **🔄 未开始（上次 cron 后 ~50 分钟仍无新 commit，距上次 16:15 已超 30 分钟）**
+- 当前步骤：NOTE-08 backend 已提交，frontend 筛选 UI 尚未开始
 
 ## 下一步任务
-- **开始实现 NOTE-08 组合筛选（backend 优先）**
-  1. 后端 `GET /notes` 新增 query params：`tag_ids`, `date_from`, `date_to`, `sort`, `order`, `match`
-  2. SQL WHERE/HAVING 组装（`INNER JOIN` + `HAVING COUNT(DISTINCT tag_id)` 全匹配；`IN` 任一匹配）
-  3. 索引（`idx_notes_user_created`）
-  4. pytest 覆盖
-  5. 前端筛选面板（Flutter notes.dart 侧边栏，标签多选 + 日期范围，URL sync + localStorage）
+- **实现 NOTE-08 前端筛选 UI**：在 `mobile/lib/pages/notes.dart` 中为笔记列表添加组合筛选功能
+  - 参数：tag_ids（多选标签，拼接为逗号分隔）、date_from / date_to（日期范围）、sort（updated_at/created_at/pinned）、order（asc/desc）、match（all/any）
+  - 调用 `GET /notes?tag_ids=&date_from=&date_to=&sort=&order=&match=`
+  - UI 形式建议：BottomSheet 或 ExpandableFilterBar
 
 ## 阻塞点与补救
-- 阻塞点：无阻塞，规格清晰 NOTE-07 参考可用
+- 阻塞点：NOTE-08 frontend 筛选 UI 完全没有实现
 - 补救动作：
-  1. `backend/main.py` — `GET /notes` 添加 query params 解析（tag_ids, date_from, date_to, sort, order, match）
-  2. SQL query 组装（INNER JOIN note_tags 做标签筛选，HAVING COUNT 做全/任一匹配）
-  3. 运行 pytest 确认不破坏现有测试
-  4. Flutter 侧边栏筛选面板（参考 NOTE-07 搜索的实现模式）
+  1. 参考 `mobile/lib/pages/notes.dart` 现有列表 UI 结构
+  2. 添加筛选 BottomSheet/FilterBar，包含：标签多选、日期范围选择器、排序方式选择
+  3. 将筛选参数追加到 notes API 调用中
+  4. 筛选条件变化后刷新笔记列表
 
-## Phase 5 P0 实现进度
-| ID | 功能 | 规格 | 实现 |
+## 人工测试
+- 等待 NOTE-08 frontend 实现后进行端到端人工测试
+
+---
+
+## Phase 5 P0 进度总览
+
+| ID | 描述 | 实现 | 状态 |
 |----|------|------|------|
-| AUTH-04 | 注册验证码 | ✅ | ❌ 未开始 |
-| AUTH-05 | 邮箱验证 | ✅ | ❌ 未开始 |
-| TAG-03 | 常用标签 | ✅ | ❌ 未开始 |
-| **NOTE-07** | **全局搜索** | ✅ | **✅ 已完成** |
-| **NOTE-08** | **组合筛选** | ✅ | **🔄 下一步** |
-| **NOTE-09** | **置顶/收藏** | ✅ | **✅ 已完成** |
-| **NOTE-10** | **模板笔记** | ✅ | **✅ 已完成** |
-| CAL-02 | 智能文件夹 | ✅ | ❌ 未开始 |
+| AUTH-04 | 认证令牌刷新 | backend | 未完成 |
+| AUTH-05 | 刷新令牌机制 | backend | 未完成 |
+| TAG-03 | 批量标签管理 | — | 未认领 |
+| NOTE-07 | 笔记复制/移动 | ✅ | ✅ 已完成 |
+| NOTE-08 | 组合筛选过滤 | ✅ backend 已提交 | 🔄 frontend 未开始 |
+| NOTE-09 | 置顶/排序视图 | ✅ | ✅ 已完成 |
+| NOTE-10 | 模板笔记 | ✅ | ✅ 已完成 |
+| CAL-02 | 日历到期提醒 | — | 未认领 |
 
-## 推荐实现顺序
-1. ~~`NOTE-07` 全局搜索~~ — ✅ 已完成
-2. ~~`NOTE-09` 置顶/收藏~~ — ✅ 已完成
-3. ~~`NOTE-10` 模板笔记~~ — ✅ 已完成
-4. `NOTE-08` 组合筛选 — 🔄 **下一步（backend 先开）**
-5. `TAG-03` 常用标签 — 相对独立
-6. `AUTH-04/05` 注册验证码/邮箱验证 — 需第三方服务，排在靠后
+## 本次操作记录（生成时间：2026-04-30 18:15 Asia/Shanghai）
 
-## 参考文档
-- NOTE-08 规格: `PRD/backend-python/p0/NOTE-08-filter-combination.md`
-- NOTE-07 参考: `PRD/backend-python/p0/NOTE-07-global-search.md`（实现模式可复用）
-- 最后更新：2026-04-30 17:05 (Asia/Shanghai)
+- git commit backend/main.py — NOTE-08 backend 已提交 ✅ (2bb484c)
+- NOTE-08 frontend UI 尚未开始实现
