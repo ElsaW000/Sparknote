@@ -1,21 +1,28 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：NOTE-08 组合筛选已全部完成（backend 2bb484c + frontend 3c0949b）
+- 当前步骤：AUTH-04（认证令牌刷新）尚未开始，等待执行
 
 ## 下一步任务
-- **实现 AUTH-04 认证令牌刷新**（backend）：在 FastAPI 中为 JWT access token 添加自动过期与刷新机制
-  - 当前 JWT 无过期验证，前端登录后 token 永久有效
-  - 建议：access token 15-30min 过期，提供 `/auth/refresh` 端点用 refresh token 换新 access token
-  - 可参考 Auth-04 描述或与 Elisa 确认具体刷新流程
+- **实现 AUTH-04 认证令牌刷新**（backend）
+  - 当前状态：JWT 已有过期时间（默认 24h，`exp` 字段），但无 `/auth/refresh` 端点
+  - 参考 PRD phases/05-feature-benchmark-and-prd-expansion.md：
+    - 添加 access token 过期验证与刷新机制
+    - `/auth/register` 也应返回 token（当前已返回）
+    - 过期时统一返回 400，提示"令牌已过期"
+  - 最小可行方案：
+    1. 在 User 表增加 `refresh_token` 字段
+    2. `POST /auth/refresh` 端点：用 refresh_token 换新 access_token
+    3. `POST /auth/login` 时同时返回 access_token + refresh_token
+    4. Token 路由中捕获 `JWTError` 并返回 400 + "令牌已过期"
+  - 建议先与 Elisa 确认刷新流程细节（refresh_token 有效期、是否需要 revoke 机制）
 
 ## 阻塞点与补救
-- 阻塞点：无（NOTE-08 已完成）
-- 补救动作：N/A
+- 阻塞点：无，PRD 有基本描述，可直接开始实现
+- 补救动作：读取 backend/main.py 中 `create_access_token` 和 auth 路由，确认当前 token 结构，再动手
 
 ## 人工测试
-- NOTE-08 组合筛选（标签+日期+排序+match）需端到端验证
-- 可在笔记页面点击"筛选"按钮测试各参数组合
+-
 
 ---
 
@@ -32,9 +39,10 @@
 | NOTE-10 | 模板笔记 | ✅ | ✅ 已完成 |
 | CAL-02 | 日历到期提醒 | — | 未认领 |
 
-## 本次操作记录（生成时间：2026-04-30 18:35 Asia/Shanghai）
+## 本次操作记录（生成时间：2026-04-30 18:55 Asia/Shanghai）
 
-- 检测到 notes.dart 有 440 行未提交 diff
-- `flutter analyze lib/pages/notes.dart` → 7 issues（均为 warning/info，无错误）
-- 已 commit：`feat: NOTE-08 combination filter frontend`（3c0949b）
-- NOTE-08 全部完成，下一步推进 AUTH-04
+- 检测到最近 20 分钟内无新 git 提交（最后提交 18:35）
+- 无 uncommitted 代码变更
+- AUTH-04 尚未开始，保持为当前目标
+- Backend 已有基础 JWT 过期逻辑（AUTH-04 需补充 refresh 机制）
+
