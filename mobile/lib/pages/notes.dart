@@ -188,6 +188,15 @@ class _NotesPageState extends State<NotesPage> {
   String? _selectedDate;
   String? _searchQuery;
 
+  // NOTE-08: combination filter state
+  Set<String> _selectedTagIds = {};
+  String? _dateFrom;
+  String? _dateTo;
+  String _sort = 'updated_at';
+  String _order = 'desc';
+  String _match = 'any';
+  bool _filterActive = false;
+
   static const double _expandedSideRailWidth = 280;
   static const double _collapsedLeftRailWidth = 92;
   static const double _collapsedRightRailWidth = 92;
@@ -255,6 +264,25 @@ class _NotesPageState extends State<NotesPage> {
       }
       if (_searchQuery != null && _searchQuery!.isNotEmpty) {
         queryParameters['q'] = _searchQuery!;
+      }
+      // NOTE-08: combination filter params
+      if (_selectedTagIds.isNotEmpty) {
+        queryParameters['tag_ids'] = _selectedTagIds.join(',');
+      }
+      if (_dateFrom != null && _dateFrom!.isNotEmpty) {
+        queryParameters['date_from'] = _dateFrom!;
+      }
+      if (_dateTo != null && _dateTo!.isNotEmpty) {
+        queryParameters['date_to'] = _dateTo!;
+      }
+      if (_sort != 'updated_at') {
+        queryParameters['sort'] = _sort;
+      }
+      if (_order != 'desc') {
+        queryParameters['order'] = _order;
+      }
+      if (_match != 'any') {
+        queryParameters['match'] = _match;
       }
 
       final uri = Uri.parse('$backendUrl/notes').replace(
@@ -439,6 +467,321 @@ class _NotesPageState extends State<NotesPage> {
   void _clearSearch() {
     _searchCtrl.clear();
     setState(() => _searchQuery = null);
+    _fetchNotes();
+  }
+
+  // NOTE-08: combination filter sheet
+  Future<void> _showFilterSheet() async {
+    // Local mutable copies for the sheet
+    Set<String> localSelectedTags = Set.from(_selectedTagIds);
+    String? localDateFrom = _dateFrom;
+    String? localDateTo = _dateTo;
+    String localSort = _sort;
+    String localOrder = _order;
+    String localMatch = _match;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return DraggableScrollableSheet(
+            initialChildSize: 0.72,
+            minChildSize: 0.4,
+            maxChildSize: 0.92,
+            expand: false,
+            builder: (_, scrollController) => Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      const Text(
+                        '组合筛选',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: _ink,
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () {
+                          setSheetState(() {
+                            localSelectedTags.clear();
+                            localDateFrom = null;
+                            localDateTo = null;
+                            localSort = 'updated_at';
+                            localOrder = 'desc';
+                            localMatch = 'any';
+                          });
+                        },
+                        child: const Text('重置'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      children: [
+                        // NOTE-08 Section: Tag filter
+                        const SizedBox(height: 8),
+                        const Text(
+                          '标签筛选',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: _ink,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            ..._tagSuggestions.take(12).map((item) {
+                              final tag = item['tag']?.toString() ?? '';
+                              if (tag.isEmpty) return const SizedBox.shrink();
+                              final selected = localSelectedTags.contains(tag);
+                              return FilterChip(
+                                label: Text('#$tag'),
+                                selected: selected,
+                                selectedColor: const Color(0xFFE7F5EC),
+                                checkmarkColor: _brand,
+                                onSelected: (val) {
+                                  setSheetState(() {
+                                    if (val) {
+                                      localSelectedTags.add(tag);
+                                    } else {
+                                      localSelectedTags.remove(tag);
+                                    }
+                                  });
+                                },
+                              );
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          localSelectedTags.isEmpty
+                              ? '不限制标签'
+                              : '已选 ${localSelectedTags.length} 个标签 · ${localMatch == 'all' ? '需全部匹配' : '任意匹配'}',
+                          style: const TextStyle(fontSize: 12, color: _muted),
+                        ),
+                        const SizedBox(height: 20),
+                        // NOTE-08 Section: Match mode
+                        const Text(
+                          '标签匹配方式',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: _ink,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SegmentedButton<String>(
+                          segments: const [
+                            ButtonSegment(
+                              value: 'any',
+                              label: Text('任意匹配'),
+                              icon: Icon(Icons.join_inner_outlined, size: 16),
+                            ),
+                            ButtonSegment(
+                              value: 'all',
+                              label: Text('全部匹配'),
+                              icon: Icon(Icons.join_full_outlined, size: 16),
+                            ),
+                          ],
+                          selected: {localMatch},
+                          onSelectionChanged: (val) {
+                            setSheetState(() => localMatch = val.first);
+                          },
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStateProperty.resolveWith((states) {
+                              if (states.contains(WidgetState.selected)) {
+                                return const Color(0xFFE7F5EC);
+                              }
+                              return null;
+                            }),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        // NOTE-08 Section: Date range
+                        const Text(
+                          '日期范围',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: _ink,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _DatePickerField(
+                                label: '开始日期',
+                                value: localDateFrom,
+                                onChanged: (val) {
+                                  setSheetState(() => localDateFrom = val);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text('—', style: TextStyle(color: _muted)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _DatePickerField(
+                                label: '结束日期',
+                                value: localDateTo,
+                                onChanged: (val) {
+                                  setSheetState(() => localDateTo = val);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        // NOTE-08 Section: Sort & Order
+                        const Text(
+                          '排序方式',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: _ink,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SegmentedButton<String>(
+                                segments: const [
+                                  ButtonSegment(value: 'updated_at', label: Text('更新时间')),
+                                  ButtonSegment(value: 'created_at', label: Text('创建时间')),
+                                  ButtonSegment(value: 'pinned', label: Text('置顶')),
+                                ],
+                                selected: {localSort},
+                                onSelectionChanged: (val) {
+                                  setSheetState(() => localSort = val.first);
+                                },
+                                style: ButtonStyle(
+                                  backgroundColor: WidgetStateProperty.resolveWith((states) {
+                                    if (states.contains(WidgetState.selected)) {
+                                      return const Color(0xFFE7F5EC);
+                                    }
+                                    return null;
+                                  }),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SegmentedButton<String>(
+                                segments: const [
+                                  ButtonSegment(value: 'desc', label: Text('↓ 降序')),
+                                  ButtonSegment(value: 'asc', label: Text('↑ 升序')),
+                                ],
+                                selected: {localOrder},
+                                onSelectionChanged: (val) {
+                                  setSheetState(() => localOrder = val.first);
+                                },
+                                style: ButtonStyle(
+                                  backgroundColor: WidgetStateProperty.resolveWith((states) {
+                                    if (states.contains(WidgetState.selected)) {
+                                      return const Color(0xFFE7F5EC);
+                                    }
+                                    return null;
+                                  }),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Apply / Cancel buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          child: const Text('取消'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: FilledButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedTagIds = localSelectedTags;
+                              _dateFrom = localDateFrom;
+                              _dateTo = localDateTo;
+                              _sort = localSort;
+                              _order = localOrder;
+                              _match = localMatch;
+                              _filterActive = localSelectedTags.isNotEmpty ||
+                                  localDateFrom != null ||
+                                  localDateTo != null ||
+                                  localSort != 'updated_at' ||
+                                  localOrder != 'desc' ||
+                                  localMatch != 'any';
+                            });
+                            Navigator.pop(ctx);
+                            _fetchNotes();
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _brand,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          child: const Text('应用筛选'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _selectedTagIds = {};
+      _dateFrom = null;
+      _dateTo = null;
+      _sort = 'updated_at';
+      _order = 'desc';
+      _match = 'any';
+      _filterActive = false;
+    });
     _fetchNotes();
   }
 
@@ -3043,6 +3386,25 @@ class _NotesPageState extends State<NotesPage> {
                       icon: const Icon(Icons.dashboard_customize_outlined, size: 18),
                       label: const Text('从模板'),
                     ),
+                    const SizedBox(width: 8),
+                    // NOTE-08: combination filter button
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _filterActive ? Colors.white : _brand,
+                        backgroundColor: _filterActive ? _brand : null,
+                        side: BorderSide(color: _brand.withAlpha(128)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                      onPressed: _showFilterSheet,
+                      icon: Icon(
+                        _filterActive ? Icons.filter_alt : Icons.filter_alt_outlined,
+                        size: 18,
+                      ),
+                      label: Text(_filterActive ? '筛选中' : '筛选'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -3076,10 +3438,10 @@ class _NotesPageState extends State<NotesPage> {
                     ),
                   ],
                 ),
-                if (_searchQuery != null || _selectedTag != null || _selectedDate != null) ...[
+                if (_searchQuery != null || _selectedTag != null || _selectedDate != null || _filterActive) ...[
                   const SizedBox(height: 12),
                   Text(
-                    '当前条件：${_searchQuery == null ? '全部内容' : '搜索 "$_searchQuery"'}${_selectedTag == null ? '' : ' · 标签 #$_selectedTag'}${_selectedDate == null ? '' : ' · 日期 $_selectedDate'}',
+                    '当前条件：${_searchQuery == null ? '全部内容' : '搜索 "$_searchQuery"'}${_selectedTag == null ? '' : ' · 标签 #$_selectedTag'}${_selectedDate == null ? '' : ' · 日期 $_selectedDate'}${!_filterActive ? '' : ' · 组合筛选'}${_filterActive ? ' · $_sort/$_order · $_match' : ''}',
                     style: const TextStyle(fontSize: _bodySize, color: Color(0xFF666666), height: _bodyHeight),
                   ),
                 ],
@@ -3786,6 +4148,82 @@ class _QuickInputPayload {
 }
 
 // NOTE-10: Template selection dialog shown when user taps "从模板".
+// NOTE-08: date picker field for filter sheet
+class _DatePickerField extends StatelessWidget {
+  final String label;
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  const _DatePickerField({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () async {
+        final now = DateTime.now();
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: value != null ? DateTime.tryParse(value!) ?? now : now,
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2100),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: Color(0xFF2D6A4F),
+                  onPrimary: Colors.white,
+                  surface: Colors.white,
+                  onSurface: Color(0xFF263238),
+                ),
+              ),
+              child: child!,
+            );
+          },
+        );
+        if (picked != null) {
+          final iso = '${picked.year.toString().padLeft(4, '0')}-'
+              '${picked.month.toString().padLeft(2, '0')}-'
+              '${picked.day.toString().padLeft(2, '0')}';
+          onChanged(iso);
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF2F3F2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFC6D6CD)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                value ?? label,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: value != null ? const Color(0xFF263238) : const Color(0xFF8A949E),
+                ),
+              ),
+            ),
+            if (value != null)
+              GestureDetector(
+                onTap: () => onChanged(null),
+                child: const Icon(Icons.close, size: 16, color: Color(0xFF8A949E)),
+              )
+            else
+              const Icon(Icons.calendar_today, size: 16, color: Color(0xFF8A949E)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _TemplateSelectorDialog extends StatelessWidget {
   static const _brand = Color(0xFF2D6A4F);
   static const _ink = Color(0xFF263238);
