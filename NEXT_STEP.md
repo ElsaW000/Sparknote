@@ -1,26 +1,23 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：NOTE-10 模板笔记 — **✅ 已完成（frontend build 验证通过 + commit 903a4bf）**
+- 当前步骤：NOTE-08 组合筛选 — **🔄 未开始（上次 cron 后 ~50 分钟仍无新 commit，距上次 16:15 已超 30 分钟）**
 
 ## 下一步任务
-- **开始实现 NOTE-08 组合筛选（依赖 NOTE-07 全局搜索，已完成）**
-  - 规格：`PRD/backend-python/p0/NOTE-08.md`
-  - 预期工作：
-    - 后端：扩展 `GET /notes/search` 支持多条件组合（时间范围 + 标签 + 关键词 + 排序）
-    - 前端：在笔记列表页面添加筛选栏（日期范围选择器、标签多选、排序选项）
-    - API 测试覆盖
+- **开始实现 NOTE-08 组合筛选（backend 优先）**
+  1. 后端 `GET /notes` 新增 query params：`tag_ids`, `date_from`, `date_to`, `sort`, `order`, `match`
+  2. SQL WHERE/HAVING 组装（`INNER JOIN` + `HAVING COUNT(DISTINCT tag_id)` 全匹配；`IN` 任一匹配）
+  3. 索引（`idx_notes_user_created`）
+  4. pytest 覆盖
+  5. 前端筛选面板（Flutter notes.dart 侧边栏，标签多选 + 日期范围，URL sync + localStorage）
 
 ## 阻塞点与补救
-- 阻塞点：无
-- 补救动作：无
-
-## 已完成的工作
-- ✅ NOTE-07 全局搜索（commit 724b3c4）
-- ✅ NOTE-09 置顶/收藏（commit 4b83393）
-- ✅ NOTE-10 模板笔记：
-  - 后端（commit 8fe67a4）：`GET /templates`、`POST /templates/preview`、`POST /notes` 支持 `template_id`
-  - 前端（commit 903a4bf）：`_openTemplateSelector()`、预览弹窗、编辑器预填充、`FAB` 双按钮
+- 阻塞点：无阻塞，规格清晰 NOTE-07 参考可用
+- 补救动作：
+  1. `backend/main.py` — `GET /notes` 添加 query params 解析（tag_ids, date_from, date_to, sort, order, match）
+  2. SQL query 组装（INNER JOIN note_tags 做标签筛选，HAVING COUNT 做全/任一匹配）
+  3. 运行 pytest 确认不破坏现有测试
+  4. Flutter 侧边栏筛选面板（参考 NOTE-07 搜索的实现模式）
 
 ## Phase 5 P0 实现进度
 | ID | 功能 | 规格 | 实现 |
@@ -38,13 +35,11 @@
 1. ~~`NOTE-07` 全局搜索~~ — ✅ 已完成
 2. ~~`NOTE-09` 置顶/收藏~~ — ✅ 已完成
 3. ~~`NOTE-10` 模板笔记~~ — ✅ 已完成
-4. `NOTE-08` 组合筛选 — 🔄 下一步
+4. `NOTE-08` 组合筛选 — 🔄 **下一步（backend 先开）**
 5. `TAG-03` 常用标签 — 相对独立
 6. `AUTH-04/05` 注册验证码/邮箱验证 — 需第三方服务，排在靠后
 
 ## 参考文档
-- Phase 5 benchmark: `PRD/phases/05-feature-benchmark-and-prd-expansion.md`
-- Phase 5 index: `PRD/phases/00-index.md`
-- P0 目录: `PRD/backend-python/p0/`
-- NOTE-08 规格: `PRD/backend-python/p0/NOTE-08.md`
-- 最后更新：2026-04-30 16:15 (Asia/Shanghai)
+- NOTE-08 规格: `PRD/backend-python/p0/NOTE-08-filter-combination.md`
+- NOTE-07 参考: `PRD/backend-python/p0/NOTE-07-global-search.md`（实现模式可复用）
+- 最后更新：2026-04-30 17:05 (Asia/Shanghai)
