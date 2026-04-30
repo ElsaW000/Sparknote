@@ -51,6 +51,7 @@ def init_db() -> None:
     """Create all database tables. Can be called manually by tests or startup."""
     SQLModel.metadata.create_all(engine)
     _ensure_legacy_schema()
+    _seed_templates()  # NOTE-10: seed after table is created
 
 
 def _ensure_legacy_schema() -> None:
@@ -120,6 +121,13 @@ def _ensure_legacy_schema() -> None:
             message_cols = _table_columns("message")
             if "user_id" not in message_cols:
                 conn.exec_driver_sql("ALTER TABLE message ADD COLUMN user_id INTEGER")
+
+            # NOTE-10: templates table
+            _existing = conn.exec_driver_sql(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='template'"
+            ).fetchall()
+            if not _existing:
+                pass  # Table created by create_all()
 
             # NOTE-07: index for global search ordering
             existing_indexes = conn.exec_driver_sql(
@@ -250,6 +258,46 @@ class NoteAttachmentRead(SQLModel):
     url: str
 
 
+# NOTE-10: Template models
+class Template(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    icon: Optional[str] = None  # "meeting", "bulb", "review"
+    title_template: Optional[str] = None
+    content_template: str
+    default_tags: Optional[str] = None  # JSON array, e.g. '["会议"]'
+    sort_order: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class TemplateRead(SQLModel):
+    id: int
+    name: str
+    icon: Optional[str] = None
+    title_template: Optional[str] = None
+    content_template: str
+    default_tags: List[str] = Field(default_factory=list)
+    sort_order: int = 0
+
+
+class TemplatePreviewRequest(SQLModel):
+    template_id: int
+    variables: Optional[dict] = None  # e.g. {"date": "2026-04-30", "topic": "Q2规划"}
+
+
+class TemplatePreviewResponse(SQLModel):
+    title: str
+    content: str
+
+
+class NoteCreate(SQLModel):
+    title: Optional[str] = None
+    content: str
+    tags: Optional[List[str]] = None
+    template_id: Optional[int] = None  # NOTE-10
+    template_variables: Optional[dict] = None  # NOTE-10
+
+
 class NoteSearchResult(SQLModel):
     id: int
     title: Optional[str] = None
@@ -266,6 +314,36 @@ class NoteSearchResponse(SQLModel):
     total: int
     page: int
     limit: int
+
+
+# NOTE-10: Seed default templates after all models are defined.
+def _seed_templates() -> None:
+    """Insert default templates if the table is empty. Uses ORM Session to avoid
+    raw-SQL parameter encoding issues on Windows."""
+    if not DATABASE_URL.startswith("sqlite"):
+        return
+    try:
+        with Session(engine) as seed_sess:
+            count = seed_sess.exec(select(func.count()).select_from(Template)).one()
+            if count > 0:
+                return
+            seed_sess.add_all([
+                Template(id=1, name="会议纪要", icon="meeting",
+                         title_template="【会议】{date} {topic}",
+                         content_template="## 会议目标\n\n## 讨论要点\n\n## 行动项\n\n## 下次会议",
+                         default_tags='["会议"]', sort_order=1),
+                Template(id=2, name="灵感卡片", icon="bulb",
+                         title_template="💡 {date} {title}",
+                         content_template="## 灵感\n{content}\n\n## 关联\n",
+                         default_tags='["灵感"]', sort_order=2),
+                Template(id=3, name="复盘", icon="review",
+                         title_template="复盘 {date}",
+                         content_template="## 完成情况\n\n## 问题与改进\n\n## 下一步\n",
+                         default_tags='["复盘"]', sort_order=3),
+            ])
+            seed_sess.commit()
+    except Exception:
+        pass  # Non-fatal: templates are optional
 
 
 class NoteAttachmentCreate(SQLModel):
@@ -918,20 +996,117 @@ def transcribe_audio(
     return AudioTranscriptionResponse(transcript=transcript)
 
 
+def _render_template(template_str: Optional[str], variables: dict) -> Optional[str]:
+    """Substitute {key} placeholders in a template string with provided variables."""
+    if not template_str:
+        return None
+    result = template_str
+    for key, value in (variables or {}).items():
+        result = result.replace(f"{{{key}}}", str(value))
+    return result
+
+
+def _apply_template_to_note(
+    session: Session, payload: NoteCreate
+) -> tuple[Optional[str], str, List[str]]:
+    """If payload.template_id is set, fill note title/content from template then overlay user values.
+    Returns (title, content, tags).
+    """
+    if payload.template_id is None:
+        tags = _merge_tags(payload.tags, payload.content)
+        return payload.title, payload.content, tags
+
+    template = session.get(Template, payload.template_id)
+    if not template:
+        # Fall back to plain note creation
+        tags = _merge_tags(payload.tags, payload.content)
+        return payload.title, payload.content, tags
+
+    vars = payload.template_variables or {}
+    # Add current date as {date} variable if not provided
+    if "{date}" in (template.title_template or "") or "{date}" in template.content_template:
+        vars.setdefault("date", datetime.now().strftime("%Y-%m-%d"))
+
+    title = _render_template(template.title_template, vars) or ""
+    content = _render_template(template.content_template, vars) or ""
+
+    # Overlay user-provided title and content (replace template placeholders)
+    if payload.title:
+        title = payload.title
+    if payload.content:
+        content = payload.content
+
+    # Merge tags: default_tags from template + user-provided tags
+    default_tags = []
+    if template.default_tags:
+        try:
+            default_tags = json.loads(template.default_tags)
+        except Exception:
+            pass
+    merged_tags = _merge_tags((payload.tags or []) + default_tags, content)
+    return title, content, merged_tags
+
+
 @app.post("/notes", response_model=NoteRead)
 def create_note(
     payload: NoteCreate,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    note = Note(title=payload.title, content=payload.content, user_id=current_user.id, updated_at=datetime.utcnow())
+    title, content, merged_tags = _apply_template_to_note(session, payload)
+    note = Note(title=title, content=content, user_id=current_user.id, updated_at=datetime.utcnow())
     session.add(note)
     session.commit()
     session.refresh(note)
-    merged_tags = _merge_tags(payload.tags, payload.content)
     _set_note_tags(session, note.id, current_user.id, merged_tags)
     session.commit()
     return _to_note_read(session, note)
+
+
+# NOTE-10: Template endpoints
+@app.get("/templates", response_model=List[TemplateRead])
+def list_templates(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Return all available note templates, sorted by sort_order."""
+    templates = session.exec(select(Template).order_by(Template.sort_order)).all()
+    result = []
+    for t in templates:
+        default_tags = []
+        if t.default_tags:
+            try:
+                default_tags = json.loads(t.default_tags)
+            except Exception:
+                pass
+        result.append(TemplateRead(
+            id=t.id,
+            name=t.name,
+            icon=t.icon,
+            title_template=t.title_template,
+            content_template=t.content_template,
+            default_tags=default_tags,
+            sort_order=t.sort_order,
+        ))
+    return result
+
+
+@app.post("/templates/preview", response_model=TemplatePreviewResponse)
+def preview_template(
+    payload: TemplatePreviewRequest,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Render a template with given variables and return the expanded title + content."""
+    template = session.get(Template, payload.template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    vars = payload.variables or {}
+    if "{date}" in (template.title_template or "") or "{date}" in template.content_template:
+        vars.setdefault("date", datetime.now().strftime("%Y-%m-%d"))
+    title = _render_template(template.title_template, vars) or ""
+    content = _render_template(template.content_template, vars) or ""
+    return TemplatePreviewResponse(title=title, content=content)
 
 
 @app.get("/notes", response_model=List[NoteRead])
