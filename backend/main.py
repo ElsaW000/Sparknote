@@ -71,6 +71,11 @@ def _ensure_legacy_schema() -> None:
                 conn.exec_driver_sql(
                     "UPDATE note SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"
                 )
+            if "updated_at" not in note_cols:
+                conn.exec_driver_sql("ALTER TABLE note ADD COLUMN updated_at TEXT")
+                conn.exec_driver_sql(
+                    "UPDATE note SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL"
+                )
 
             user_cols = _table_columns("user")
             if "identity" not in user_cols:
@@ -98,6 +103,16 @@ def _ensure_legacy_schema() -> None:
             message_cols = _table_columns("message")
             if "user_id" not in message_cols:
                 conn.exec_driver_sql("ALTER TABLE message ADD COLUMN user_id INTEGER")
+
+            # NOTE-07: index for global search ordering
+            existing_indexes = conn.exec_driver_sql(
+                "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_notes_user_updated'"
+            ).fetchall()
+            if not existing_indexes:
+                conn.exec_driver_sql(
+                    "CREATE INDEX IF NOT EXISTS idx_notes_user_updated "
+                    "ON note(user_id, updated_at DESC)"
+                )
     except Exception:
         # Schema compatibility patch should not block app startup.
         pass
@@ -121,6 +136,7 @@ class Note(SQLModel, table=True):
     content: str
     user_id: int = Field(foreign_key="user.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class NoteTag(SQLModel, table=True):
@@ -194,6 +210,7 @@ class NoteRead(SQLModel):
     content: str
     user_id: int
     created_at: datetime
+    updated_at: datetime
     tags: List[str] = Field(default_factory=list)
     attachments: List["NoteAttachmentRead"] = Field(default_factory=list)
     workspace_conversation_id: Optional[int] = None
@@ -210,6 +227,24 @@ class NoteAttachmentRead(SQLModel):
     size_bytes: int
     created_at: datetime
     url: str
+
+
+class NoteSearchResult(SQLModel):
+    id: int
+    title: Optional[str] = None
+    content: str
+    user_id: int
+    created_at: datetime
+    updated_at: datetime
+    tags: List[str] = Field(default_factory=list)
+    match_type: str = "content"  # "title", "content", "tag"
+
+
+class NoteSearchResponse(SQLModel):
+    results: List[NoteSearchResult]
+    total: int
+    page: int
+    limit: int
 
 
 class NoteAttachmentCreate(SQLModel):
@@ -671,6 +706,7 @@ def _to_note_read(session: Session, note: Note) -> NoteRead:
         content=note.content,
         user_id=note.user_id,
         created_at=note.created_at,
+        updated_at=note.updated_at,
         tags=_get_note_tags(session, note.id, note.user_id),
         attachments=_get_note_attachments(session, note.id, note.user_id),
         workspace_conversation_id=workspace.id if workspace else None,
@@ -865,7 +901,7 @@ def create_note(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    note = Note(title=payload.title, content=payload.content, user_id=current_user.id)
+    note = Note(title=payload.title, content=payload.content, user_id=current_user.id, updated_at=datetime.utcnow())
     session.add(note)
     session.commit()
     session.refresh(note)
@@ -905,6 +941,100 @@ def list_notes(
     query = query.order_by(Note.created_at.desc())
     notes = session.exec(query).all()
     return [_to_note_read(session, n) for n in notes]
+
+
+@app.get("/notes/search", response_model=NoteSearchResponse)
+def search_notes(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+    q: str = "",
+    page: int = 1,
+    limit: int = 20,
+):
+    """Full-text search across note title, content, and tags with pagination.
+
+    Query params:
+    - q: search keyword (required, min 1 char)
+    - page: page number (default 1)
+    - limit: results per page (default 20, max 50)
+
+    Returns results ordered by note updated_at descending.
+    """
+    keyword = (q or "").strip()
+    if not keyword:
+        return NoteSearchResponse(results=[], total=0, page=page, limit=limit)
+
+    limit = min(max(1, limit), 50)
+    page = max(1, page)
+    offset = (page - 1) * limit
+
+    # Build LIKE patterns for title, content, and tag matching
+    like_pattern = f"%{keyword}%"
+
+    # Count total matching notes (deduplicated)
+    # We join with note_tags to also match tags, but GROUP BY note id to deduplicate
+    count_query = (
+        select(func.count(func.distinct(Note.id)))
+        .select_from(Note)
+        .outerjoin(NoteTag, (NoteTag.note_id == Note.id) & (NoteTag.user_id == current_user.id))
+        .where(
+            Note.user_id == current_user.id,
+        )
+        .where(
+            or_(
+                func.lower(func.coalesce(Note.title, "")).like(like_pattern.lower()),
+                func.lower(Note.content).like(like_pattern.lower()),
+                func.lower(NoteTag.tag).like(like_pattern.lower()),
+            )
+        )
+    )
+    total = session.exec(count_query).one()
+
+    # Fetch paginated results, ordered by updated_at desc
+    # Use a subquery-based approach to get distinct notes with updated_at ordering
+    search_query = (
+        select(Note)
+        .outerjoin(NoteTag, (NoteTag.note_id == Note.id) & (NoteTag.user_id == current_user.id))
+        .where(
+            Note.user_id == current_user.id,
+        )
+        .where(
+            or_(
+                func.lower(func.coalesce(Note.title, "")).like(like_pattern.lower()),
+                func.lower(Note.content).like(like_pattern.lower()),
+                func.lower(NoteTag.tag).like(like_pattern.lower()),
+            )
+        )
+        .group_by(Note.id)
+        .order_by(Note.updated_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    notes = session.exec(search_query).all()
+
+    # Determine match type for each note
+    kw_lower = keyword.lower()
+    results = []
+    for note in notes:
+        match_type = "content"
+        tags = _get_note_tags(session, note.id, current_user.id)
+        title_lower = (note.title or "").lower()
+        if kw_lower in title_lower:
+            match_type = "title"
+        elif any(kw_lower in tag.lower() for tag in tags):
+            match_type = "tag"
+        results.append(NoteSearchResult(
+            id=note.id,
+            title=note.title,
+            content=note.content,
+            user_id=note.user_id,
+            created_at=note.created_at,
+            updated_at=note.updated_at,
+            tags=tags,
+            match_type=match_type,
+        ))
+
+    return NoteSearchResponse(results=results, total=total, page=page, limit=limit)
 
 
 @app.get("/notes/{note_id}", response_model=NoteRead)
@@ -1309,6 +1439,7 @@ def update_note(
         note.title = payload.title
     if payload.content is not None:
         note.content = payload.content
+    note.updated_at = datetime.utcnow()
     if payload.tags is not None or payload.content is not None:
         current_tags = payload.tags
         if current_tags is None:
@@ -1579,6 +1710,7 @@ def close_conversation(
         title=conv.title or f"Summary {cid}",
         content=summary,
         user_id=current_user.id,
+        updated_at=datetime.utcnow(),
     )
     session.add(note)
     conv.status = "summarized"

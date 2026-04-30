@@ -535,3 +535,59 @@ def test_note_auto_extract_hashtags():
     assert "newtag" in updated["tags"]
     assert "å·¥ä½œ" in updated["tags"]
 
+
+def test_note_search():
+    headers = _auth_headers("searcher@example.com", "pass1234")
+
+    # Create notes with known content for search testing
+    r1 = client.post("/notes", json={"title": "Python 技巧", "content": "学会使用列表推导式"}, headers=headers)
+    assert r1.status_code == 200
+    note1_id = r1.json()["id"]
+
+    r2 = client.post("/notes", json={"title": "JavaScript 入门", "content": "学习 Python 语法"}, headers=headers)
+    assert r2.status_code == 200
+
+    r3 = client.post("/notes", json={"title": "Rust vs Go", "content": "系统编程语言比较", "tags": ["Python"]}, headers=headers)
+    assert r3.status_code == 200
+    note3_id = r3.json()["id"]
+
+    # Search by title keyword
+    r = client.get("/notes/search", params={"q": "JavaScript"}, headers=headers)
+    assert r.status_code == 200
+    resp = r.json()
+    assert resp["total"] >= 1
+    assert any(n["id"] == note1_id or n["title"] == "JavaScript 入门" for n in resp["results"])
+
+    # Search by content keyword
+    r = client.get("/notes/search", params={"q": "列表推导式"}, headers=headers)
+    assert r.status_code == 200
+    resp = r.json()
+    assert resp["total"] >= 1
+    assert resp["results"][0]["match_type"] in ("title", "content")
+
+    # Search by tag
+    r = client.get("/notes/search", params={"q": "Python"}, headers=headers)
+    assert r.status_code == 200
+    resp = r.json()
+    # Should match note2 (content) and note3 (tag)
+    assert resp["total"] >= 2
+    ids = {n["id"] for n in resp["results"]}
+    assert note1_id in ids or note3_id in ids
+
+    # Pagination
+    r = client.get("/notes/search", params={"q": "Python", "page": 1, "limit": 1}, headers=headers)
+    assert r.status_code == 200
+    resp = r.json()
+    assert resp["page"] == 1
+    assert resp["limit"] == 1
+    assert resp["total"] >= 2
+    assert len(resp["results"]) == 1
+
+    # Empty query returns empty
+    r = client.get("/notes/search", params={"q": ""}, headers=headers)
+    assert r.status_code == 200
+    resp = r.json()
+    assert resp["results"] == []
+    assert resp["total"] == 0
+
+
