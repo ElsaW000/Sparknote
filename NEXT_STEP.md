@@ -23,8 +23,12 @@
 - PRD 最后更新：2026-04-25（Phase 2 benchmark PRD 已生成）
 - DEVLOG 最后更新：2026-03-18（Phase 1 相关功能开发暂停，等待 PRD 落地）
 - `PRD/phases/05-feature-benchmark-and-prd-expansion.md` 包含 8 个 P0 story，待人工审核确认方向
-- git 状态（2026-04-30 07:58）：
+- git 状态（2026-04-30 08:18）：
   - 本次 cron 更新了 NEXT_STEP.md（唯一变更）
   - 无新代码变更（backend 最后改动 04-28，mobile 最后改动 03-17）
+  - 新增未跟踪文件：
+    - `PRD/00-整理概念.md`（2026-04-02，编码损坏，Echo 无法读取内容）
+    - `backend/run.bat`（2026-04-28，简单启动脚本，无功能影响）
   - 临时文件：.cron_log、.tmp_backend.pid、.tmp_ui02/ 等，无需关注
-- 最后更新：2026-04-30 07:58 (Asia/Shanghai)
+- ⚠️ 注意：`PRD/00-整理概念.md` 文件存在编码问题（GBK/UTF-8混淆），Echo 无法解析其中内容。如该文件包含新任务方向，请 Jie 重新保存或手动告知内容。
+- 最后更新：2026-04-30 08:18 (Asia/Shanghai)
