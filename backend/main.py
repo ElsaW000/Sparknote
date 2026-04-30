@@ -1117,20 +1117,82 @@ def list_notes(
     tag: Optional[str] = None,
     q: Optional[str] = None,
     filter: Optional[str] = "all",
+    # NOTE-08: combination filter params
+    tag_ids: Optional[str] = None,    # comma-separated tag IDs, e.g. "1,2,3"
+    date_from: Optional[date] = None,  # ISO date, filter created_at >= date_from
+    date_to: Optional[date] = None,    # ISO date, filter created_at <= date_to
+    sort: Optional[str] = "updated_at",  # updated_at | created_at | pinned
+    order: Optional[str] = "desc",       # asc | desc
+    match: Optional[str] = "any",       # all | any — tag match mode
 ):
     """List notes for the current user.
     Optional `since` query param (ISO datetime) filters notes created after the given time.
     Optional `tag` query param filters notes containing the exact tag (TAG-04).
     Optional `q` query param searches note title and content case-insensitively.
     Optional `filter` query param: `all` (default), `pinned`, `unpinned`.
-    Results are ordered by pinned first, then updated_at desc.
+    NOTE-08 combination filter params:
+    - tag_ids: comma-separated tag IDs (e.g. "1,2,3")
+    - date_from / date_to: ISO date range for created_at
+    - sort: updated_at | created_at | pinned
+    - order: asc | desc
+    - match: all | any (tag match mode)
+    Results are ordered by pinned first, then by sort column.
     """
-    query = select(Note).where(Note.user_id == current_user.id)
+    # Determine sort column
+    sort_col = Note.updated_at
+    if sort == "created_at":
+        sort_col = Note.created_at
+    elif sort == "pinned":
+        sort_col = Note.is_pinned
+    sort_asc = (order == "asc")
+
+    # Parse tag_ids (treated as tag text names, comma-separated)
+    parsed_tags: List[str] = []
+    if tag_ids:
+        parsed_tags = [t.strip() for t in tag_ids.split(",") if t.strip()]
+    has_tag_ids_filter = bool(parsed_tags)
+
+    if has_tag_ids_filter:
+        num_tags = len(parsed_tags)
+        if match == "all":
+            # All specified tags must be present: HAVING COUNT >= num_tags
+            query = (
+                select(Note)
+                .join(NoteTag, (NoteTag.note_id == Note.id) & (NoteTag.user_id == current_user.id))
+                .where(Note.user_id == current_user.id)
+                .where(NoteTag.tag.in_(parsed_tags))
+                .group_by(Note.id)
+                .having(func.count(func.distinct(NoteTag.tag)) >= num_tags)
+            )
+        else:
+            # Any of the specified tags (default)
+            query = (
+                select(Note)
+                .join(NoteTag, (NoteTag.note_id == Note.id) & (NoteTag.user_id == current_user.id))
+                .where(Note.user_id == current_user.id)
+                .where(NoteTag.tag.in_(parsed_tags))
+                .group_by(Note.id)
+            )
+    else:
+        query = select(Note).where(Note.user_id == current_user.id)
+
+    # Legacy tag text filter (TAG-04) — only if tag_ids not used
+    if tag is not None and not has_tag_ids_filter:
+        query = query.join(NoteTag, (NoteTag.note_id == Note.id) & (NoteTag.user_id == current_user.id) & (NoteTag.tag == tag))
+
+    # Date filters (NOTE-08)
+    if date_from is not None:
+        from_dt = datetime.combine(date_from, datetime.min.time())
+        query = query.where(Note.created_at >= from_dt)
+    if date_to is not None:
+        to_dt = datetime.combine(date_to, datetime.max.time())
+        query = query.where(Note.created_at <= to_dt)
+
+    # Since filter
     if since is not None:
         query = query.where(Note.created_at > since)
-    if tag is not None:
-        # Join with NoteTag to filter notes that have the tag
-        query = query.join(NoteTag, (NoteTag.note_id == Note.id) & (NoteTag.user_id == current_user.id) & (NoteTag.tag == tag))
+
+    # Keyword search
     if q is not None and q.strip():
         keyword = f"%{q.strip().lower()}%"
         query = query.where(
@@ -1139,11 +1201,16 @@ def list_notes(
                 func.lower(Note.content).like(keyword),
             )
         )
+
+    # Pinned filter
     if filter == "pinned":
         query = query.where(Note.is_pinned == True)
     elif filter == "unpinned":
         query = query.where(Note.is_pinned == False)
-    query = query.order_by(Note.is_pinned.desc(), Note.updated_at.desc())
+
+    # Ordering: pinned first, then by sort column
+    order_dir = sort_col.asc() if sort_asc else sort_col.desc()
+    query = query.order_by(Note.is_pinned.desc(), order_dir)
     notes = session.exec(query).all()
     return [_to_note_read(session, n) for n in notes]
 
