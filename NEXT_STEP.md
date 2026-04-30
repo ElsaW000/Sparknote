@@ -1,13 +1,12 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：AUTH-04（认证令牌刷新）尚未开始，仍处于等待执行状态
-- 距上次功能提交（fd9faf2 NOTE-08 完成，18:35）已超过 1 小时 20 分钟，无新代码提交
+- 当前步骤：AUTH-04（认证令牌刷新）尚未开始，距上次功能提交（fd9faf2 NOTE-08 完成，18:35）已超过 2 小时 20 分钟，无新代码提交
 
 ## 下一步任务
 - **实现 AUTH-04 认证令牌刷新**（backend）
   - 当前状态：JWT 有过期时间（默认 24h，`exp` 字段），但无 `/auth/refresh` 端点
-  - 参考 `PRD/phases/05-feature-benchmark-and-prd-expansion.md`：
+  - PRD/phases/05-feature-benchmark-and-prd-expansion.md 中 AUTH-04 描述：
     - 添加 access token 过期验证与刷新机制
     - `/auth/register` 已返回 token（无需改）
     - 过期时统一返回 400，提示"令牌已过期"
@@ -34,19 +33,19 @@
 
 | ID | 描述 | 实现 | 状态 |
 |----|------|------|------|
-| AUTH-04 | 认证令牌刷新 | backend | 🔄 下一个 |
+| AUTH-04 | 认证令牌刷新 | backend | 下一个 |
 | AUTH-05 | 邮箱验证 | backend | 未开始 |
-| TAG-03 | 批量标签管理 | — | 未认领 |
-| NOTE-07 | 笔记复制/移动 | ✅ | ✅ 已完成 |
-| NOTE-08 | 组合筛选过滤 | ✅ backend+frontend | ✅ 已完成 |
-| NOTE-09 | 置顶/排序视图 | ✅ | ✅ 已完成 |
-| NOTE-10 | 模板笔记 | ✅ | ✅ 已完成 |
-| CAL-02 | 日历到期提醒 | — | 未认领 |
+| TAG-03 | 批量标签管理 | - | 未认领 |
+| NOTE-07 | 笔记复制/移动 | done | done |
+| NOTE-08 | 组合筛选过滤 | done backend+frontend | done |
+| NOTE-09 | 置顶/排序视图 | done | done |
+| NOTE-10 | 模板笔记 | done | done |
+| CAL-02 | 日历到期提醒 | - | 未认领 |
 
-## 本次操作记录（生成时间：2026-04-30 20:25 Asia/Shanghai）
+## 本次操作记录（生成时间：2026-04-30 20:55 Asia/Shanghai）
 
-- 检测到最近 ~110 分钟内无新 git 提交（最后功能提交 fd9faf2 于 18:35）
+- 检测到最近 2 小时 20 分钟内无新 git 提交（最后功能提交 fd9faf2 于 18:35）
 - NEXT_STEP.md 自身变更除外，无其他功能代码改动
-- Backend 健康确认（`/health` -> `ok`）
+- Backend 测试通过（24 passed，9.03s）
 - AUTH-04 描述清晰，无阻塞，仍是当前唯一下一步目标
 - 存在少量 untracked 临时文件（debug脚本、zip等），不属于功能代码，不影响主流程
