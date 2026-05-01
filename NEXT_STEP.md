@@ -1,31 +1,27 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**TAG-03 常用标签快捷选择** — 代码已有改动（后端 `TagItem` 结构、`/tags/frequent` 逻辑、前端标签 chips），但尚未提交到 git
-- 过去 10 分钟：后端测试持续通过（24 passed），代码有未提交变更（backend/main.py、backend/tests/test_api.py、mobile/lib/pages/notes.dart 有改动）
-- 项目无新提交已超过 **45 天**
+- 当前步骤：**无活跃代码任务** — git 无实质变更（仅临时文件），上次功能提交距今约 45 天（2026-03-17）
+- 过去 10 分钟：无新代码改动，git status 仅显示临时文件（`.cron_log`、`.tmp_*`、`find_issues*.py` 等）
+- TAG-03（常用标签快捷选择）声称有未提交代码，但当前 git diff 对 HEAD 为空，无法确认
 
 ## 下一步任务
-- **提交 TAG-03 相关变更 + 人工验收**
-  1. 先将 `backend/main.py`、`backend/tests/test_api.py`、`mobile/lib/pages/notes.dart` 合并提交（或清理后提交）
-  2. 人工验收：打开 http://127.0.0.1:8080，走核心流程：登录 → 笔记列表 → 快速输入/长笔记 → 灵感工作台 → 标签 chips 显示 + 点击追加行为
-  3. 验收后：通知 Echo 推进 AUTH-05（邮箱验证）或指定新任务
-  4. 如决定暂停 Sparknote：告知 Echo 切换其他项目
+- **等待人工方向指引**
+  1. 确认 TAG-03 代码是否仍存在于 working directory（如有则先 git add + commit）
+  2. 人工验收核心功能流（登录 → 笔记 → 灵感工作台）
+  3. 确定下一个迭代目标：重启 Phase 5 任务，还是转向 PRD 3.2（风格学习 + 个性化 Agent）
+  4. 如长期暂停，请告知 Echo 更新长期 memory 后切换项目
 
 ## 阻塞点与补救
-- 阻塞点：TAG-03 代码已有改动但未 commit，导致自动化测试可能与本地运行代码不一致
+- 阻塞点：项目缺乏明确的下一步指令，代码无进展，45 天无功能提交
 - 补救动作（Echo 侧）：
-  1. 检查未提交变更是否与 TAG-03 功能一致
-  2. 如一致：git add + commit，注明"TAG-03 frequent tags"
-  3. 重新运行 pytest 验证
-  4. 等待 Jie 完成人工验收
+  1. 检查 `backend/main.py`、`mobile/lib/pages/notes.dart` 是否有未追踪的 TAG-03 代码
+  2. 如有实质性代码：提交并更新测试
+  3. 如无实质性代码：说明 TAG-03 代码已不存在，需要重新评估是否实现
 
 ## 人工测试
-- ✅ TAG-03 后端：TagItem 结构 + /tags/frequent — 代码已改，待提交验证
-- ✅ TAG-03 前端：frequent tag chips UI — 代码已改，待提交验证
-- ✅ 自动化测试：24 passed（基于 committed 版本）
-- ⏳ **人工验收**：常用标签 chips 显示 + 点击追加行为
-- ⏳ **人工回归**：桌面端完整功能流
+- ⏳ **需要人工指定**：项目下一步方向待 Jie 确认
+- ⏳ **TAG-03 验收**：声称的代码变更当前无法在 git 中确认
 
 ---
 
@@ -34,8 +30,8 @@
 | ID | 描述 | 状态 |
 |----|------|------|
 | AUTH-04 | 注册验证码防刷 | ✅ done |
-| AUTH-05 | 邮箱验证 | 待启动（TAG-03 验收后） |
-| TAG-03 | 常用标签快捷选择 | ⏳ 代码已改，待提交 + 人工验收 |
+| AUTH-05 | 邮箱验证 | 待启动 |
+| TAG-03 | 常用标签快捷选择 | ❓ 代码存在性待确认 |
 | NOTE-07 | 全局搜索 | ✅ done |
 | NOTE-08 | 组合筛选过滤 | ✅ done |
 | NOTE-09 | 置顶/收藏 | ✅ done |
@@ -50,8 +46,11 @@
 
 PRD 规划的后续功能：知识库导入 / 风格学习 / 角色系统 / 脚本生成 / PRD 生成 / 多角色 Agent
 
-**如果 Jie 决定继续 Sparknote**：建议下一个迭代以「风格学习 + 个性化 Agent」为核心目标，从 PRD 3.2 节展开。
+**下一步建议**：
+- 短期：确认 TAG-03 是否存在并完成验收
+- 中期：推进 AUTH-05（邮箱验证）或 CAL-02（智能文件夹）
+- 长期：以「风格学习 + 个性化 Agent」（PRD 3.2）为核心目标
 
 ---
 
-**本次更新时间：2026-05-01 12:35 Asia/Shanghai**
+**本次更新时间：2026-05-01 12:55 Asia/Shanghai**
