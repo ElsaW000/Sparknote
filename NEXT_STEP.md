@@ -1,27 +1,21 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**无活跃代码任务** — git 无实质变更（仅临时文件），上次功能提交距今约 45 天（2026-03-17）
-- 过去 10 分钟：无新代码改动，git status 仅显示临时文件（`.cron_log`、`.tmp_*`、`find_issues*.py` 等）
-- TAG-03（常用标签快捷选择）声称有未提交代码，但当前 git diff 对 HEAD 为空，无法确认
+- 当前步骤：**无活跃代码任务** — 过去 10 分钟无代码改动，项目持续 idle
+- TAG-03 状态澄清：**backend `/tags/frequent` endpoint 已存在**（`main.py:1423`），返回 `TagItem(id, name, count, recent)`。**前端接入状态待确认** — 需要检查 `mobile/lib/pages/notes.dart` 是否真正调用该 endpoint 并渲染快捷标签 UI
 
 ## 下一步任务
-- **等待人工方向指引**
-  1. 确认 TAG-03 代码是否仍存在于 working directory（如有则先 git add + commit）
-  2. 人工验收核心功能流（登录 → 笔记 → 灵感工作台）
-  3. 确定下一个迭代目标：重启 Phase 5 任务，还是转向 PRD 3.2（风格学习 + 个性化 Agent）
-  4. 如长期暂停，请告知 Echo 更新长期 memory 后切换项目
+- **确认 TAG-03 前端接入情况**
+  - 读取 `mobile/lib/pages/notes.dart`，查找是否存在 `/tags/frequent` 的 HTTP 调用和 UI 渲染
+  - 如果前端已接上：TAG-03 可视为基本完成，等待人工测试
+  - 如果前端未接上：需要补全 Flutter 端调用逻辑（GET `/tags/frequent` + 渲染快捷标签按钮）
 
 ## 阻塞点与补救
-- 阻塞点：项目缺乏明确的下一步指令，代码无进展，45 天无功能提交
-- 补救动作（Echo 侧）：
-  1. 检查 `backend/main.py`、`mobile/lib/pages/notes.dart` 是否有未追踪的 TAG-03 代码
-  2. 如有实质性代码：提交并更新测试
-  3. 如无实质性代码：说明 TAG-03 代码已不存在，需要重新评估是否实现
+- 阻塞点：项目 idle 44 天，TAG-03 backend 已就绪但前端接入情况未知
+- 补救动作：检查 `mobile/lib/pages/notes.dart` 中是否有 `/tags/frequent` 的 fetch 调用；如有则 TAG-03 完成，如无则补全
 
 ## 人工测试
-- ⏳ **需要人工指定**：项目下一步方向待 Jie 确认
-- ⏳ **TAG-03 验收**：声称的代码变更当前无法在 git 中确认
+- ⏳ 等待人工确认 TAG-03 前端接入状态，或给出下一步方向指令
 
 ---
 
@@ -30,27 +24,14 @@
 | ID | 描述 | 状态 |
 |----|------|------|
 | AUTH-04 | 注册验证码防刷 | ✅ done |
-| AUTH-05 | 邮箱验证 | 待启动 |
-| TAG-03 | 常用标签快捷选择 | ❓ 代码存在性待确认 |
+| AUTH-05 | 邮箱验证 | ⏳ 未开始 |
+| TAG-03 | 常用标签快捷选择 | 🔍 待确认（backend done, 前端待核实） |
 | NOTE-07 | 全局搜索 | ✅ done |
 | NOTE-08 | 组合筛选过滤 | ✅ done |
 | NOTE-09 | 置顶/收藏 | ✅ done |
 | NOTE-10 | 模板笔记 | ✅ done |
-| CAL-02 | 智能文件夹/保存筛选 | 未开始 |
+| CAL-02 | 智能文件夹/保存筛选 | ⏳ 未开始 |
 
 ---
 
-## PRD 视野备忘
-
-当前 MVP 已实现：登录注册 / 笔记 CRUD / 灵感工作台 AI 对话 / 附件上传 / 音频转写 / Notion 配置 / 标签系统 / 热力图日历
-
-PRD 规划的后续功能：知识库导入 / 风格学习 / 角色系统 / 脚本生成 / PRD 生成 / 多角色 Agent
-
-**下一步建议**：
-- 短期：确认 TAG-03 是否存在并完成验收
-- 中期：推进 AUTH-05（邮箱验证）或 CAL-02（智能文件夹）
-- 长期：以「风格学习 + 个性化 Agent」（PRD 3.2）为核心目标
-
----
-
-**本次更新时间：2026-05-01 12:55 Asia/Shanghai**
+**本次更新时间：2026-05-01 14:26 Asia/Shanghai**
