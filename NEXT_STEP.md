@@ -35,10 +35,9 @@
 | NOTE-10 | 模板笔记 | done | done |
 | CAL-02 | 智能文件夹/保存筛选 | — | 未开始 |
 
-## 本次操作记录（生成时间：2026-05-01 07:45 Asia/Shanghai）
+## 本次操作记录（生成时间：2026-05-01 08:45 Asia/Shanghai）
 
-- 无新 git 提交（最后代码提交 e44672a 于 2026-05-01 01:26，约 6 小时 29 分前）
-- 源码层无新变更（最近修改文件：mobile/lib/pages/notes.dart, backend/main.py, backend/tests/test_api.py，均为 04-30 或更早）
-- NEXT_STEP.md 自身为唯一 tracked 变更（本次更新）
+- 无新 git 提交（最后代码提交 e44672a 于 2026-05-01 01:26，约 7.3 小时前）
+- 源码层无新变更
 - 当前等待：人工验收 TAG-03 功能
 - 下一步功能方向：AUTH-05 邮箱验证
