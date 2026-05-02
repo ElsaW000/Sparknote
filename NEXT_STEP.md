@@ -26,12 +26,13 @@
 ## 技术债（建议清理）
 - 根目录调试脚本残留：`check_schema.py`、`find_issues*.py`、`fix_test*.py`（最后修改 2026-04-30），应归档到 `tools/debug/` 或删除。
 - 根目录杂项文件：`.cron_log`、`.tmp_backend.pid`、`.tmp_ui02.zip`、`.tmp_ui02/`、`backend/run.bat`。
-- DEVLOG 指定清理但未执行的脚本：`debug_login.py`、`debug_login2.py`、`check_db.py`。
+- DEVLOG 指定清理但未执行的脚本：`debug_login.py`、`debug_login2.py`、`check_db.py`（DEVLOG 2026-03-11 记录）。
 - 状态：非紧急，纯属仓库整洁度。建议决策者确认后批量处理。
 
 ## Cron 说明
 - 本文件由 cron 每 10 分钟自动更新
-- 最近更新：2026-05-03 04:58 (Asia/Shanghai)
+- 最近更新：2026-05-03 05:28 (Asia/Shanghai)
 - 后端状态：`/health` → `{"status":"ok"}` ✅
-- 最近 git 提交：无新代码活动（最后代码提交：2026-03-18，最后 cron 提交：312da69，2026-05-03 03:38）
+- 最近 git 提交：无新代码活动（最后代码提交：2026-03-18，最后 cron 提交：6273153，2026-05-03 04:58）
+- 本次 cron 执行：2026-05-03 05:28 — 状态无变化
 - 如需推进项目，请在 Telegram / 直接修改本文件指令 Echo 开始行动
