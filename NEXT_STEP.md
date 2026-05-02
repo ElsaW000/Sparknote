@@ -1,7 +1,7 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：Phase 5 idle 已持续约 6 周（最后代码活动：2026-03-18），项目无推进。
+- 当前步骤：Phase 5 idle 已持续约 7.5 周（最后代码活动：2026-03-18），项目无推进。后端当前正常运行。
 
 ## 下一步任务
 - 项目方向待确认：需要 Jie 决策下一步方向（继续 Phase 1 收尾 / 启动 Phase 2 / 冻结维护）。
@@ -11,10 +11,12 @@
   1. 无明确的产品优先级指令，Echo 无法自主决定推进方向。
   2. AUTH-05（邮箱验证）和 CAL-02（智能文件夹）issue 文件在 `PRD/backend-python/p0/` 但未合并进 issue 追踪系统。
   3. 人工桌面端回归测试从未正式完成，缺乏当前产品状态验收记录。
+  4. 后端曾未运行（已恢复：`/health` → `{"status":"ok"}`），如需本地验证可随时开始。
 - 补救动作：
   1. Jie 给出明确指令：Phase 1 收尾 / Phase 2 启动 / 其他。
   2. 如继续 Phase 1：先安排一次桌面端完整流程测试，收集问题，再统一修复。
   3. 如启动 Phase 2：提供新 PRD 或功能列表。
+  4. 如需重启后端：运行 `run_sparknote_background.ps1` 或 `start_sparknote_local.bat`。
 
 ## 人工测试
 - 核心流程后端测试：✅ 通过（18 passed）
@@ -27,6 +29,6 @@
 
 ## Cron 说明
 - 本文件由 cron 每 10 分钟自动更新
-- 最近更新：2026-05-03 00:48 (Asia/Shanghai)
-- 后端状态：`/health` → `{"status":"ok"}`
+- 最近更新：2026-05-03 03:38 (Asia/Shanghai)
+- 后端状态：`/health` → `{"status":"ok"}` ✅ 已恢复
 - 如需推进项目，请在 Telegram / 直接修改本文件指令 Echo 开始行动
