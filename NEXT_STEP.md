@@ -1,38 +1,18 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：Phase 5 已完成，Phase 6 未分配，无活跃开发任务
+- 当前步骤：Phase 5 已完成，Phase 6 未开始；最近 10 分钟无代码改动
 
 ## 下一步任务
-- **等待 Jie 明确 Phase 6 目标**
-
-  **观察到的上下文**（供 Jie 参考）：
-  - Phase 5 全部 P0 已在代码中实现并通过 pytest 验证（18 passed）
-  - `PRD/_prd_preview.txt` 已存在，定义了"个性化创作 Agent 平台"新定位
-  - PRD/phases/ 目录存在，可查阅各阶段详情
-  - P1 待办已整理，含以下方向：TAG-03（常用标签）、NOTE-07（全局搜索）、NOTE-08（组合筛选）、LINK-01（反向链接）
-  - **过去 10 分钟无任何代码改动**，最近一次代码变更：2026-05-01（mobile/lib/pages/notes.dart）
-  - 当前 git 无活跃开发任务
-
-  **推荐从以下 P1 待办中选取最高优先级启动**：
-  - AUTH-06（多设备登录 / 会话管理）
-  - TAG-04（标签层级结构）
-  - NOTE-11（笔记回收站 / 软删除）
-  - LINK-01（反向链接基础版）
-  - AI-04（OCR + 智能摘要）
-  - SYNC-01（数据同步 / 导出）
+- Phase 6 任务尚未由 Jie 指定
+- PRD 2026-04 明确三大方向：**知识库**（P0 导入/素材库/文章理解）、**个性化 Agent**（P0 风格学习/预设角色）、**生产型输出**（P0 脚本/文案/PRD 生成）
+- 已有的 P0 实现规划：`PRD/backend-python/p0/` 下有 9 个需求文档（AUTH-04/05、CAL-02、NOTE-07~10、TAG-03），但这些是 Phase 5 遗留的 P0，尚未实现
+- **建议从知识库 P0 开始**（最基础的输入侧），按 `PRD/backend-python/p0/README.md` 的顺序推进
+- Jie 确认首个目标后，Echo 可立即开始实现
 
 ## 阻塞点与补救
-- 阻塞点：Phase 6 方向未在代码仓库中确定
-- 补救动作：
-  1. Jie 从以上 P1 待办中指一个优先级最高的方向
-  2. Jie 或 Echo 读取 `PRD/backend-python/` 对应文件并确认范围
-  3. Echo 接收后立即开始实现
+- 阻塞点：Jie 尚未明确 Phase 6 从哪个功能模块开始
+- 补救动作：Jie 确认方向（建议知识库 P0） → Echo 按 PRD 规格开始实现第一个后端 API
 
 ## 人工测试
-- 基础 pytest 18+ 通过，Flutter Web 可启动
-- 当前无活跃开发任务，等待 Jie 指令
-
----
-
-_NEXT_STEP.md updated by cron at 2026-05-11 18:56 (Asia/Shanghai)_
+- 等待 Jie 体验 Phase 5 交付物（Flutter Web + Python backend），收集反馈
