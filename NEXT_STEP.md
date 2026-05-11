@@ -1,26 +1,27 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：**Phase 5 完成，Phase 6 未分配** — 最近 10 分钟无代码变更，git diff 无新文件改动。
+- 当前步骤：Phase 5 完成，Phase 6 尚未分配
 
 ## 下一步任务
-- **等待 Jie 确认 Phase 6 方向与优先级**：
-  - PRD 已更新到 2026-05-03 版（个性化创作 Agent 平台定位），但 Phase 6 任务尚未通过 TBC issue 分配。
-  - 当前 MVP 代码（笔记 + AI工作台）已就绪，PRD 新定位（知识库、风格学习、脚本生成、角色系统）与现有实现存在 Gap。
-  - Jie 需通过 TBC issue 或直接消息指派 Phase 6 第一个任务，Echo 收到后立即执行。
+- **等待 Jie 定义 Phase 6 的具体范围与优先级。**
+  - PRD/phases/05-feature-benchmark-and-prd-expansion.md 中已列出 8 项 P0 功能（全局搜索、组合筛选、置顶/收藏、模板笔记、注册验证码、邮箱验证、常用标签快捷选择、智能文件夹），可作为 Phase 6 的候选范围。
+  - Echo 建议从 NOTE-07（全局搜索）开始，按 P0 清单顺序推进。
 
 ## 阻塞点与补救
-- 阻塞点：Phase 6 无分配任务，PRD 新方向与当前 MVP 代码需要对齐。
-- 补救动作：Jie 分配 Phase 6 第一个任务；Echo 读取 issue 后立即开始执行。
-
-## 技术状态
-- Backend：pytest 18+ passed，FastAPI 正常运行
-- Mobile：Flutter Web 可构建，MVP 功能已实现
-- Git：距上次代码提交（May 8）已约 2 天，无新代码变更
-- 未提交文件：`PRD/00-整理产品定义.md`、`PRD/_prd_preview.txt`、`backend/run.bat`
+- 阻塞点：**Phase 6 未分配，无明确任务指令。**
+- 补救动作：Jie 告知 Echo 以下信息之一即可立即开始：
+  1. 确认按 NOTE-07→NOTE-08→NOTE-09→NOTE-10 顺序执行，或指定其中几条优先
+  2. 告知是否有其他新需求需要插入
+  3. 或告知当前阶段不需要推进，保持现状
 
 ## 人工测试
-- MVP 基础功能已就绪，**等待 Jie 确认 Phase 6 方向和任务分配**。
+- Phase 5 功能已交付，基础运行验证已过（pytest 18+ passed，Flutter Web 可构建）。
+- 如 Jie 尚未体验当前版本，建议先做一轮手动体验后再决定 Phase 6 范围。
 
 ---
-_NEXT_STEP.md updated by cron at 2026-05-10 20:34 (Asia/Shanghai)_
+
+_NEXT_STEP.md updated by cron at 2026-05-11 16:56 (Asia/Shanghai)_
+
+> 无新代码变更。git status：仅 NEXT_STEP.md 自身有未提交格式调整，无 backend/mobile 代码变更。
+> Phase 5 完成，Phase 6 待 Jie 分配。上次代码提交：2026-05-10 20:34，距今约 20 小时。
