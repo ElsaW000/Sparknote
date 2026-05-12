@@ -19,9 +19,9 @@
 **状态快照**
 - 后端测试：`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest backend/tests -q` — 18 passed
 - 前端构建：`flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000` — 正常
-- DEVLOG 最新：2026-03-18（Phase 5 收尾，等待 Phase 6）
+- DEVLOG 最新：2026-03-18（Phase 5 收尾，建议转向「人工回归 + 问题收集」）
 - Git 状态：无新功能代码变更，仅 NEXT_STEP.md 本次更新
-- 本次 review：2026-05-13 06:13 CST
+- 本次 review：2026-05-13 06:53 CST
 
 ---
-*Last reviewed: 2026-05-13 06:13 CST*
+*Last reviewed: 2026-05-13 06:53 CST*
