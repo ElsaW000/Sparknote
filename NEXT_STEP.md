@@ -1,25 +1,28 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- **Phase 5**: 完成（8个P0规格已写入）
-- **Phase 6**: 待启动 - AUTH-05（邮箱验证）和 CAL-02（智能文件夹）规格已就绪，但尚未分配优先级
-- **最近代码提交**: `964fced` (2026-05-12 12:38)
-- **后端测试**: 24 passed（稳定）
-- **Git 状态**: 仅 NEXT_STEP.md 有变更（本次 cron 自动更新），无新代码改动
-
-## 当前步骤
-- **状态**: 与上次 cron 相同，无变化
-- Echo 无活跃任务，项目暂停等待 Jie 给出 Phase 6 方向。
+- 当前步骤：**等待中** — Phase 5 已完成，Phase 6 方向待 Jie 指定
+- 最后活跃 commit：`ea15f1e` (cron: 2026-05-12 15:07)
+- 本次检查（15:37）：无新增代码变更，无新文件修改
 
 ## 下一步任务
-- **等待 Jie 决策**: Echo 不主动行动，直到 Jie 指定 Phase 6 优先级。
-- Jie 需要决定：先启动 AUTH-05，还是先启动 CAL-02，还是两者并行？
-- 一旦分配，Echo 将创建 issues 并开始实现。
+- **等待 Jie 给出 Phase 6 任务方向**，暂不主动推进新功能
 
 ## 阻塞点与补救
-- **Echo 侧无阻塞** — PRD 规格已就绪，后端稳定。
-- **阻塞源**: 需要 Jie 确定优先级顺序。
+- 阻塞点：Phase 6 具体任务未明确，无人指派
+- 补救动作：Echo 被动等待状态，不自动扩展功能边界。如 Jie 有新方向，立即响应执行
 
 ## 人工测试
-- MVP 核心流程（登录 → 笔记 → 工作台 → 对话）稳定。
-- 上次人工测试确认以来无新功能需求。
+- MVP 基础功能（登录/笔记/AI 对话/附件/音频转写）已完成并通过 pytest
+- 后续 UI 细节收敛需人工体验反馈，再决定是否继续调整
+
+## Cron 历史摘要
+```
+ea15f1e  2026-05-12 15:07  no change, awaiting Jie Phase 6 direction
+892af32  2026-05-12 14:47  no change, awaiting Jie Phase 6 direction
+964fced  2026-05-12 12:37  no change, awaiting Jie direction
+7cb5b8d  2026-05-12 11:55  no change, awaiting Jie direction
+813f756  2026-05-12 11:15  no change, awaiting Jie direction
+a22584c  2026-05-12 01:06  no change, awaiting Jie direction
+38a1527  2026-05-11 23:16  PRD evolving, awaiting Jie Phase 6 direction
+```
