@@ -1,36 +1,28 @@
-﻿# NEXT STEP for Sparknote
+# NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：Phase 5 完成，Phase 6 P0 功能自 2026-04-30 起陆续执行中（AUTH-04、NOTE-07/08/09/10、TAG-03 均已完成），剩余 AUTH-05（邮箱验证）和 CAL-02（保存筛选视图）待完成
+- 当前步骤：**Phase 5/6 代码实现已完成稳定**，距最后代码提交（2026-03-18）约 8 周
+- 项目状态：无代码变动（仅 cron 例行更新）
 
 ## 下一步任务
-- **AUTH-05（邮箱验证）**：后端 /auth/verify-email + 前端验证流程未实现，建议优先完成
-  - 参考 PRD/phases/05-feature-benchmark-and-prd-expansion.md AUTH-05 规格
-- **CAL-02（保存筛选视图）**：后端筛选视图持久化 + 前端保存/加载 UI 待实现
-  - 参考 PRD/phases/05-feature-benchmark-and-prd-expansion.md CAL-02 规格
+- **等待 Jie 指定 Phase 6 P0 方向**
+  - 待确认：AUTH-05（身份认证相关）和 CAL-02（日历相关）哪个先做
+  - 收到明确方向后，Echo 立即开始实现
 
 ## 阻塞点与补救
-- 阻塞点：Jie 尚未明确指定 AUTH-05 和 CAL-02 的执行优先级和具体规格细节
-- 补救动作：
-  1. 如果 Jie 确认优先做 AUTH-05，Echo 可立即开始实现邮箱验证后端 + 前端流程
-  2. 如果 CAL-02 更优先，Echo 可先梳理 NOTE-08 组合筛选的视图持久化需求
+- 阻塞点：无代码阻塞，等待产品优先级指引
+- 补救动作：Jie 回复 Phase 6 第一个要做的功能
 
 ## 人工测试
-- Phase 5 MVP 功能已完成，等待 Jie 人工体验/验收
-- Phase 6 已完成的 P0 功能（AUTH-04、TAG-03、NOTE-07/08/09/10）同样等待人工测试确认
+- Phase 5/6 功能代码已完成，基础测试通过（backend 18 passed，Flutter build OK）
+- 桌面端人工回归验收仍未执行，待 Phase 6 新功能推进前或期间穿插进行
 
 ---
 
 **项目状态摘要**
-- 最后代码提交：2026-05-13 14:43 CST（cron，仅更新 NEXT_STEP.md）
-- Phase 5 验收：backend 18 passed，Flutter build OK（2026-03-18）
-- Phase 6 P0 执行进度：
-  - ✅ AUTH-04（注册验证码防刷）
-  - ✅ TAG-03（常用标签快捷选择）
-  - ✅ NOTE-07（全局搜索）
-  - ✅ NOTE-08（组合筛选）
-  - ✅ NOTE-09（置顶/收藏）
-  - ✅ NOTE-10（模板创建）
-  - ⏳ AUTH-05（邮箱验证）
-  - ⏳ CAL-02（保存筛选视图）
-- cron review: 2026-05-13 15:45 CST
+- 最后代码提交：2026-03-18（workspace 编辑器画布收敛）
+- 后端测试：18 passed（2026-03-17）
+- Flutter build：OK（2026-03-18）
+- 当前阶段：代码稳定，等待 Phase 6 P0 方向
+- Phase 7 已知功能（streaming AI / realtime recording / clipboard paste / Notion sync）：未开始
+- cron review: 2026-05-13 19:36 CST
