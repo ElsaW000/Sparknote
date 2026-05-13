@@ -1,7 +1,7 @@
 # NEXT STEP for Sparknote
 
 ## 当前判断
-- 当前步骤：Phase 5 P0 后端已全部完成，等待 Jie 定义 Phase 6 方向
+- 当前步骤：Phase 5 P0 已全部完成，等待 Jie 定义 Phase 6 方向
 
 ## 下一步任务
 - 等待 Jie 指定 Phase 6 的目标（后端 P1 / 前端增强 / 部署 / 其他）
@@ -22,9 +22,9 @@
 - Flutter 构建：`flutter build web --dart-define=BACKEND_URL=http://127.0.0.1:8000` — 可构建
 - DEVLOG 最新：2026-03-18（Phase 5 收尾 + UI 收敛 + 附件 + Notion MVP）
 - Phase 5 完成度：P0 8 项全部实现（见 PRD/backend-python/p0/README.md）
-- Phase 6：尚未定义（PRD/phases/ 下无 06-index.md）
-- Git 状态：仅 NEXT_STEP.md 待提交
-- 下次 review：2026-05-13 09:53 CST
+- Phase 6：尚未定义（PRD/phases/ 下仅 00-index.md）
+- Git 状态：仅 NEXT_STEP.md 待提交（无新代码改动）
+- 下次 review：2026-05-13 10:03 CST
 
 ---
-*Last reviewed: 2026-05-13 09:43 CST*
+*Last reviewed: 2026-05-13 09:53 CST*
