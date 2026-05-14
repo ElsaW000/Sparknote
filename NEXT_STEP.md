@@ -28,4 +28,4 @@
 - Phase 5 完成时间：2026-03-18（workspace editor canvas scroll fix）
 - Phase 6 状态：待 Jie 指定 P0（已等待约 2 个月）
 - Phase 7 增强（streaming AI / realtime recording / clipboard paste / Notion sync）：未开始
-- cron review: 2026-05-14 20:13 CST
+- cron review: 2026-05-14 20:34 CST
