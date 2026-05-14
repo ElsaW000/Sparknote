@@ -25,4 +25,4 @@
 - Flutter build：OK（2026-03-18）
 - 当前阶段：代码稳定，等待 Phase 6 P0 方向
 - Phase 7 已知功能（streaming AI / realtime recording / clipboard paste / Notion sync）：未开始
-- cron review: 2026-05-14 17:24 CST
+- cron review: 2026-05-14 17:37 CST
