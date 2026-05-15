@@ -264,9 +264,26 @@ class _NotesPageState extends State<NotesPage> {
       if (_selectedTag != null && _selectedTag!.isNotEmpty) {
         queryParameters['tag'] = _selectedTag!;
       }
+      // NOTE-07: use dedicated full-text search endpoint when a search query is active
       if (_searchQuery != null && _searchQuery!.isNotEmpty) {
-        queryParameters['q'] = _searchQuery!;
+        final searchUri = Uri.parse('$backendUrl/notes/search').replace(
+          queryParameters: {'q': _searchQuery!},
+        );
+        final searchR = await http.get(
+          searchUri,
+          headers: {'Authorization': 'Bearer $token'},
+        );
+        if (!mounted) return;
+        if (searchR.statusCode == 200) {
+          final data = json.decode(_decodeResponse(searchR)) as Map<String, dynamic>;
+          setState(() => _notes = data['results'] as List<dynamic>);
+        } else {
+          setState(() => _loadError = '搜索失败：${searchR.statusCode}');
+        }
+        if (mounted) setState(() => _loading = false);
+        return;
       }
+
       // NOTE-08: combination filter params
       if (_selectedTagIds.isNotEmpty) {
         queryParameters['tag_ids'] = _selectedTagIds.join(',');
@@ -2363,6 +2380,40 @@ class _NotesPageState extends State<NotesPage> {
     } catch (_) {}
   }
 
+  // NOTE-09: pin/unpin toggle
+  Future<void> _togglePin(Map<String, dynamic> note) async {
+    final id = note['id'] as int;
+    final isPinned = note['is_pinned'] == true;
+    final token = await _token();
+    if (!mounted || token == null || token.isEmpty) return;
+
+    try {
+      http.Response resp;
+      if (isPinned) {
+        resp = await http.delete(
+          Uri.parse('$backendUrl/notes/$id/pin'),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+      } else {
+        resp = await http.post(
+          Uri.parse('$backendUrl/notes/$id/pin'),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+      }
+      if (!mounted) return;
+      if (resp.statusCode == 200) {
+        final data = json.decode(_decodeResponse(resp)) as Map<String, dynamic>;
+        final updatedNote = Map<String, dynamic>.from(note);
+        updatedNote['is_pinned'] = data['is_pinned'];
+        setState(() {
+          final idx = _notes.indexWhere((n) => (n as Map)['id'] == id);
+          if (idx >= 0) _notes[idx] = updatedNote;
+        });
+        await _refreshDashboard();
+      }
+    } catch (_) {}
+  }
+
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('access_token');
@@ -2962,6 +3013,19 @@ class _NotesPageState extends State<NotesPage> {
                     padding: EdgeInsets.zero,
                     visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
                   ),
+                  onPressed: () => _togglePin(note),
+                  icon: Icon(
+                    note['is_pinned'] == true ? Icons.push_pin : Icons.push_pin_outlined,
+                    size: compactIconSize + 1,
+                  ),
+                  tooltip: note['is_pinned'] == true ? '取消置顶' : '置顶',
+                ),
+                IconButton.filledTonal(
+                  style: IconButton.styleFrom(
+                    minimumSize: Size(compactActionHeight, compactActionHeight),
+                    padding: EdgeInsets.zero,
+                    visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+                  ),
                   onPressed: () => _deleteNote(note['id'] as int),
                   icon: Icon(Icons.delete_outline, size: compactIconSize + 1),
                   tooltip: '删除',
@@ -3025,6 +3089,20 @@ class _NotesPageState extends State<NotesPage> {
                   },
                   icon: Icon(Icons.auto_awesome, size: compactIconSize),
                   label: const Text('灵感工作台'),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  style: IconButton.styleFrom(
+                    minimumSize: Size(compactActionHeight, compactActionHeight),
+                    padding: EdgeInsets.zero,
+                    visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+                  ),
+                  onPressed: () => _togglePin(note),
+                  icon: Icon(
+                    note['is_pinned'] == true ? Icons.push_pin : Icons.push_pin_outlined,
+                    size: compactIconSize + 1,
+                  ),
+                  tooltip: note['is_pinned'] == true ? '取消置顶' : '置顶',
                 ),
                 const SizedBox(width: 8),
                 IconButton.filledTonal(
