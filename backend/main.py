@@ -378,7 +378,7 @@ class WorkspaceShareResponse(SQLModel):
     share_text: str
 
 
-NoteRead.update_forward_refs(NoteAttachmentRead=NoteAttachmentRead)
+NoteRead.model_rebuild()
 
 
 class AudioTranscriptionRequest(SQLModel):
@@ -407,6 +407,8 @@ class NoteRelationRead(SQLModel):
 class UserCreate(SQLModel):
     email: str
     password: str
+    captcha_id: Optional[str] = None
+    captcha_answer: Optional[str] = None
 
 
 class UserRegister(SQLModel):
@@ -487,6 +489,11 @@ REQUIRE_REGISTER_CAPTCHA = os.getenv("REQUIRE_REGISTER_CAPTCHA", "1").lower() in
     "yes",
 )
 REGISTER_CAPTCHA_TTL_SECONDS = int(os.getenv("REGISTER_CAPTCHA_TTL_SECONDS", "300"))
+REQUIRE_LOGIN_CAPTCHA = os.getenv("REQUIRE_LOGIN_CAPTCHA", "0").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 # Prefer pbkdf2_sha256 for broad compatibility in local/dev environments.
 # Some passlib+bcrypt version combos can fail during backend self-check.
@@ -943,11 +950,20 @@ def register_user(payload: UserRegister, session: Session = Depends(get_session)
 @app.post("/auth/login", response_model=Token)
 def login(payload: UserCreate, session: Session = Depends(get_session)):
     logger.info(f"Login attempt for email: {payload.email}")
+
+    # --- captcha verification (AUTH-04) ---
+    if REQUIRE_LOGIN_CAPTCHA:
+        if not _verify_and_consume_captcha(payload.captcha_id, payload.captcha_answer):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Captcha verification failed or expired",
+            )
+
     user = get_user_by_email(session, payload.email)
     if not user:
         logger.warning(f"User not found: {payload.email}")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
-    
+
     logger.info(f"User found: {user.email}, checking password...")
     logger.info(f"Stored hash: {user.password_hash[:50]}...")
     
