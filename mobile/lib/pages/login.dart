@@ -70,9 +70,13 @@ class _LoginPageState extends State<LoginPage> {
 
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _captchaAnswerCtrl = TextEditingController();
   bool _loading = false;
+  bool _captchaLoading = false;
   bool _obscurePassword = true;
   String? _error;
+  String? _captchaId;
+  String? _captchaQuestion;
 
   static final RegExp _emailPattern =
       RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
@@ -94,11 +98,17 @@ class _LoginPageState extends State<LoginPage> {
       _error = null;
     });
     try {
+      final captchaAnswer = _captchaAnswerCtrl.text.trim();
       final uri = Uri.parse('$backendUrl/auth/login');
       final r = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email, 'password': password}),
+        body: json.encode({
+          'email': email,
+          'password': password,
+          if ((_captchaId ?? '').isNotEmpty) 'captcha_id': _captchaId,
+          if (captchaAnswer.isNotEmpty) 'captcha_answer': captchaAnswer,
+        }),
       );
       if (r.statusCode == 200) {
         final data = json.decode(r.body) as Map<String, dynamic>;
@@ -147,9 +157,39 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadCaptcha();
+  }
+
+  Future<void> _loadCaptcha() async {
+    setState(() {
+      _captchaLoading = true;
+      _captchaId = null;
+      _captchaQuestion = null;
+    });
+    try {
+      final resp = await http.get(Uri.parse('$backendUrl/auth/captcha'));
+      if (!mounted) return;
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body) as Map<String, dynamic>;
+        setState(() {
+          _captchaId = data['captcha_id']?.toString();
+          _captchaQuestion = data['question']?.toString();
+        });
+      }
+    } catch (_) {} finally {
+      if (mounted) {
+        setState(() => _captchaLoading = false);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _captchaAnswerCtrl.dispose();
     super.dispose();
   }
 
@@ -301,6 +341,37 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  Widget _buildCaptchaCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _authMint,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _authBrand.withValues(alpha: 0.20)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.verified_user_outlined, color: _authBg, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _captchaLoading
+                  ? '正在加载验证码...'
+                  : (_captchaQuestion ??
+                      '验证码不可用，请点击刷新'),
+              style: const TextStyle(fontSize: 14, color: _authBg, height: 1.6),
+            ),
+          ),
+          IconButton(
+            onPressed: _captchaLoading ? null : _loadCaptcha,
+            icon: const Icon(Icons.refresh),
+            tooltip: '刷新验证码',
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: const Color(0xFFFCFDFC),
@@ -341,6 +412,17 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               obscureText: _obscurePassword,
+            ),
+            const SizedBox(height: 16),
+            _buildCaptchaCard(),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _captchaAnswerCtrl,
+              decoration: _authFieldDecoration(
+                hintText: '验证码答案',
+                prefixIcon: Icons.calculate_outlined,
+              ),
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 20),
             if (_error != null)
@@ -520,6 +602,17 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               obscureText: _obscurePassword,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildCaptchaCard(),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _captchaAnswerCtrl,
+                              decoration: _authFieldDecoration(
+                                hintText: '验证码答案',
+                                prefixIcon: Icons.calculate_outlined,
+                              ),
+                              keyboardType: TextInputType.number,
                             ),
                             const SizedBox(height: 24),
                             if (_error != null)
