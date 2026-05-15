@@ -27,11 +27,12 @@
 ---
 
 **记录**
-- Phase 6 P0 状态（2026-05-15 21:39 盘点）：
+- Phase 6 P0 状态（2026-05-15 21:59 盘点）：
   - [x] NOTE-07: 搜索全文本（后端+前端 ✅）
   - [x] NOTE-09: pin/unpin（后端+前端 ✅）
   - [~] AUTH-04: 登录保护 Turnstile（**后端已 committed，login.dart 前端未开始**）
   - [ ] AUTH-05: 注册保护 Turnstile（未开始）
   - [ ] CAL-02: 日程化（未开始）
 - Phase 7 暂停（streaming AI / realtime recording / clipboard paste / Notion sync）
-- cron review: 2026-05-15 21:39 CST
+- cron review: 2026-05-15 21:59 CST
+- 无新代码变更（距上次 commit 约 20 分钟）
