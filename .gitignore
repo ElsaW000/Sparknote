@@ -18,6 +18,7 @@ local.properties
 .env.local
 .venv/
 00-history/
+archive/
 $null
 debug.keystore
 __pycache__/
