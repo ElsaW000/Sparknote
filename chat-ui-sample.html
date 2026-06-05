@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Spark Vault — Chat UI Sample</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'PingFang SC', sans-serif; background: #f0ece6; display: flex; justify-content: center; padding: 24px; gap: 24px; flex-wrap: wrap; }
+
+  /* ── Phone frame ── */
+  .phone { width: 375px; background: #f5f2ee; border-radius: 40px; overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,0.18); display: flex; flex-direction: column; height: 720px; }
+  .phone-label { font-size: 12px; color: #666; text-align: center; margin-top: 10px; letter-spacing: .5px; }
+
+  /* ── Nav ── */
+  .nav { display: flex; align-items: center; padding: 14px 18px; background: #fff; border-bottom: 1px solid #f0ece6; flex-shrink: 0; }
+  .nav-back { font-size: 20px; color: #1c1b1f; padding-right: 8px; cursor: pointer; }
+  .nav-center { flex: 1; text-align: center; }
+  .nav-title { font-size: 16px; font-weight: 700; color: #1c1b1f; display: block; }
+  .nav-sub { font-size: 11px; color: #49454f; }
+  .nav-more { font-size: 18px; color: #49454f; cursor: pointer; }
+
+  /* ── Messages ── */
+  .messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+  .msg-row { display: flex; }
+  .msg-row.user { justify-content: flex-end; }
+  .msg-row.assistant { justify-content: flex-start; }
+
+  .ai-bubble { background: #fff; border-radius: 18px 18px 18px 5px; padding: 14px 16px; max-width: 86%; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .user-bubble { background: #004a77; border-radius: 18px 18px 5px 18px; padding: 14px 16px; max-width: 86%; }
+  .user-bubble .bubble-text { color: #fff; }
+  .bubble-text { font-size: 14px; line-height: 1.65; color: #1c1b1f; display: block; white-space: pre-wrap; }
+
+  /* ── Citations ── */
+  .citations-block { margin-top: 10px; border-top: 1px solid #f0ece6; padding-top: 9px; }
+  .citations-header { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  .citations-icon { font-size: 12px; }
+  .citations-label { flex: 1; font-size: 11px; color: #49454f; }
+  .citations-toggle { font-size: 11px; color: #004a77; font-weight: 600; }
+  .citations-list { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+  .citation-item { display: flex; align-items: flex-start; gap: 6px; background: #f5f2ee; border-radius: 8px; padding: 7px 9px; cursor: pointer; transition: background .15s; }
+  .citation-item:hover { background: #ece8e1; }
+  .citation-dot { font-size: 14px; color: #004a77; flex-shrink: 0; line-height: 1.4; }
+  .citation-snippet { font-size: 11px; color: #49454f; line-height: 1.5; }
+
+  /* ── Mentor grid ── */
+  .mentor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .mentor-card { background: #f5f2ee; border-radius: 12px; padding: 12px 10px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: all .15s; }
+  .mentor-card:hover { background: #ece8e1; border-color: #004a77; }
+  .mentor-card.selected { border-color: #004a77; background: #e8f0f8; }
+  .mentor-emoji { font-size: 26px; display: block; margin-bottom: 4px; }
+  .mentor-name { font-size: 13px; font-weight: 700; color: #1c1b1f; display: block; }
+  .mentor-framework { font-size: 10px; color: #49454f; display: block; margin-top: 1px; }
+  .mentor-desc-text { font-size: 10px; color: #a39e97; display: block; margin-top: 3px; }
+
+  /* ── Thinking ── */
+  .thinking-dots { font-size: 22px; color: #49454f; letter-spacing: 3px; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+
+  /* ── Input area ── */
+  .input-area { display: flex; align-items: flex-end; gap: 10px; padding: 10px 16px 18px; background: #fff; border-top: 1px solid #f0ece6; flex-shrink: 0; }
+  .input-box { flex: 1; font-size: 14px; color: #1c1b1f; background: #f5f2ee; border-radius: 14px; padding: 10px 14px; border: none; outline: none; resize: none; line-height: 1.5; min-height: 42px; }
+  .send-btn { width: 40px; height: 40px; border-radius: 20px; background: #004a77; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
+  .send-btn.inactive { background: #e8e4de; }
+  .send-icon { font-size: 16px; color: #fff; }
+
+  /* ── Annotations ── */
+  .annotation { background: #fff; border-radius: 12px; padding: 14px 16px; font-size: 12px; line-height: 1.7; color: #49454f; max-width: 300px; box-shadow: 0 4px 16px rgba(0,0,0,.1); align-self: flex-start; margin-top: 8px; }
+  .annotation h4 { font-size: 13px; font-weight: 700; color: #1c1b1f; margin-bottom: 6px; }
+  .annotation .tag { display: inline-block; background: #e8f0f8; color: #004a77; font-size: 10px; border-radius: 6px; padding: 2px 7px; margin: 2px 3px 2px 0; font-weight: 600; }
+  .annotation .tag.red { background: #fdecea; color: #ba1a1a; }
+  .annotation .tag.green { background: #e6f4e6; color: #2e7d32; }
+  .col { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+</style>
+</head>
+<body>
+
+<!-- ── Screen 1: Mentor 选择（新设计） ── -->
+<div class="col">
+  <div class="phone">
+    <div class="nav">
+      <span class="nav-back">←</span>
+      <div class="nav-center">
+        <span class="nav-title">大师导师</span>
+      </div>
+      <span class="nav-more">⋯</span>
+    </div>
+    <div class="messages">
+      <div class="msg-row assistant">
+        <div class="ai-bubble">
+          <span class="bubble-text">选择一种思维视角来开始今天的对话：</span>
+          <div class="mentor-grid">
+            <div class="mentor-card">
+              <span class="mentor-emoji">🏮</span>
+              <span class="mentor-name">工匠视角</span>
+              <span class="mentor-framework">极致与内在驱动</span>
+              <span class="mentor-desc-text">稻盛和夫哲学启发</span>
+            </div>
+            <div class="mentor-card selected">
+              <span class="mentor-emoji">🎩</span>
+              <span class="mentor-name">逆向思维</span>
+              <span class="mentor-framework">多元框架识别偏见</span>
+              <span class="mentor-desc-text">芒格思维模型启发</span>
+            </div>
+            <div class="mentor-card">
+              <span class="mentor-emoji">🏛️</span>
+              <span class="mentor-name">苏格拉底提问法</span>
+              <span class="mentor-framework">层层追问假设</span>
+              <span class="mentor-desc-text">经典对话方法</span>
+            </div>
+            <div class="mentor-card" style="border:2px dashed #d8d4ce;background:transparent;">
+              <span class="mentor-emoji">＋</span>
+              <span class="mentor-name" style="font-size:12px;color:#49454f;">自定义视角</span>
+              <span class="mentor-desc-text">在「我的」中创建</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="input-area">
+      <textarea class="input-box" placeholder="请先选择思维视角…" disabled></textarea>
+      <div class="send-btn inactive"><span class="send-icon">↑</span></div>
+    </div>
+  </div>
+  <div class="annotation">
+    <h4>改动说明 — Mentor 选择</h4>
+    <span class="tag green">✓ 去真人化</span>
+    <span class="tag green">✓ 框架名称</span>
+    <span class="tag">保留 emoji</span>
+    <p style="margin-top:8px;">名字从"稻盛和夫 / 查理·芒格 / 苏格拉底"改为"工匠视角 / 逆向思维 / 苏格拉底提问法"。增加小字说明"xxx 启发"，保留文化参考不声称 AI 模仿真人。</p>
+  </div>
+</div>
+
+<!-- ── Screen 2: 带 Citation 的对话 ── -->
+<div class="col">
+  <div class="phone">
+    <div class="nav">
+      <span class="nav-back">←</span>
+      <div class="nav-center">
+        <span class="nav-title">逆向思维</span>
+        <span class="nav-sub">大师导师模式</span>
+      </div>
+      <span class="nav-more">⋯</span>
+    </div>
+    <div class="messages">
+      <!-- Greeting -->
+      <div class="msg-row assistant">
+        <div class="ai-bubble">
+          <span class="bubble-text">今天我们用「逆向思维」视角来思考。多元框架识别偏见。你想探讨什么？</span>
+        </div>
+      </div>
+
+      <!-- User -->
+      <div class="msg-row user">
+        <div class="user-bubble">
+          <span class="bubble-text">我感觉自己在管理上越来越忙，但团队效率没有提升</span>
+        </div>
+      </div>
+
+      <!-- AI with collapsed citation -->
+      <div class="msg-row assistant">
+        <div class="ai-bubble">
+          <span class="bubble-text">先反转一下：如果你的"忙"本身就是效率问题的原因，而不是解决方案，会怎样？你的记录里有几次提到"亲自做"——这可能恰好是在剥夺团队成长的机会。</span>
+          <div class="citations-block">
+            <div class="citations-header" onclick="toggle(this)">
+              <span class="citations-icon">📎</span>
+              <span class="citations-label">基于 2 条你的记录</span>
+              <span class="citations-toggle">展开</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User -->
+      <div class="msg-row user">
+        <div class="user-bubble">
+          <span class="bubble-text">你说得对，我确实什么都想参与</span>
+        </div>
+      </div>
+
+      <!-- AI with expanded citation -->
+      <div class="msg-row assistant">
+        <div class="ai-bubble">
+          <span class="bubble-text">那进一步问：如果你的团队有三件事，其中只有一件需要你，是哪件？识别"只有我能做"和"我习惯做"的边界，是提效的第一步。</span>
+          <div class="citations-block">
+            <div class="citations-header" onclick="toggle(this)" style="cursor:pointer">
+              <span class="citations-icon">📎</span>
+              <span class="citations-label">基于 3 条你的记录</span>
+              <span class="citations-toggle">收起</span>
+            </div>
+            <div class="citations-list">
+              <div class="citation-item">
+                <span class="citation-dot">·</span>
+                <span class="citation-snippet">今天又帮小王改了那份方案，花了两小时，感觉这不该是我做的事…</span>
+              </div>
+              <div class="citation-item">
+                <span class="citation-dot">·</span>
+                <span class="citation-snippet">团队说要自主决策，但每次我不在就出错，我还是选择了亲自跟进</span>
+              </div>
+              <div class="citation-item">
+                <span class="citation-dot">·</span>
+                <span class="citation-snippet">这周开了 12 个会，但真正推进的事只有 2 件</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Thinking -->
+      <div class="msg-row assistant">
+        <div class="ai-bubble">
+          <span class="thinking-dots">···</span>
+        </div>
+      </div>
+    </div>
+    <div class="input-area">
+      <textarea class="input-box" placeholder="回复逆向思维…"></textarea>
+      <div class="send-btn"><span class="send-icon">↑</span></div>
+    </div>
+  </div>
+  <div class="annotation">
+    <h4>改动说明 — Citation UI</h4>
+    <span class="tag green">✓ 来源可见</span>
+    <span class="tag green">✓ 可展开/收起</span>
+    <span class="tag">可点击跳转片段</span>
+    <p style="margin-top:8px;">每条 AI 回复底部显示「📎 基于 N 条你的记录」，点击展开具体片段摘要。点击片段可跳转到 Library 编辑器查看全文。没有来源时不显示 citation 区域。</p>
+    <br/>
+    <h4>颜色语义</h4>
+    <span class="tag red">无引用</span> 不显示<br/>
+    <span class="tag">有引用</span> 折叠显示数量<br/>
+    <span class="tag green">展开</span> 显示摘要列表
+  </div>
+</div>
+
+<script>
+function toggle(header) {
+  const block = header.parentElement
+  const list = block.querySelector('.citations-list')
+  const btn = header.querySelector('.citations-toggle')
+  if (list) {
+    list.remove()
+    btn.textContent = '展开'
+  } else {
+    btn.textContent = '收起'
+    const ul = document.createElement('div')
+    ul.className = 'citations-list'
+    ul.innerHTML = `
+      <div class="citation-item"><span class="citation-dot">·</span><span class="citation-snippet">今天又帮小王改了那份方案，花了两小时，感觉这不该是我做的事…</span></div>
+      <div class="citation-item"><span class="citation-dot">·</span><span class="citation-snippet">团队说要自主决策，但每次我不在就出错，我还是选择了亲自跟进</span></div>
+    `
+    block.appendChild(ul)
+  }
+}
+</script>
+</body>
+</html>

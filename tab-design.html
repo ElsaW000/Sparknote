@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Spark Vault — 4 Tab 详细设计</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#ede9e4;padding:24px;color:#1a1a1a}
+h1{font-size:18px;font-weight:700;margin-bottom:4px}
+.lead{font-size:12px;color:#888;margin-bottom:24px}
+.tabs-row{display:flex;gap:20px;overflow-x:auto;padding-bottom:8px}
+.phone-wrap{flex:0 0 260px}
+.phone-label{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;text-align:center}
+.phone{background:#fbf9f6;border-radius:36px;overflow:hidden;border:6px solid #222;box-shadow:0 8px 32px rgba(0,0,0,.18);min-height:580px;display:flex;flex-direction:column}
+.status{background:#f5f2ee;height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:10px;color:#aaa;flex-shrink:0}
+.nav{background:#f5f2ee;padding:10px 16px 8px;border-bottom:1px solid #e0dbd5;flex-shrink:0}
+.nav-title{font-size:18px;font-weight:700;color:#111}
+.nav-sub{font-size:10px;color:#aaa;margin-top:1px}
+.nav-right{float:right;font-size:18px;color:#555;margin-top:-24px}
+.body{flex:1;overflow:hidden;padding:12px 14px;background:#fbf9f6;display:flex;flex-direction:column;gap:10px}
+.tabbar{display:flex;background:white;border-top:1px solid #ddd;flex-shrink:0}
+.t{flex:1;padding:8px 2px 6px;text-align:center;font-size:9px;color:#aaa}
+.t.on{color:#004a77;font-weight:700}
+.tic{font-size:16px;display:block;margin-bottom:2px}
+/* components */
+.card{background:white;border-radius:12px;padding:10px 12px;border:1px solid #e8e4e0}
+.card-title{font-size:11px;font-weight:700;color:#333;margin-bottom:6px}
+.input-mock{background:#f5f2ee;border-radius:8px;padding:8px 10px;font-size:10px;color:#bbb;margin-bottom:6px}
+.chip{display:inline-block;font-size:9px;padding:3px 8px;border-radius:10px;margin:2px 2px 0 0}
+.chip-blue{background:#e8f4ff;color:#004a77}
+.chip-orange{background:#fff3e0;color:#c85000}
+.chip-green{background:#e8f5e9;color:#1b5e20}
+.chip-gray{background:#f0f0f0;color:#666}
+.frag{background:white;border-radius:8px;padding:8px 10px;border:1px solid #e8e4e0;margin-bottom:6px;font-size:10px;line-height:1.5}
+.frag-meta{font-size:9px;color:#bbb;margin-top:3px}
+.digest{background:linear-gradient(135deg,#e8f4ff,#f0e8ff);border-radius:10px;padding:10px 12px;font-size:10px;color:#333;line-height:1.5;border:1px solid #d0e8ff}
+.report-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0ece8}
+.report-row:last-child{border-bottom:none}
+.report-ic{font-size:18px}
+.report-info{flex:1}
+.report-name{font-size:10px;font-weight:600;color:#333}
+.report-meta{font-size:9px;color:#bbb;margin-top:1px}
+.report-arr{font-size:12px;color:#ccc}
+.chat-session{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f0ece8}
+.chat-session:last-child{border-bottom:none}
+.chat-ic{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.chat-ic.bias{background:#fff3e0}
+.chat-ic.mentor{background:#e8f5e9}
+.chat-ic.create{background:#e8f4ff}
+.chat-body{flex:1}
+.chat-name{font-size:10px;font-weight:600;color:#333}
+.chat-preview{font-size:9px;color:#999;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.chat-time{font-size:9px;color:#ccc}
+.session-start{background:#f5f2ee;border-radius:10px;padding:10px 12px}
+.session-title{font-size:10px;font-weight:700;color:#555;margin-bottom:7px}
+.me-user{display:flex;align-items:center;gap:10px;padding:8px 0 12px}
+.me-avatar{width:40px;height:40px;border-radius:50%;background:#004a77;display:flex;align-items:center;justify-content:center;color:white;font-size:16px;font-weight:700;flex-shrink:0}
+.me-name{font-size:13px;font-weight:700;color:#111}
+.me-plan{font-size:10px;color:#888;margin-top:1px}
+.me-arr{margin-left:auto;font-size:14px;color:#ccc}
+.me-group{background:white;border-radius:10px;overflow:hidden;border:1px solid #e8e4e0;margin-bottom:8px}
+.me-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #f0ece8;font-size:11px;color:#333}
+.me-row:last-child{border-bottom:none}
+.me-row-ic{font-size:15px;width:20px;text-align:center}
+.me-row-arr{margin-left:auto;font-size:11px;color:#ccc}
+.section-label{font-size:9px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.6px;margin:4px 0 6px}
+.divider{height:1px;background:#f0ece8;margin:4px 0}
+.btn-primary{background:#004a77;color:white;border:none;border-radius:8px;padding:8px 14px;font-size:10px;font-weight:600;width:100%;cursor:pointer}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:2px}
+.stat-card{background:white;border-radius:8px;padding:8px 10px;border:1px solid #e8e4e0;text-align:center}
+.stat-num{font-size:18px;font-weight:700;color:#004a77}
+.stat-label{font-size:9px;color:#aaa;margin-top:1px}
+</style>
+</head>
+<body>
+<h1>Spark Vault — 最终架构：4 Tab 详细设计</h1>
+<p class="lead">Home · Library · Chat · Me &nbsp;|&nbsp; 请逐一确认每个 Tab 的内容结构</p>
+
+<div class="tabs-row">
+
+<!-- TAB 1: HOME -->
+<div class="phone-wrap">
+  <div class="phone-label">① Home</div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div class="nav">
+      <div class="nav-title">Home</div>
+      <div class="nav-sub">你的个人成长伙伴</div>
+    </div>
+    <div class="body">
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num">47</div><div class="stat-label">碎片总数</div></div>
+        <div class="stat-card"><div class="stat-num">12</div><div class="stat-label">本周录入</div></div>
+        <div class="stat-card"><div class="stat-num">8</div><div class="stat-label">对话次数</div></div>
+        <div class="stat-card"><div class="stat-num">3</div><div class="stat-label">生成报告</div></div>
+      </div>
+
+      <div class="digest">
+        <div style="font-size:10px;font-weight:700;color:#004a77;margin-bottom:5px">✦ 本周 AI Digest · 自动生成</div>
+        本周你记录最多的主题是「认知」和「成长」。AI 注意到你在"努力"这个话题上有一个反复出现的思维惯性——值得一次纠偏对话。
+        <div style="margin-top:8px"><button class="btn-primary" style="padding:5px 10px;width:auto;font-size:9px">💬 开始纠偏对话</button></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 报告历史</div>
+        <div class="report-row">
+          <div class="report-ic">📋</div>
+          <div class="report-info">
+            <div class="report-name">成长反思报告</div>
+            <div class="report-meta">2026-05-24 · 基于 8 次对话</div>
+          </div>
+          <div class="report-arr">›</div>
+        </div>
+        <div class="report-row">
+          <div class="report-ic">📋</div>
+          <div class="report-info">
+            <div class="report-name">创作风格分析</div>
+            <div class="report-meta">2026-05-17 · 自动生成</div>
+          </div>
+          <div class="report-arr">›</div>
+        </div>
+        <div class="report-row">
+          <div class="report-ic">📋</div>
+          <div class="report-info">
+            <div class="report-name">第一性原理专题</div>
+            <div class="report-meta">2026-05-10 · 手动触发</div>
+          </div>
+          <div class="report-arr">›</div>
+        </div>
+      </div>
+    </div>
+    <div class="tabbar">
+      <div class="t on"><span class="tic">🏠</span>Home</div>
+      <div class="t"><span class="tic">📚</span>Library</div>
+      <div class="t"><span class="tic">💬</span>Chat</div>
+      <div class="t"><span class="tic">👤</span>Me</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: LIBRARY -->
+<div class="phone-wrap" >
+  <div class="phone-label">② Library（录入区重设计）</div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div class="nav" style="padding-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="nav-title">Library</div>
+          <div class="nav-sub">我的知识碎片</div>
+        </div>
+        <div style="display:flex;gap:10px;font-size:16px;color:#555">⌕ ≡</div>
+      </div>
+    </div>
+    <div class="body" style="padding:10px 12px">
+
+      <!-- 录入区：显眼独立卡片 -->
+      <div style="background:white;border-radius:14px;padding:10px 12px;border:1.5px solid #c8e0f4;box-shadow:0 2px 8px rgba(0,74,119,.08)">
+        <div style="font-size:9px;font-weight:700;color:#004a77;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">＋ 添加碎片</div>
+        <div style="position:relative">
+          <textarea style="width:100%;border:none;background:#f5f2ee;border-radius:8px;padding:8px 28px 8px 8px;font-size:10px;color:#333;resize:none;height:52px;outline:none;font-family:inherit" placeholder="随手记录一个想法、金句、观察…"></textarea>
+          <span style="position:absolute;right:7px;bottom:7px;font-size:13px;color:#aaa;cursor:pointer;background:#f5f2ee;line-height:1" title="全屏编辑">⤢</span>
+        </div>
+        <div style="font-size:8px;color:#bbb;text-align:right;margin-top:2px">点击 ⤢ 进入全屏编辑（支持图片 / 录音 / 链接）</div>
+        <!-- 来源类型 -->
+        <div style="display:flex;gap:4px;margin:7px 0 8px;flex-wrap:wrap">
+          <span class="chip chip-orange" style="cursor:pointer">💡 想法</span>
+          <span class="chip chip-blue" style="cursor:pointer">📖 书摘</span>
+          <span class="chip chip-gray" style="cursor:pointer;background:#e8f5e9;color:#1b5e20">🌐 网页</span>
+          <span class="chip chip-gray" style="cursor:pointer">其他</span>
+        </div>
+        <!-- 录入方式按钮行（仅非文字模式）-->
+        <div style="display:flex;gap:6px;margin-bottom:7px">
+          <!-- 拍照/OCR -->
+          <button style="flex:1;background:#f0f7ff;border:1px solid #c8e0f4;border-radius:10px;padding:7px 4px;font-size:9px;color:#004a77;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">
+            <span style="font-size:16px">📷</span>
+            <span style="font-weight:600">拍照</span>
+            <span style="font-size:8px;color:#7aabcc">OCR 识别</span>
+          </button>
+          <!-- 语音录音 -->
+          <button style="flex:1;background:#f5f2ee;border:1px solid #e0dbd5;border-radius:10px;padding:7px 4px;font-size:9px;color:#555;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">
+            <span style="font-size:16px">🎙</span>
+            <span style="font-weight:600">录音</span>
+            <span style="font-size:8px;color:#aaa">存原文件</span>
+          </button>
+          <!-- 网页抓取 -->
+          <button style="flex:1;background:#fff8f0;border:1px solid #f5d9b8;border-radius:10px;padding:7px 4px;font-size:9px;color:#c85000;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer">
+            <span style="font-size:16px">🌐</span>
+            <span style="font-weight:600">网页</span>
+            <span style="font-size:8px;color:#e0a070">粘贴链接</span>
+          </button>
+        </div>
+
+        <!-- 网页抓取展开态（点击"网页"后出现） -->
+        <div style="background:#fff8f0;border-radius:8px;padding:8px 10px;margin-bottom:7px;border:1px solid #f5d9b8">
+          <div style="font-size:9px;font-weight:700;color:#c85000;margin-bottom:5px">🌐 粘贴网页链接，自动抓取正文</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div style="flex:1;background:white;border-radius:6px;padding:5px 8px;font-size:9px;color:#bbb;border:1px solid #e8e4e0">https://...</div>
+            <button style="background:#c85000;color:white;border:none;border-radius:6px;padding:5px 10px;font-size:9px;font-weight:600;cursor:pointer">抓取</button>
+          </div>
+          <div style="font-size:8px;color:#e0a070;margin-top:5px">💡 想要从浏览器一键发送？安装 Spark Vault 插件 →</div>
+        </div>
+        <button class="btn-primary" style="padding:7px;font-size:10px">保存到 Library</button>
+      </div>
+
+      <!-- 筛选行 -->
+      <div style="display:flex;gap:5px;margin:4px 0 2px;overflow-x:auto">
+        <span class="chip chip-blue" style="white-space:nowrap">全部 47</span>
+        <span class="chip chip-gray" style="white-space:nowrap">💡 想法</span>
+        <span class="chip chip-gray" style="white-space:nowrap">📖 书摘</span>
+        <span class="chip chip-gray" style="white-space:nowrap">🌐 网页</span>
+        <span class="chip chip-gray" style="white-space:nowrap">🎙 录音</span>
+      </div>
+
+      <div class="section-label" style="margin-top:4px">全部碎片 · 47</div>
+
+      <div style="overflow:auto;flex:1">
+        <div class="frag">
+          <span class="chip chip-orange" style="margin-bottom:4px">💡 想法</span>
+          <div>"努力不一定有回报，但不努力一定没有回报——这个逻辑本身值得怀疑"</div>
+          <div class="frag-meta">#认知 #成长 · 刚刚</div>
+        </div>
+        <div class="frag">
+          <span class="chip chip-blue" style="margin-bottom:4px">📖 书摘</span>
+          <div>"第一性原理：从基本假设出发，而不是从类比出发"</div>
+          <div class="frag-meta">《从0到1》· #思维框架 · 昨天</div>
+        </div>
+        <div class="frag">
+          <span class="chip chip-gray" style="margin-bottom:4px">🌐 网页</span>
+          <div>"稻盛和夫：工作即修行，将平凡的事做到极致"</div>
+          <div class="frag-meta">#工作哲学 · 2天前</div>
+        </div>
+        <!-- 录音类碎片卡片 -->
+        <div class="frag" style="border-left:3px solid #9c6e3c">
+          <span class="chip" style="background:#fdf0e0;color:#9c6e3c;margin-bottom:6px">🎙 录音</span>
+          <!-- 音频播放条 -->
+          <div style="display:flex;align-items:center;gap:7px;background:#f9f5f0;border-radius:7px;padding:6px 8px;margin-bottom:5px">
+            <span style="font-size:14px;color:#9c6e3c;cursor:pointer">▶</span>
+            <div style="flex:1;height:3px;background:#e0d4c4;border-radius:2px;position:relative">
+              <div style="width:35%;height:3px;background:#9c6e3c;border-radius:2px"></div>
+            </div>
+            <span style="font-size:9px;color:#aaa">00:42</span>
+          </div>
+          <!-- 转录状态 -->
+          <div style="font-size:9px;color:#bbb;display:flex;align-items:center;gap:4px">
+            <span>📝 转录文字</span>
+            <span style="background:#f0ece8;color:#aaa;border-radius:4px;padding:1px 6px;font-size:8px;cursor:pointer">点击生成</span>
+          </div>
+          <div class="frag-meta" style="margin-top:4px">#日常思考 · 3天前</div>
+        </div>
+      </div>
+    </div>
+    <div class="tabbar">
+      <div class="t"><span class="tic">🏠</span>Home</div>
+      <div class="t on"><span class="tic">📚</span>Library</div>
+      <div class="t"><span class="tic">💬</span>Chat</div>
+      <div class="t"><span class="tic">👤</span>Me</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: CHAT -->
+<div class="phone-wrap">
+  <div class="phone-label">③ Chat</div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div class="nav" style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div class="nav-title">Chat</div>
+        <div class="nav-sub">对话会话</div>
+      </div>
+      <!-- 新建会话按钮（右上角，醒目） -->
+      <button style="background:#004a77;color:white;border:none;border-radius:20px;padding:6px 14px;font-size:10px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px">
+        <span style="font-size:13px">＋</span> 新建会话
+      </button>
+    </div>
+    <div class="body" style="padding:10px 14px">
+
+      <!-- 新建会话说明区（非输入框） -->
+      <div style="background:#f0f7ff;border-radius:12px;padding:10px 12px;border:1px solid #c8e0f4;margin-bottom:4px">
+        <div style="font-size:10px;font-weight:700;color:#004a77;margin-bottom:7px">选择一种对话方式开始 →</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;align-items:center;gap:8px;background:white;border-radius:8px;padding:7px 10px;border:1px solid #e8e4e0;cursor:pointer">
+            <span style="font-size:16px">🧠</span>
+            <div style="flex:1">
+              <div style="font-size:10px;font-weight:600;color:#333">记忆纠偏</div>
+              <div style="font-size:9px;color:#aaa">发现误解与惯性记忆，重新校准认知</div>
+            </div>
+            <span style="font-size:11px;color:#ccc">›</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:white;border-radius:8px;padding:7px 10px;border:1px solid #e8e4e0;cursor:pointer">
+            <span style="font-size:16px">👤</span>
+            <div style="flex:1">
+              <div style="font-size:10px;font-weight:600;color:#333">大师导师</div>
+              <div style="font-size:9px;color:#aaa">选择一位 Mentor，深度探讨问题</div>
+            </div>
+            <span style="font-size:11px;color:#ccc">›</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:white;border-radius:8px;padding:7px 10px;border:1px solid #e8e4e0;cursor:pointer">
+            <span style="font-size:16px">✍</span>
+            <div style="flex:1">
+              <div style="font-size:10px;font-weight:600;color:#333">创作辅助</div>
+              <div style="font-size:9px;color:#aaa">基于 Library 碎片，辅助写作输出</div>
+            </div>
+            <span style="font-size:11px;color:#ccc">›</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:white;border-radius:8px;padding:7px 10px;border:1px solid #e8e4e0;cursor:pointer">
+            <span style="font-size:16px">📋</span>
+            <div style="flex:1">
+              <div style="font-size:10px;font-weight:600;color:#333">生成报告</div>
+              <div style="font-size:9px;color:#aaa">整理对话 & 碎片，输出结构化报告</div>
+            </div>
+            <span style="font-size:11px;color:#ccc">›</span>
+          </div>
+        </div>
+        <div style="font-size:8px;color:#7aabcc;margin-top:7px;text-align:center">点击任意一项 → 进入全屏对话页</div>
+      </div>
+
+      <div class="section-label">历史会话</div>
+
+      <div style="flex:1;overflow:auto">
+        <div class="chat-session">
+          <div class="chat-ic bias">🧠</div>
+          <div class="chat-body">
+            <div class="chat-name">记忆纠偏 · 努力与回报</div>
+            <div class="chat-preview">AI: 你是否考虑过，这个信念来自...</div>
+          </div>
+          <div class="chat-time">今天</div>
+        </div>
+        <div class="chat-session">
+          <div class="chat-ic mentor">👤</div>
+          <div class="chat-body">
+            <div class="chat-name">稻盛和夫 · 工作哲学</div>
+            <div class="chat-preview">稻盛: 工作即祈祷，将每一件...</div>
+          </div>
+          <div class="chat-time">昨天</div>
+        </div>
+        <div class="chat-session">
+          <div class="chat-ic create">✍</div>
+          <div class="chat-body">
+            <div class="chat-name">创作辅助 · 小红书文案</div>
+            <div class="chat-preview">基于你的 Library 碎片生成...</div>
+          </div>
+          <div class="chat-time">2天前</div>
+        </div>
+      </div>
+    </div>
+    <div class="tabbar">
+      <div class="t"><span class="tic">🏠</span>Home</div>
+      <div class="t"><span class="tic">📚</span>Library</div>
+      <div class="t on"><span class="tic">💬</span>Chat</div>
+      <div class="t"><span class="tic">👤</span>Me</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 4: ME -->
+<div class="phone-wrap">
+  <div class="phone-label">④ Me</div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div class="nav">
+      <div class="nav-title">Me</div>
+    </div>
+    <div class="body">
+      <div class="me-group" style="padding:12px">
+        <div class="me-user">
+          <div class="me-avatar">J</div>
+          <div>
+            <div class="me-name">Jie Wang</div>
+            <div class="me-plan">Plus · 有效期至 2026-12</div>
+          </div>
+          <div class="me-arr">›</div>
+        </div>
+      </div>
+
+      <div class="me-group">
+        <div class="me-row"><span class="me-row-ic">⭐</span>升级套餐<span class="me-row-arr">›</span></div>
+      </div>
+
+      <div class="me-group">
+        <div class="me-row"><span class="me-row-ic">🎨</span>个性化 / Skills<span class="me-row-arr">›</span></div>
+        <div class="me-row"><span class="me-row-ic">👤</span>个人资料<span class="me-row-arr">›</span></div>
+        <div class="me-row"><span class="me-row-ic">⚙️</span>设置<span class="me-row-arr">›</span></div>
+      </div>
+
+      <div class="me-group">
+        <div class="me-row"><span class="me-row-ic">❓</span>帮助与反馈<span class="me-row-arr">›</span></div>
+        <div class="me-row"><span class="me-row-ic">📄</span>用户协议 / 隐私政策<span class="me-row-arr">›</span></div>
+        <div class="me-row"><span class="me-row-ic">ℹ️</span>关于 Spark Vault<span class="me-row-arr">›</span></div>
+      </div>
+
+      <div class="me-group">
+        <div class="me-row" style="color:#c00"><span class="me-row-ic">🚪</span>退出登录</div>
+      </div>
+    </div>
+    <div class="tabbar">
+      <div class="t"><span class="tic">🏠</span>Home</div>
+      <div class="t"><span class="tic">📚</span>Library</div>
+      <div class="t"><span class="tic">💬</span>Chat</div>
+      <div class="t on"><span class="tic">👤</span>Me</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div style="margin-top:24px;background:white;border-radius:12px;padding:16px;font-size:12px;color:#555;line-height:1.9;max-width:1120px">
+  <strong>设计说明：</strong><br>
+  📚 <b>Library</b>：顶部是快速录入入口（文字/OCR/语音），下方是所有碎片列表，Capture tab 不再单独存在<br>
+  💬 <b>Chat</b>：顶部是 session 初始化卡片（选模式或直接输入），下方是历史对话列表。对话完成后自动存入列表<br>
+  🏠 <b>Home</b>：数据统计 + AI 每周自动 Digest + 报告历史。Reports 不单独一个 tab<br>
+  👤 <b>Me</b>：完全参考 Claude 样式。「个性化/Skills」展开后管理内置模板和自定义 Skills
+</div>
+
+<h2 style="font-size:16px;font-weight:700;margin:36px 0 4px">子页面设计</h2>
+<p class="lead">全屏对话页 · 全屏碎片编辑页 · 碎片全量浏览页 · 碎片详情页 · 报告历史列表 · 报告详情 · Skills 管理</p>
+
+<div class="tabs-row">
+
+<!-- SUB 1: 全屏对话页（导师模式 · Mentor 选择卡片状态） -->
+<div class="phone-wrap" >
+  <div class="phone-label">S1 · 全屏对话页（导师选角色）</div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div style="background:#f5f2ee;padding:10px 16px 8px;border-bottom:1px solid #e0dbd5;display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <span style="font-size:18px;color:#555;cursor:pointer">←</span>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;color:#111">大师导师</div>
+        <div style="font-size:9px;color:#aaa">新会话</div>
+      </div>
+      <span style="font-size:16px;color:#aaa">⋯</span>
+    </div>
+    <div style="flex:1;overflow:hidden;background:#fbf9f6;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+      <!-- AI 第一条消息：Mentor 选择卡片 -->
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <div style="width:28px;height:28px;border-radius:50%;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🤖</div>
+        <div style="flex:1">
+          <div style="background:white;border-radius:12px;border-top-left-radius:4px;padding:10px 12px;border:1px solid #e8e4e0;font-size:10px;line-height:1.6;color:#333">
+            你好！请选择一位你想对话的大师，我会以他的视角和你探讨问题：
+          </div>
+          <!-- Mentor 选项卡片 -->
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px">
+            <div style="background:white;border:1.5px solid #004a77;border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px">
+              <span style="font-size:18px">🏮</span>
+              <div>
+                <div style="font-size:10px;font-weight:700;color:#004a77">稻盛和夫</div>
+                <div style="font-size:8px;color:#aaa">工作哲学 · 人生意义 · 敬天爱人</div>
+              </div>
+            </div>
+            <div style="background:white;border:1px solid #e8e4e0;border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px">
+              <span style="font-size:18px">🎩</span>
+              <div>
+                <div style="font-size:10px;font-weight:700;color:#333">查理·芒格</div>
+                <div style="font-size:8px;color:#aaa">多元思维框架 · 逆向思考 · 理性</div>
+              </div>
+            </div>
+            <div style="background:white;border:1px solid #e8e4e0;border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px">
+              <span style="font-size:18px">🏛️</span>
+              <div>
+                <div style="font-size:10px;font-weight:700;color:#333">苏格拉底</div>
+                <div style="font-size:8px;color:#aaa">提问式对话 · 追问本质 · 自我认知</div>
+              </div>
+            </div>
+            <div style="background:#f5f2ee;border:1px dashed #ccc;border-radius:10px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px">
+              <span style="font-size:18px">✏️</span>
+              <div style="font-size:10px;color:#888">自定义导师（来自 Skills）→</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 底部输入区（选角色前灰化） -->
+    <div style="background:white;border-top:1px solid #e8e4e0;padding:8px 12px;display:flex;gap:8px;align-items:center;flex-shrink:0">
+      <div style="flex:1;background:#f5f2ee;border-radius:20px;padding:8px 14px;font-size:10px;color:#ccc">先选择一位导师…</div>
+      <button style="background:#ccc;color:white;border:none;border-radius:50%;width:30px;height:30px;font-size:14px;cursor:not-allowed">↑</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUB 1b: 全屏对话页（对话进行中状态） -->
+<div class="phone-wrap" >
+  <div class="phone-label">S1b · 全屏对话页（对话中）</div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div style="background:#f5f2ee;padding:10px 16px 8px;border-bottom:1px solid #e0dbd5;display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <span style="font-size:18px;color:#555;cursor:pointer">←</span>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;color:#111">稻盛和夫 · 工作哲学</div>
+        <div style="font-size:9px;color:#aaa">大师导师模式 · 基于 12 条个人记录</div>
+      </div>
+      <span style="font-size:16px;color:#aaa">⋯</span>
+    </div>
+    <div style="flex:1;overflow:hidden;background:#fbf9f6;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+      <!-- AI 消息 -->
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <div style="width:28px;height:28px;border-radius:50%;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🏮</div>
+        <div style="background:white;border-radius:12px;border-top-left-radius:4px;padding:10px 12px;border:1px solid #e8e4e0;font-size:10px;line-height:1.6;color:#333;max-width:200px">
+          工作即祈祷。你提到"努力不一定有回报"——我想问，你所说的"回报"，究竟是指外部的认可，还是内心的充实？
+        </div>
+      </div>
+      <!-- 用户消息 -->
+      <div style="display:flex;justify-content:flex-end">
+        <div style="background:#004a77;color:white;border-radius:12px;border-bottom-right-radius:4px;padding:10px 12px;font-size:10px;line-height:1.6;max-width:200px">
+          我想的是外部回报，比如职位晋升、收入提升…
+        </div>
+      </div>
+      <!-- AI 回复 -->
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <div style="width:28px;height:28px;border-radius:50%;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🏮</div>
+        <div style="background:white;border-radius:12px;border-top-left-radius:4px;padding:10px 12px;border:1px solid #e8e4e0;font-size:10px;line-height:1.6;color:#333;max-width:200px">
+          那么，如果去掉晋升和收入，你的工作还有意义吗？这才是真正的考验…
+          <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #f0ece8;font-size:9px;color:#aaa">引用你的记录：「工作的意义不在结果」· 3天前</div>
+        </div>
+      </div>
+    </div>
+    <!-- 底部输入区（激活态） -->
+    <div style="background:white;border-top:1px solid #e8e4e0;padding:8px 12px;display:flex;gap:8px;align-items:center;flex-shrink:0">
+      <div style="flex:1;background:#f5f2ee;border-radius:20px;padding:8px 14px;font-size:10px;color:#999">回复稻盛和夫…</div>
+      <button style="background:#004a77;color:white;border:none;border-radius:50%;width:30px;height:30px;font-size:14px;cursor:pointer">↑</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUB 2: 全屏碎片编辑页（Notion 式内联编辑） -->
+<div class="phone-wrap" >
+  <div class="phone-label">S2 · 全屏碎片编辑页（Notion 式）</div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div style="background:#f5f2ee;padding:10px 16px 8px;border-bottom:1px solid #e0dbd5;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <span style="font-size:14px;color:#555;cursor:pointer">取消</span>
+      <div style="font-size:14px;font-weight:700;color:#111">新建碎片</div>
+      <button style="background:#004a77;color:white;border:none;border-radius:12px;padding:5px 14px;font-size:11px;font-weight:600;cursor:pointer">保存</button>
+    </div>
+
+    <!-- 类型选择行 -->
+    <div style="background:#f5f2ee;padding:6px 14px;border-bottom:1px solid #e0dbd5;display:flex;gap:6px;flex-shrink:0">
+      <span style="background:#fff3e0;color:#c85000;border-radius:20px;padding:4px 12px;font-size:9px;font-weight:600;border:1.5px solid #f5c87a">💡 我的想法</span>
+      <span style="background:#f0f0f0;color:#999;border-radius:20px;padding:4px 12px;font-size:9px;cursor:pointer">📖 参考摘录</span>
+    </div>
+
+    <!-- 文档编辑主体 —— 一个连续画布 -->
+    <div style="flex:1;overflow:auto;background:white;padding:14px 16px;display:flex;flex-direction:column;gap:0">
+
+      <!-- 标题行（可选） -->
+      <div style="font-size:15px;font-weight:700;color:#111;margin-bottom:10px;border:none;outline:none;padding:0" contenteditable="true">关于努力与回报的反思</div>
+
+      <!-- 正文段落 1 -->
+      <div style="font-size:11px;line-height:1.8;color:#333;margin-bottom:10px">
+        在读稻盛和夫的时候突然想到一个问题：如果把所有"努力应该有回报"这个前提去掉，我还愿意工作吗？
+      </div>
+
+      <!-- 内联图片（粘贴后显示真实图片样式） -->
+      <div style="margin-bottom:10px;border-radius:8px;overflow:hidden;border:1px solid #e8e4e0">
+        <div style="background:linear-gradient(135deg,#e8e8e8,#d0d0d0);height:80px;display:flex;align-items:center;justify-content:center;position:relative">
+          <span style="font-size:28px;opacity:.4">🖼</span>
+          <div style="position:absolute;bottom:5px;right:8px;background:rgba(0,0,0,.5);color:white;font-size:8px;border-radius:4px;padding:2px 6px">OCR ✓ 已识别</div>
+        </div>
+        <!-- OCR 识别出的文字内联折叠 -->
+        <div style="padding:6px 10px;font-size:9px;color:#888;background:#fafafa;border-top:1px solid #f0ece8">
+          识别：<span style="color:#333">"工作即修行，将平凡的事情做到极致便是修炼"</span>
+        </div>
+      </div>
+
+      <!-- 正文段落 2 -->
+      <div style="font-size:11px;line-height:1.8;color:#333;margin-bottom:10px">
+        这让我想到之前记录的那段话——
+        <span style="display:inline-block;width:2px;height:11px;background:#004a77;vertical-align:middle"></span>
+      </div>
+
+      <!-- 内联录音条（和 Library 里一致的样式） -->
+      <div style="margin-bottom:10px;background:#f9f5f0;border-radius:8px;padding:8px 12px;border:1px solid #e8ddd4">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:16px;color:#9c6e3c;cursor:pointer">▶</span>
+          <div style="flex:1;height:3px;background:#e0d4c4;border-radius:2px">
+            <div style="width:0%;height:3px;background:#9c6e3c;border-radius:2px"></div>
+          </div>
+          <span style="font-size:9px;color:#aaa">01:23</span>
+          <span style="font-size:9px;color:#bbb">🎙 录音</span>
+        </div>
+      </div>
+
+      <!-- URL 预览卡（粘贴链接后内联展示） -->
+      <div style="margin-bottom:10px;background:#f5f2ee;border-radius:8px;border:1px solid #e0dbd5;display:flex;gap:10px;padding:8px 10px;align-items:center">
+        <div style="width:32px;height:32px;background:#e8e4e0;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px">🌐</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:9px;font-weight:600;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">稻盛和夫：工作的意义与人生的价值</div>
+          <div style="font-size:8px;color:#aaa;margin-top:1px">mp.weixin.qq.com</div>
+        </div>
+        <span style="font-size:11px;color:#ccc;flex-shrink:0;cursor:pointer">×</span>
+      </div>
+
+      <!-- 标签行 -->
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">
+        <span class="chip chip-blue">#认知</span>
+        <span class="chip chip-orange">#成长</span>
+        <span style="background:#f5f2ee;color:#999;border-radius:10px;padding:3px 10px;font-size:9px;cursor:pointer">+ 标签</span>
+      </div>
+    </div>
+
+    <!-- 底部工具栏：格式 + 附件插入 -->
+    <div style="background:#f9f9f9;border-top:1px solid #e8e4e0;padding:8px 14px;flex-shrink:0">
+      <!-- 格式行 -->
+      <div style="display:flex;gap:14px;align-items:center;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid #f0ece8">
+        <span style="font-size:13px;font-weight:700;color:#555;cursor:pointer">B</span>
+        <span style="font-size:13px;font-style:italic;color:#555;cursor:pointer">I</span>
+        <span style="font-size:12px;color:#555;cursor:pointer;text-decoration:underline">U</span>
+        <span style="font-size:11px;font-weight:700;color:#555;cursor:pointer">H</span>
+        <span style="font-size:13px;color:#555;cursor:pointer">• 列表</span>
+        <span style="font-size:13px;color:#555;cursor:pointer">" 引用</span>
+      </div>
+      <!-- 附件插入行 -->
+      <div style="display:flex;gap:16px;align-items:center">
+        <span style="font-size:18px;cursor:pointer" title="插入图片">📷</span>
+        <span style="font-size:18px;cursor:pointer" title="录音">🎙</span>
+        <span style="font-size:18px;cursor:pointer" title="插入链接">🔗</span>
+        <span style="font-size:18px;cursor:pointer" title="插入文件">📎</span>
+        <span style="flex:1"></span>
+        <span style="font-size:12px;color:#bbb">/ 命令</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUB 3: 碎片全量浏览页（Library ≡ 入口） -->
+<div class="phone-wrap" >
+  <div class="phone-label">S3 · 碎片全量浏览页（Library ≡）</div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div style="background:#f5f2ee;padding:10px 16px 8px;border-bottom:1px solid #e0dbd5;display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <span style="font-size:18px;color:#555;cursor:pointer">←</span>
+      <div style="flex:1;font-size:14px;font-weight:700;color:#111">全部碎片</div>
+      <span style="font-size:16px;color:#555">⌕</span>
+    </div>
+    <div style="flex:1;background:#fbf9f6;display:flex;flex-direction:column">
+      <!-- 筛选区 -->
+      <div style="padding:10px 14px 6px;background:#f5f2ee;border-bottom:1px solid #e8e4e0">
+        <!-- 大类切换 -->
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <span style="background:#004a77;color:white;border-radius:20px;padding:5px 14px;font-size:10px;font-weight:600;cursor:pointer">我的想法</span>
+          <span style="background:white;color:#555;border-radius:20px;padding:5px 14px;font-size:10px;border:1px solid #ddd;cursor:pointer">参考资料</span>
+          <span style="background:white;color:#555;border-radius:20px;padding:5px 14px;font-size:10px;border:1px solid #ddd;cursor:pointer">全部</span>
+        </div>
+        <!-- 细分类型 -->
+        <div style="display:flex;gap:5px;overflow-x:auto">
+          <span class="chip chip-orange" style="white-space:nowrap">💡 想法 28</span>
+          <span class="chip chip-gray" style="white-space:nowrap">🎙 录音 7</span>
+          <span class="chip chip-gray" style="white-space:nowrap;background:#fdf0e0;color:#9c6e3c">✍ 日记 4</span>
+        </div>
+        <!-- 排序 -->
+        <div style="font-size:9px;color:#aaa;margin-top:7px">排序：最近添加 ↓　<span style="color:#004a77">时间 · 标签 · 类型</span></div>
+      </div>
+      <!-- 碎片列表 -->
+      <div style="flex:1;overflow:auto;padding:10px 14px">
+        <div style="font-size:9px;font-weight:700;color:#bbb;margin-bottom:5px">5月 · 31日</div>
+        <div class="frag">
+          <span class="chip chip-orange" style="margin-bottom:4px">💡 想法</span>
+          <div>"努力不一定有回报…"</div>
+          <div class="frag-meta">#认知 · 刚刚</div>
+        </div>
+        <div style="font-size:9px;font-weight:700;color:#bbb;margin:8px 0 5px">5月 · 28日</div>
+        <div class="frag">
+          <span class="chip chip-orange" style="margin-bottom:4px">💡 想法</span>
+          <div>"专注是一种修炼，而不是一种技术"</div>
+          <div class="frag-meta">#成长 · 3天前</div>
+        </div>
+        <div class="frag" style="border-left:3px solid #9c6e3c">
+          <span class="chip" style="background:#fdf0e0;color:#9c6e3c;margin-bottom:4px">🎙 录音</span>
+          <div style="display:flex;align-items:center;gap:6px;background:#f9f5f0;border-radius:6px;padding:5px 8px">
+            <span style="color:#9c6e3c">▶</span>
+            <div style="flex:1;height:2px;background:#e0d4c4;border-radius:2px"><div style="width:40%;height:2px;background:#9c6e3c;border-radius:2px"></div></div>
+            <span style="font-size:8px;color:#aaa">01:15</span>
+          </div>
+          <div class="frag-meta" style="margin-top:4px">#日常 · 3天前</div>
+        </div>
+        <div style="text-align:center;font-size:9px;color:#bbb;padding:12px 0">— 上拉加载更多 —</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUB 4: 报告历史列表页 -->
+<div class="phone-wrap" >
+  <div class="phone-label">S4 · 报告历史列表页</div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div style="background:#f5f2ee;padding:10px 16px 8px;border-bottom:1px solid #e0dbd5;display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <span style="font-size:18px;color:#555;cursor:pointer">←</span>
+      <div style="flex:1;font-size:14px;font-weight:700;color:#111">报告历史</div>
+      <button style="background:#004a77;color:white;border:none;border-radius:12px;padding:5px 12px;font-size:9px;font-weight:600;cursor:pointer">+ 生成新报告</button>
+    </div>
+    <div style="flex:1;overflow:auto;background:#fbf9f6;padding:12px 14px">
+      <div style="font-size:9px;font-weight:700;color:#bbb;margin-bottom:8px">2026年5月</div>
+      <div style="background:white;border-radius:10px;border:1px solid #e8e4e0;overflow:hidden;margin-bottom:10px">
+        <div style="padding:12px;border-bottom:1px solid #f0ece8">
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span style="font-size:22px">📋</span>
+            <div style="flex:1">
+              <div style="font-size:11px;font-weight:700;color:#333">成长反思报告</div>
+              <div style="font-size:9px;color:#aaa;margin-top:2px">2026-05-24 · 自动生成 · 基于 8 次对话</div>
+              <div style="font-size:9px;color:#666;margin-top:5px;line-height:1.5">本月你在「认知」话题上的对话占 65%，主要模式是自我批判型…</div>
+            </div>
+            <span style="font-size:12px;color:#ccc">›</span>
+          </div>
+        </div>
+        <div style="padding:8px 12px;display:flex;gap:8px">
+          <span class="chip chip-orange">记忆纠偏×5</span>
+          <span class="chip chip-green">导师×2</span>
+          <span class="chip chip-blue">创作×1</span>
+        </div>
+      </div>
+      <div style="background:white;border-radius:10px;border:1px solid #e8e4e0;overflow:hidden;margin-bottom:10px">
+        <div style="padding:12px;border-bottom:1px solid #f0ece8">
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span style="font-size:22px">📋</span>
+            <div style="flex:1">
+              <div style="font-size:11px;font-weight:700;color:#333">创作风格分析</div>
+              <div style="font-size:9px;color:#aaa;margin-top:2px">2026-05-17 · 手动生成</div>
+              <div style="font-size:9px;color:#666;margin-top:5px;line-height:1.5">你的写作倾向偏叙事型，擅长用故事包装观点…</div>
+            </div>
+            <span style="font-size:12px;color:#ccc">›</span>
+          </div>
+        </div>
+        <div style="padding:8px 12px">
+          <span class="chip chip-blue">创作×3</span>
+        </div>
+      </div>
+      <div style="font-size:9px;font-weight:700;color:#bbb;margin:12px 0 8px">2026年4月</div>
+      <div class="report-row" style="background:white;padding:10px 12px;border-radius:10px;border:1px solid #e8e4e0;margin-bottom:6px">
+        <div class="report-ic">📋</div>
+        <div class="report-info">
+          <div class="report-name">第一性原理专题</div>
+          <div class="report-meta">2026-04-10 · 自动生成</div>
+        </div>
+        <div class="report-arr">›</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUB 4b: 生成新报告面板（底部 Sheet） -->
+<div class="phone-wrap" >
+  <div class="phone-label">S4b · 生成新报告</div>
+  <div class="phone" style="position:relative">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <!-- 背景：报告历史列表（遮罩） -->
+    <div style="flex:1;background:#fbf9f6;padding:12px 14px;overflow:hidden;filter:brightness(.85)">
+      <div style="font-size:9px;font-weight:700;color:#bbb;margin-bottom:8px">2026年5月</div>
+      <div style="background:white;border-radius:10px;border:1px solid #e8e4e0;padding:12px;margin-bottom:8px;opacity:.7">
+        <div style="font-size:11px;font-weight:700;color:#333">成长反思报告</div>
+        <div style="font-size:9px;color:#aaa;margin-top:2px">2026-05-24 · 自动生成</div>
+      </div>
+    </div>
+    <!-- 半透明遮罩 -->
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,.35)"></div>
+    <!-- 底部 Sheet -->
+    <div style="position:absolute;bottom:0;left:0;right:0;background:white;border-radius:20px 20px 0 0;padding:16px 16px 20px">
+      <!-- 拖拽指示条 -->
+      <div style="width:36px;height:4px;background:#e0dbd5;border-radius:2px;margin:0 auto 14px"></div>
+      <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:14px">生成新报告</div>
+      <!-- 报告类型 -->
+      <div style="font-size:9px;font-weight:700;color:#888;margin-bottom:7px">报告类型</div>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <span style="background:#004a77;color:white;border-radius:20px;padding:5px 12px;font-size:9px;font-weight:600;cursor:pointer">成长反思</span>
+        <span style="background:#f0f0f0;color:#555;border-radius:20px;padding:5px 12px;font-size:9px;cursor:pointer">创作风格</span>
+        <span style="background:#f0f0f0;color:#555;border-radius:20px;padding:5px 12px;font-size:9px;cursor:pointer">专题深度</span>
+      </div>
+      <!-- 时间范围 -->
+      <div style="font-size:9px;font-weight:700;color:#888;margin-bottom:7px">时间范围</div>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <span style="background:#f0f0f0;color:#555;border-radius:20px;padding:5px 12px;font-size:9px;cursor:pointer">最近7天</span>
+        <span style="background:#004a77;color:white;border-radius:20px;padding:5px 12px;font-size:9px;font-weight:600;cursor:pointer">最近30天</span>
+        <span style="background:#f0f0f0;color:#555;border-radius:20px;padding:5px 12px;font-size:9px;cursor:pointer">自定义</span>
+      </div>
+      <!-- 聚焦话题 -->
+      <div style="font-size:9px;font-weight:700;color:#888;margin-bottom:7px">聚焦话题 <span style="font-weight:400;color:#bbb">（可选）</span></div>
+      <div style="background:#f5f2ee;border-radius:8px;padding:7px 10px;font-size:9px;color:#bbb;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+        <span>全部话题</span>
+        <span style="color:#aaa">▾</span>
+      </div>
+      <!-- 生成按钮 -->
+      <button style="background:#004a77;color:white;border:none;border-radius:10px;padding:11px;width:100%;font-size:11px;font-weight:700;cursor:pointer">✨ 开始生成报告</button>
+      <div style="text-align:center;font-size:9px;color:#bbb;margin-top:8px">预计生成时间：30 秒</div>
+    </div>
+  </div>
+</div>
+
+<!-- SUB 5: 报告详情页 -->
+<div class="phone-wrap" >
+  <div class="phone-label">S5 · 报告详情页</div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div style="background:#f5f2ee;padding:10px 16px 8px;border-bottom:1px solid #e0dbd5;display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <span style="font-size:18px;color:#555;cursor:pointer">←</span>
+      <div style="flex:1;font-size:14px;font-weight:700;color:#111">成长反思报告</div>
+      <span style="font-size:16px;color:#555">⎙</span>
+    </div>
+    <div style="flex:1;overflow:auto;background:#fbf9f6;padding:14px">
+      <div style="font-size:9px;color:#aaa;margin-bottom:12px">2026-05-24 · 自动生成 · 基于 8 次对话 + 47 条碎片</div>
+      <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:10px;line-height:1.4">你这个月在「认知纠偏」上做了很多尝试</div>
+      <div style="background:white;border-radius:10px;padding:12px;border:1px solid #e8e4e0;margin-bottom:10px">
+        <div style="font-size:9px;font-weight:700;color:#004a77;margin-bottom:6px">📌 核心洞察</div>
+        <div style="font-size:10px;line-height:1.7;color:#333">
+          你在"努力与回报"这个话题上表现出<strong>自我批判型思维惯性</strong>：把外部回报的缺失归因于自身努力不足，而非系统性因素。这个模式在 5 次对话中均有出现。
+        </div>
+      </div>
+      <div style="background:white;border-radius:10px;padding:12px;border:1px solid #e8e4e0;margin-bottom:10px">
+        <div style="font-size:9px;font-weight:700;color:#c85000;margin-bottom:6px">🔁 反复出现的思维模式</div>
+        <div style="font-size:9px;line-height:1.8;color:#555">
+          · 用绝对化语言表达观点（"一定"/"不可能"）<br>
+          · 倾向于寻找外部验证而非内部标准<br>
+          · 对模糊情境下的"等待"有明显焦虑
+        </div>
+      </div>
+      <div style="background:white;border-radius:10px;padding:12px;border:1px solid #e8e4e0;margin-bottom:10px">
+        <div style="font-size:9px;font-weight:700;color:#1b5e20;margin-bottom:6px">💡 建议下一步</div>
+        <div style="font-size:9px;line-height:1.8;color:#555">
+          尝试一次“去掉外部评价”为主题的记忆纠偏对话<br>
+          → <span style="color:#004a77;text-decoration:underline;cursor:pointer">立即开始这个对话</span>
+        </div>
+      </div>
+      <!-- 用户反馈区 -->
+      <div style="background:#f9f5f0;border-radius:10px;padding:12px;border:1px solid #e8ddd4">
+        <div style="font-size:9px;font-weight:700;color:#555;margin-bottom:8px">💬 这份分析说得准吗？</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button style="flex:1;background:white;border:1px solid #e8e4e0;border-radius:8px;padding:7px 4px;font-size:9px;color:#333;cursor:pointer">✅ 基本准确</button>
+          <button style="flex:1;background:white;border:1px solid #e8e4e0;border-radius:8px;padding:7px 4px;font-size:9px;color:#333;cursor:pointer">⚠️ 不完全对</button>
+          <button style="flex:1;background:white;border:1px solid #e8e4e0;border-radius:8px;padding:7px 4px;font-size:9px;color:#333;cursor:pointer">🙅 没这么严重</button>
+        </div>
+        <div style="background:white;border-radius:6px;border:1px solid #e8e4e0;padding:6px 8px;font-size:9px;color:#bbb">补充你的想法（可选）…</div>
+        <div style="font-size:8px;color:#bbb;margin-top:6px;text-align:center">你的反馈会帮助 AI 更准确地理解你</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUB 6: Me → Skills 管理页 -->
+<div class="phone-wrap" >
+  <div class="phone-label">S6 · Me → Skills 管理页</div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●●</span></div>
+    <div style="background:#f5f2ee;padding:10px 16px 8px;border-bottom:1px solid #e0dbd5;display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <span style="font-size:18px;color:#555;cursor:pointer">←</span>
+      <div style="flex:1;font-size:14px;font-weight:700;color:#111">个性化 / Skills</div>
+    </div>
+    <div style="flex:1;overflow:auto;background:#fbf9f6;padding:12px 14px">
+      <div style="font-size:9px;color:#888;line-height:1.6;margin-bottom:12px">Skills 决定 AI 以何种风格和角色与你对话。你可以启用内置模板，或创建自己的。</div>
+
+      <div class="section-label">内置导师模板</div>
+      <div style="background:white;border-radius:10px;border:1px solid #e8e4e0;overflow:hidden;margin-bottom:10px">
+        <div style="padding:10px 12px;border-bottom:1px solid #f0ece8;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">🏮</span>
+          <div style="flex:1">
+            <div style="font-size:10px;font-weight:700;color:#333">稻盛和夫</div>
+            <div style="font-size:9px;color:#aaa">工作哲学 · 人生意义</div>
+          </div>
+          <div style="width:32px;height:18px;background:#004a77;border-radius:9px;position:relative"><div style="width:14px;height:14px;background:white;border-radius:50%;position:absolute;right:2px;top:2px"></div></div>
+        </div>
+        <div style="padding:10px 12px;border-bottom:1px solid #f0ece8;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">🎩</span>
+          <div style="flex:1">
+            <div style="font-size:10px;font-weight:700;color:#333">查理·芒格</div>
+            <div style="font-size:9px;color:#aaa">多元思维框架</div>
+          </div>
+          <div style="width:32px;height:18px;background:#004a77;border-radius:9px;position:relative"><div style="width:14px;height:14px;background:white;border-radius:50%;position:absolute;right:2px;top:2px"></div></div>
+        </div>
+        <div style="padding:10px 12px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">🏛️</span>
+          <div style="flex:1">
+            <div style="font-size:10px;font-weight:700;color:#999">苏格拉底</div>
+            <div style="font-size:9px;color:#ccc">追问本质 · 未启用</div>
+          </div>
+          <div style="width:32px;height:18px;background:#ddd;border-radius:9px;position:relative"><div style="width:14px;height:14px;background:white;border-radius:50%;position:absolute;left:2px;top:2px"></div></div>
+        </div>
+      </div>
+
+      <div class="section-label">我的自定义 Skills</div>
+      <div style="background:white;border-radius:10px;border:1px solid #e8e4e0;overflow:hidden;margin-bottom:10px">
+        <div style="padding:10px 12px;border-bottom:1px solid #f0ece8;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">🎯</span>
+          <div style="flex:1">
+            <div style="font-size:10px;font-weight:700;color:#333">我的创业导师</div>
+            <div style="font-size:9px;color:#aaa">自定义 prompt · 启用中</div>
+          </div>
+          <span style="font-size:11px;color:#ccc">›</span>
+        </div>
+      </div>
+      <button style="width:100%;background:#f5f2ee;border:1.5px dashed #ccc;border-radius:10px;padding:10px;font-size:10px;color:#888;cursor:pointer">+ 创建新 Skill</button>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,62 @@
+﻿{
+"pages": [
+{
+"path": "pages/home/index",
+"style": { "navigationBarTitleText": "Spark Vault", "navigationStyle": "custom" }
+},
+{
+"path": "pages/library/index",
+"style": { "navigationBarTitleText": "Library", "navigationStyle": "custom" }
+},
+{
+"path": "pages/chat/index",
+"style": { "navigationBarTitleText": "Chat", "navigationStyle": "custom" }
+},
+{
+"path": "pages/me/index",
+"style": { "navigationBarTitleText": "Me", "navigationStyle": "custom" }
+},
+{
+"path": "pages/chat/session",
+"style": { "navigationBarTitleText": "对话", "navigationStyle": "custom" }
+},
+{
+"path": "pages/library/editor",
+"style": { "navigationBarTitleText": "编辑碎片", "navigationStyle": "custom" }
+},
+{
+"path": "pages/me/skills",
+"style": { "navigationBarTitleText": "个性化 / Skills", "navigationStyle": "custom" }
+},
+{
+"path": "pages/home/report/index",
+"style": { "navigationBarTitleText": "报告历史", "navigationStyle": "custom" }
+},
+{
+"path": "pages/home/report/generate",
+"style": { "navigationBarTitleText": "生成报告", "navigationStyle": "custom" }
+},
+{
+"path": "pages/home/report/detail",
+"style": { "navigationBarTitleText": "报告详情", "navigationStyle": "custom" }
+}
+],
+"tabBar": {
+"color": "#49454f",
+"selectedColor": "#004a77",
+"backgroundColor": "#ffffff",
+"borderStyle": "black",
+"list": [
+{ "pagePath": "pages/home/index",    "text": "🏠 Home" },
+{ "pagePath": "pages/library/index", "text": "📚 Library" },
+{ "pagePath": "pages/chat/index",    "text": "💬 Chat" },
+{ "pagePath": "pages/me/index",      "text": "👤 Me" }
+]
+},
+"globalStyle": {
+"navigationBarTextStyle": "black",
+"navigationBarBackgroundColor": "#fbf9f6",
+"backgroundColor": "#fbf9f6"
+},
+"uniIdRouter": {}
+}

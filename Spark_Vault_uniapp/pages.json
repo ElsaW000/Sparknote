@@ -1,0 +1,114 @@
+{
+	"pages": [
+		{
+			"path": "pages/home/index",
+			"style": {
+				"navigationBarTitleText": "Home",
+				"navigationBarBackgroundColor": "#fbf9f6",
+				"backgroundColor": "#fbf9f6"
+			}
+		},
+		{
+			"path": "pages/library/index",
+			"style": {
+				"navigationBarTitleText": "Library",
+				"navigationBarBackgroundColor": "#fbf9f6",
+				"backgroundColor": "#fbf9f6"
+			}
+		},
+		{
+			"path": "pages/chat/index",
+			"style": {
+				"navigationBarTitleText": "Chat",
+				"navigationBarBackgroundColor": "#fbf9f6",
+				"backgroundColor": "#fbf9f6"
+			}
+		},
+		{
+			"path": "pages/me/index",
+			"style": {
+				"navigationBarTitleText": "Me",
+				"navigationBarBackgroundColor": "#fbf9f6",
+				"backgroundColor": "#fbf9f6"
+			}
+		},
+		{
+			"path": "pages/chat/session",
+			"style": {
+				"navigationBarTitleText": "对话",
+				"navigationBarBackgroundColor": "#ffffff",
+				"backgroundColor": "#f5f2ee"
+			}
+		},
+		{
+			"path": "pages/library/editor",
+			"style": {
+				"navigationBarTitleText": "新建碎片",
+				"navigationBarBackgroundColor": "#ffffff",
+				"backgroundColor": "#ffffff"
+			}
+		},
+		{
+			"path": "pages/library/browser",
+			"style": {
+				"navigationBarTitleText": "全部碎片",
+				"navigationBarBackgroundColor": "#ffffff",
+				"backgroundColor": "#f5f2ee"
+			}
+		},
+		{
+			"path": "pages/report/list",
+			"style": {
+				"navigationBarTitleText": "报告历史",
+				"navigationBarBackgroundColor": "#ffffff",
+				"backgroundColor": "#fbf9f6"
+			}
+		},
+		{
+			"path": "pages/report/detail",
+			"style": {
+				"navigationBarTitleText": "报告详情",
+				"navigationBarBackgroundColor": "#ffffff",
+				"backgroundColor": "#fbf9f6"
+			}
+		},
+		{
+			"path": "pages/me/skills",
+			"style": {
+				"navigationBarTitleText": "个性化 / Skills",
+				"navigationBarBackgroundColor": "#ffffff",
+				"backgroundColor": "#fbf9f6"
+			}
+		}
+	],
+	"tabBar": {
+		"color": "#49454f",
+		"selectedColor": "#004a77",
+		"backgroundColor": "#ffffff",
+		"borderStyle": "black",
+		"list": [
+			{
+				"pagePath": "pages/home/index",
+				"text": "Home"
+			},
+			{
+				"pagePath": "pages/library/index",
+				"text": "Library"
+			},
+			{
+				"pagePath": "pages/chat/index",
+				"text": "Chat"
+			},
+			{
+				"pagePath": "pages/me/index",
+				"text": "Me"
+			}
+		]
+	},
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarBackgroundColor": "#ffffff",
+		"backgroundColor": "#fbf9f6"
+	},
+	"uniIdRouter": {}
+}
