@@ -1,247 +1,343 @@
-<!-- pages/home/index.vue -->
+<!-- Spark_Vault_uniapp/src/pages/home/index.vue -->
 <template>
-  <view class="page">
-    <!-- Header -->
-    <view class="header">
+  <scroll-view scroll-y class="sv-page">
+    <view class="sv-header">
       <view>
-        <text class="title">Home</text>
-        <text class="subtitle">你的个人成长伙伴</text>
+        <text class="sv-kicker">{{ todayLabel }} / GMT+8</text>
+        <text class="sv-title">首页概览 <text class="sv-title-mark">. Today</text></text>
       </view>
+      <text class="sv-pill">记录中</text>
     </view>
 
-    <!-- Stats Row -->
-    <view class="stats-row">
-      <view class="stat-item">
-        <text class="stat-num">{{ metrics.totalFragments }}</text>
-        <text class="stat-label">碎片总数</text>
-      </view>
-      <view class="stat-item">
-        <text class="stat-num">{{ metrics.weeklyFragments }}</text>
-        <text class="stat-label">本周录入</text>
-      </view>
-      <view class="stat-item">
-        <text class="stat-num">{{ metrics.chatCount }}</text>
-        <text class="stat-label">对话次数</text>
-      </view>
-      <view class="stat-item">
-        <text class="stat-num">{{ metrics.reportCount }}</text>
-        <text class="stat-label">生成报告</text>
-      </view>
-    </view>
-
-    <!-- AI Digest Card -->
-    <view class="card digest-card">
-      <view class="digest-header">
-        <text class="digest-badge">✦ 本周 AI Digest · 自动生成</text>
-      </view>
-      <text class="digest-text">{{ weeklyDigest }}</text>
-      <button class="btn-primary" @click="startChat('memory')">💬 开始纠偏对话</button>
-    </view>
-
-    <!-- Report History -->
-    <view class="section-header">
-      <text class="section-title">📋 报告历史</text>
-      <text class="section-more" @click="goReports">全部 ›</text>
-    </view>
-
-    <view v-if="reports.length === 0" class="empty-state">
-      <text class="empty-text">还没有报告。开始对话后可生成报告。</text>
-    </view>
-
-    <view v-else class="report-list">
-      <view
-        v-for="report in recentReports"
-        :key="report.id"
-        class="report-item card"
-        @click="goReportDetail(report.id)"
-      >
-        <text class="report-icon">📋</text>
-        <view class="report-info">
-          <text class="report-title">{{ report.title }}</text>
-          <text class="report-meta">{{ formatDate(report.created_at) }}</text>
+    <view class="sv-grid-2">
+      <view class="sv-cream-card metric-card">
+        <view class="sv-between">
+          <text class="sv-label">全部记录</text>
+          <text class="metric-icon">□</text>
         </view>
-        <text class="arrow">›</text>
+        <text class="sv-value">{{ metrics.totalFragments }}</text>
+        <view class="sv-progress">
+          <view class="sv-progress-fill" :style="{ width: fragmentProgress + '%' }" />
+        </view>
+      </view>
+
+      <view class="sv-cream-card metric-card">
+        <view class="sv-between">
+          <text class="sv-label">收藏</text>
+          <text class="metric-icon">☆</text>
+        </view>
+        <text class="sv-value">{{ metrics.favoriteFragments }}</text>
+        <view class="sv-progress">
+          <view class="sv-progress-fill navy-fill" :style="{ width: favoriteProgress + '%' }" />
+        </view>
+      </view>
+
+      <view class="sv-cream-card metric-card">
+        <view class="sv-between">
+          <text class="sv-label">标签</text>
+          <text class="metric-icon">#</text>
+        </view>
+        <text class="sv-value">{{ metrics.tagCount }}</text>
+      </view>
+
+      <view class="sv-cream-card metric-card">
+        <view class="sv-between">
+          <text class="sv-label">主要来源</text>
+          <text class="metric-icon">◇</text>
+        </view>
+        <text class="source-main">{{ metrics.primarySource }}</text>
       </view>
     </view>
-  </view>
+
+    <view class="sv-navy-card insight-card">
+      <view class="gold-badge">今日提醒</view>
+      <text class="insight-title">《{{ currentMonth }} · 记录回顾》已就绪</text>
+      <text class="insight-copy">
+        根据最近的记录和对话，建议今晚做一次简短回顾：从最新内容里选一条，写下它真正提醒你的事。
+      </text>
+      <view class="insight-footer">
+        <text class="insight-ref">最近整理</text>
+        <text class="insight-link" @click="goReports">查看回顾 ></text>
+      </view>
+    </view>
+
+    <LibraryPage ref="libraryPanel" embedded />
+  </scroll-view>
 </template>
 
 <script>
+import LibraryPage from '../library/index.vue'
 import { getVaultStore } from '../../store/vaultStore.js'
 
 export default {
   name: 'HomePage',
+  components: { LibraryPage },
   data() {
     return {
-      metrics: { totalFragments: 0, weeklyFragments: 0, chatCount: 0, reportCount: 0 },
-      weeklyDigest: '',
-      reports: []
+      metrics: { totalFragments: 0, favoriteFragments: 0, tagCount: 0, primarySource: 'Other' },
+      fragments: []
     }
   },
   computed: {
-    recentReports() {
-      return this.reports.slice(0, 3)
+    todayLabel() {
+      const d = new Date()
+      return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+    },
+    currentMonth() {
+      const d = new Date()
+      return `${d.getFullYear()}年${d.getMonth() + 1}月`
+    },
+    recentFragments() {
+      return this.fragments.slice(0, 2)
+    },
+    fragmentProgress() {
+      return Math.min(100, this.metrics.totalFragments * 10)
+    },
+    favoriteProgress() {
+      if (!this.metrics.totalFragments) return 0
+      return Math.min(100, Math.round((this.metrics.favoriteFragments / this.metrics.totalFragments) * 100))
     }
   },
   onShow() {
     this.loadData()
+    this.openEmbeddedQuickComposer()
   },
   methods: {
     loadData() {
       const store = getVaultStore()
       store.refresh()
       this.metrics = store.state.metrics
-      this.weeklyDigest = store.state.weeklyDigest
-      this.reports = store.state.reports
+      this.fragments = store.state.fragments
     },
-    startChat(mode) {
-      uni.switchTab({ url: '/pages/chat/index' })
+    goCapture() {
+      uni.navigateTo({ url: '/pages/capture/index' })
+    },
+    goAiLab() {
+      uni.navigateTo({ url: '/pages/ai/index' })
+    },
+    goWorkspace() {
+      uni.switchTab({ url: '/pages/workspace/index' })
     },
     goReports() {
       uni.navigateTo({ url: '/pages/home/report/index' })
     },
-    goReportDetail(id) {
-      uni.navigateTo({ url: `/pages/home/report/detail?id=${id}` })
+    openEmbeddedQuickComposer() {
+      let shouldOpen = false
+      try {
+        shouldOpen = uni.getStorageSync('mirrorme_open_quick_composer') === '1'
+        if (shouldOpen) uni.removeStorageSync('mirrorme_open_quick_composer')
+      } catch (_) {
+        shouldOpen = false
+      }
+      if (!shouldOpen) return
+      this.$nextTick(() => {
+        const panel = this.$refs.libraryPanel
+        if (panel && typeof panel.openQuickComposer === 'function') panel.openQuickComposer()
+      })
+    },
+    goEditor(id) {
+      if (!Number.isInteger(Number(id))) return
+      uni.navigateTo({ url: `/pages/library/editor?id=${id}` })
     },
     formatDate(ts) {
       if (!ts) return ''
       const d = new Date(ts)
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      return `${d.getMonth() + 1}/${d.getDate()}`
     }
   }
 }
 </script>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  background: #fbf9f6;
-  padding: 48rpx 32rpx 32rpx;
+.metric-card {
+  min-height: 186rpx;
+}
+
+.metric-icon {
+  color: #c4a052;
+  font-size: 28rpx;
+  flex-shrink: 0;
+}
+
+.shortcut-icon-svg {
+  width: 30rpx;
+  height: 30rpx;
+}
+
+.navy-fill {
+  background: #1a2b48;
+}
+
+.source-main {
+  display: block;
+  margin-top: 14rpx;
+  color: #1a2b48;
+  font-size: 30rpx;
+  line-height: 1.1;
+  font-weight: 900;
+}
+
+.insight-card {
+  margin-top: 24rpx;
+}
+
+.gold-badge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 7rpx 16rpx;
+  border-radius: 999rpx;
+  background: rgba(196, 160, 82, 0.18);
+  border: 1rpx solid rgba(196, 160, 82, 0.35);
+  color: #c4a052;
+  font-family: "Courier New", monospace;
+  font-size: 17rpx;
+  font-weight: 900;
+  letter-spacing: 2rpx;
+}
+
+.insight-title {
+  display: block;
+  margin-top: 20rpx;
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 28rpx;
+  line-height: 1.35;
+  font-weight: 900;
+  font-style: italic;
+}
+
+.insight-copy {
+  display: block;
+  margin-top: 14rpx;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 23rpx;
+  line-height: 1.6;
+}
+
+.insight-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 26rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+.insight-ref {
+  color: rgba(255, 255, 255, 0.4);
+  font-family: "Courier New", monospace;
+  font-size: 17rpx;
+}
+
+.insight-link {
+  color: #c4a052;
+  font-size: 22rpx;
+  font-weight: 900;
+}
+
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx;
+}
+
+.shortcut-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  min-height: 110rpx;
+  padding: 20rpx;
+  border: 1rpx solid #dedacf;
+  border-radius: 22rpx;
+  background: #ffffff;
   box-sizing: border-box;
 }
-.header {
-  margin-bottom: 40rpx;
-  padding-top: 20rpx;
-}
-.title {
-  display: block;
-  font-size: 52rpx;
-  font-weight: 700;
-  color: #1a1a2e;
-}
-.subtitle {
-  display: block;
-  font-size: 26rpx;
-  color: #888;
-  margin-top: 4rpx;
-}
-.stats-row {
+
+.shortcut-icon {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 18rpx;
   display: flex;
-  background: #fff;
-  border-radius: 20rpx;
-  padding: 32rpx 0;
-  margin-bottom: 32rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
-}
-.stat-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  background: #f2f0e9;
+  color: #c4a052;
+  font-size: 28rpx;
+  font-weight: 900;
 }
-.stat-num {
-  font-size: 52rpx;
-  font-weight: 700;
-  color: #004a77;
-}
-.stat-label {
+
+.shortcut-title {
+  display: block;
+  color: #1a2b48;
   font-size: 22rpx;
-  color: #888;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+.shortcut-sub {
+  display: block;
+  margin-top: 4rpx;
+  color: rgba(26, 26, 26, 0.45);
+  font-family: "Courier New", monospace;
+  font-size: 16rpx;
+}
+
+.recent-head {
   margin-top: 4rpx;
 }
-.card {
-  background: #fff;
-  border-radius: 20rpx;
-  padding: 32rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+
+.recent-section {
+  margin-bottom: 0;
 }
-.digest-card {
-  background: #eaf4ff;
+
+.empty-card,
+.spark-card {
+  margin-top: 16rpx;
 }
-.digest-header {
-  margin-bottom: 16rpx;
+
+.type-badge {
+  padding: 5rpx 12rpx;
+  border-radius: 9rpx;
+  border: 1rpx solid #f1d9a8;
+  background: #fff8e8;
+  color: #8a5e13;
+  font-family: "Courier New", monospace;
+  font-size: 16rpx;
+  font-weight: 900;
 }
-.digest-badge {
+
+.spark-title {
+  display: block;
+  margin-top: 18rpx;
+  color: #1a2b48;
   font-size: 24rpx;
-  font-weight: 600;
-  color: #004a77;
+  line-height: 1.35;
+  font-weight: 900;
 }
-.digest-text {
+
+.spark-copy {
   display: block;
-  font-size: 28rpx;
-  color: #333;
-  line-height: 1.6;
-  margin-bottom: 24rpx;
-}
-.btn-primary {
-  width: 100%;
-  background: #004a77;
-  color: #fff;
-  border-radius: 12rpx;
-  font-size: 28rpx;
-  padding: 20rpx 0;
-  border: none;
-}
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16rpx;
-}
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #1a1a2e;
-}
-.section-more {
-  font-size: 26rpx;
-  color: #004a77;
-}
-.empty-state {
-  text-align: center;
-  padding: 48rpx 0;
-}
-.empty-text {
-  font-size: 26rpx;
-  color: #aaa;
-}
-.report-list {}
-.report-item {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-}
-.report-icon {
-  font-size: 36rpx;
-}
-.report-info {
-  flex: 1;
-}
-.report-title {
-  display: block;
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #1a1a2e;
-}
-.report-meta {
-  display: block;
+  margin-top: 10rpx;
+  color: rgba(26, 26, 26, 0.7);
   font-size: 22rpx;
-  color: #aaa;
-  margin-top: 4rpx;
+  line-height: 1.55;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
-.arrow {
-  font-size: 32rpx;
-  color: #ccc;
+
+.tag-row {
+  display: flex;
+  gap: 8rpx;
+  flex-wrap: wrap;
+  margin-top: 14rpx;
+}
+
+.empty-title {
+  display: block;
+  color: #1a2b48;
+  font-size: 26rpx;
+  font-weight: 900;
+  margin-bottom: 8rpx;
 }
 </style>

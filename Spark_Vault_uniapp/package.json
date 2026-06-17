@@ -1,8 +1,8 @@
 {
-  "name": "spark-vault-uniapp",
+  "name": "mirrorme-uniapp",
   "version": "0.1.0",
   "private": true,
-  "description": "Spark Vault uni-app multi-runtime MVP",
+  "description": "MirrorMe uni-app multi-runtime MVP",
   "type": "module",
   "scripts": {
     "dev:h5": "uni -p h5",
@@ -19,7 +19,7 @@
     "build:mp-toutiao": "uni build -p mp-toutiao",
     "test:logic": "node tests/test_vault_logic.mjs",
     "check:js": "node tests/check_js.mjs",
-    "verify": "node tests/test_vault_logic.mjs && node tests/check_js.mjs"
+    "verify": "node tests/test_vault_logic.mjs && node tests/test_editor_surface.mjs && node tests/test_home_surface.mjs && node tests/test_workspace_surface.mjs && node tests/check_js.mjs"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-alpha-1000920260525813",
@@ -30,6 +30,11 @@
     "@dcloudio/uni-mp-baidu": "3.0.0-alpha-1000920260525813",
     "@dcloudio/uni-mp-toutiao": "3.0.0-alpha-1000920260525813",
     "@dcloudio/uni-mp-weixin": "3.0.0-alpha-1000920260525813",
+    "@iconify-json/lucide": "^1.2.113",
+    "@iconify-json/material-symbols": "^1.2.78",
+    "@iconify-json/ph": "^1.2.2",
+    "@iconify-json/ri": "^1.2.10",
+    "@iconify/vue": "^5.0.1",
     "tesseract.js": "^7.0.0",
     "vue": "3.5.34"
   },

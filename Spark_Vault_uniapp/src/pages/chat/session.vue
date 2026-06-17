@@ -3,12 +3,12 @@
   <view class="page">
     <!-- Nav Bar -->
     <view class="nav-bar">
-      <text class="nav-back" @click="goBack">←</text>
+      <text class="nav-back" @click="goBack">返回</text>
       <view class="nav-center">
         <text class="nav-title">{{ session.title }}</text>
         <text class="nav-sub">{{ modeName }} · 基于 {{ fragmentCount }} 条个人记录</text>
       </view>
-      <text class="nav-more">⋯</text>
+      <text class="nav-more">更多</text>
     </view>
 
     <!-- Messages -->
@@ -46,7 +46,7 @@
         class="send-btn"
         :disabled="!inputText.trim() || isLoading"
         @click="sendMessage"
-      >↑</button>
+      >发送</button>
     </view>
   </view>
 </template>
@@ -54,6 +54,7 @@
 <script>
 import { getVaultStore } from '../../store/vaultStore.js'
 import { CHAT_MODES } from '../../services/vaultLogic.js'
+import { selectRelevantFragments } from '../../services/aiService.js'
 
 export default {
   name: 'ChatSession',
@@ -122,23 +123,33 @@ export default {
       this.session.messages.push({ role: 'user', content: text })
       this.scrollToBottom()
 
-      // Simulate AI response (TODO: replace with actual API call)
-      await this.simulateAIResponse(text)
+      await this.generateLocalResponse(text)
 
       this.isLoading = false
       this.persistSession()
       this.scrollToBottom()
     },
-    async simulateAIResponse(userText) {
-      await new Promise((r) => setTimeout(r, 800))
+    async generateLocalResponse(userText) {
+      await new Promise((r) => setTimeout(r, 300))
+      const store = getVaultStore()
+      store.refresh()
+      const fragments = store.state.fragments.filter((f) => f.content_type === 'personal_content')
+      const relevant = selectRelevantFragments(fragments, userText, 3)
+      const contextLine = relevant.length
+        ? `我找到 ${relevant.length} 条相关记录：${relevant.map((f) => `「${(f.title || f.content || f.originalText || '').slice(0, 18)}」`).join('、')}。`
+        : '我还没有找到直接相关的本地记录，所以先基于你刚才的话回应。'
+      const prompt = userText.slice(0, 36)
       const responses = {
-        memory: `这是一个有趣的想法。你提到"${userText.slice(0, 20)}"——我想问，这个观点是什么时候形成的？它是否曾经被事实验证过？`,
-        mentor: `从第一性原理出发，你的这个观点值得深入探讨。你是否考虑过，如果把最基本的假设去掉，这个结论还成立吗？`,
-        writing: `基于你的记录，我帮你整理了相关素材。你提到的核心论点可以展开为：首先...`,
-        report: `我注意到你的记录中有几个反复出现的主题：首先是关于"${userText.slice(0, 15)}"的思考...`
+        memory: `${contextLine}\n\n你提到「${prompt}」。先检查一个可能的盲点：这是一个事实判断、情绪反应，还是长期形成的默认解释？建议你补一条记录：这件事第一次让你产生类似感受是在什么时候。`,
+        mentor: `${contextLine}\n\n如果用更严格的思考框架看「${prompt}」，可以先拆成三个问题：你真正想解决什么、你默认了哪些前提、最小的验证动作是什么。`,
+        writing: `${contextLine}\n\n这段内容可以先写成一个小提纲：核心观点、触发场景、一个例子、一个反问。先不要追求完整文章，把最有力量的一句话写清楚。`,
+        report: `${contextLine}\n\n这可以进入一份复盘报告：主题是「${prompt || '近期思考'}」，可记录为现象、重复模式、可能原因、下一步行动四段。`
       }
-      const content = responses[this.session.mode] || '我理解你的意思。让我们继续深入探讨这个问题。'
-      this.session.messages.push({ role: 'assistant', content })
+      this.session.messages.push({
+        role: 'assistant',
+        content: responses[this.session.mode] || `${contextLine}\n\n我理解你的意思。我们可以继续把这个问题拆细。`,
+        citation: relevant[0]?.content || relevant[0]?.originalText || ''
+      })
     },
     persistSession() {
       const store = getVaultStore()
@@ -176,15 +187,25 @@ export default {
   border-bottom: 1rpx solid #f0f0f0;
 }
 .nav-back {
-  font-size: 40rpx;
-  color: #333;
-  padding: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84rpx;
+  height: 52rpx;
+  padding: 0 18rpx;
+  border: 1rpx solid #dedacf;
+  border-radius: 999rpx;
+  background: #f8f7f2;
+  color: #1a2b48;
+  font-size: 24rpx;
+  font-weight: 800;
+  box-sizing: border-box;
 }
 .nav-center { flex: 1; }
 .nav-title {
   display: block;
-  font-size: 30rpx;
-  font-weight: 600;
+  font-size: 34rpx;
+  font-weight: 800;
   color: #1a1a2e;
 }
 .nav-sub {
@@ -194,9 +215,19 @@ export default {
   margin-top: 2rpx;
 }
 .nav-more {
-  font-size: 32rpx;
-  color: #888;
-  padding: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84rpx;
+  height: 52rpx;
+  padding: 0 18rpx;
+  border: 1rpx solid #dedacf;
+  border-radius: 999rpx;
+  background: #fff;
+  color: #1a2b48;
+  font-size: 24rpx;
+  font-weight: 800;
+  box-sizing: border-box;
 }
 .messages {
   flex: 1;
@@ -278,12 +309,13 @@ export default {
   box-sizing: border-box;
 }
 .send-btn {
-  width: 72rpx;
+  min-width: 96rpx;
   height: 72rpx;
-  border-radius: 36rpx;
+  border-radius: 999rpx;
   background: #004a77;
   color: #fff;
-  font-size: 32rpx;
+  font-size: 26rpx;
+  font-weight: 800;
   border: none;
   display: flex;
   align-items: center;

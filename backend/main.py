@@ -615,7 +615,7 @@ class ChineseJSONResponse(JSONResponse):
             separators=(",", ":"),
         ).encode("utf-8")
 
-app = FastAPI(title="Sparknote Backend", default_response_class=ChineseJSONResponse)
+app = FastAPI(title="MirrorMe Backend", default_response_class=ChineseJSONResponse)
 # during local development we allow all origins to avoid CORS issues
 # (in production this should be locked down to the real frontend URL)
 app.add_middleware(

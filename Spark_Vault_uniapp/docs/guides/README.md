@@ -7,6 +7,7 @@
 | 文件 | 说明 |
 |---|---|
 | [android_getting_started.md](android_getting_started.md) | Android APK 构建、安装、完整使用流程 |
+| [mirrorme_behavior_mirror_brainstorming_20260605.md](mirrorme_behavior_mirror_brainstorming_20260605.md) | MirrorMe 行为镜像与潜意识反馈：AI 定位与报告机制 brainstorming |
 
 ## 待补充
 

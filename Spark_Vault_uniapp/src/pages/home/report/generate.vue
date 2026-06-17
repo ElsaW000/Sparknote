@@ -2,7 +2,7 @@
 <template>
   <view class="page">
     <view class="nav-bar">
-      <text class="nav-back" @click="goBack">←</text>
+      <text class="nav-back" @click="goBack">返回</text>
       <text class="nav-title">生成本月报告</text>
     </view>
     <view class="body">
@@ -58,29 +58,47 @@ export default {
   },
   methods: {
     async generate() {
+      if (this.isGenerating) return
       this.isGenerating = true
+      this.done = false
       const steps = ['正在整理碎片…', '识别思维模式…', '生成洞察报告…']
       for (const step of steps) {
         this.progress = step
         await new Promise((r) => setTimeout(r, 1000))
       }
 
-      // Save a placeholder report
       const store = getVaultStore()
+      store.refresh()
       const month = new Date().toISOString().slice(0, 7)
-      const result = store.saveSession ? null : null // no-op
-      // Save report via repository directly
-      const report = {
-        id: Date.now(),
+      const fragments = store.state.fragments.filter((f) => f.content_type === 'personal_content')
+      const fragmentLines = fragments.length
+        ? fragments.slice(0, 8).map((f, index) => `${index + 1}. ${f.title || f.sourceTitle || '未命名'}：${(f.content || f.originalText || '').slice(0, 120)}`).join('\n')
+        : '本月还没有个人记录。请先在碎片库或采集页保存内容。'
+      const result = store.saveReport({
         title: `${this.currentMonth} 成长反思报告`,
         month,
-        generatedContent: `## ${this.currentMonth} 成长反思报告\n\n本月共录入 ${this.fragmentCount} 条个人记录。\n\n**主要发现**\n\n（AI 分析结果将在接入后端后显示）`,
-        relatedFragmentIds: [],
+        generatedContent: [
+          `## ${this.currentMonth} 成长反思报告`,
+          '',
+          `本月共录入 ${fragments.length} 条个人记录。`,
+          '',
+          '**主要记录**',
+          fragmentLines,
+          '',
+          '**建议行动**',
+          '- 选择一条最重要的记录，补充它触发你的真实原因。',
+          '- 将相似主题的记录合并成一个可复盘的问题。',
+          '- 下次记录时同时写下场景、感受和下一步动作。'
+        ].join('\n'),
+        relatedFragmentIds: fragments.map((f) => f.id).filter(Number.isInteger),
         created_at: Date.now()
+      })
+      if (!result.ok) {
+        this.isGenerating = false
+        uni.showToast({ title: result.error || '生成失败', icon: 'none' })
+        return
       }
-      store.refresh() // reload
-      // TODO: call real report generation API
-      this.generatedId = report.id
+      this.generatedId = result.report.id
       this.isGenerating = false
       this.done = true
     },
@@ -95,8 +113,22 @@ export default {
 <style scoped>
 .page { min-height: 100vh; background: #fbf9f6; }
 .nav-bar { display: flex; align-items: center; gap: 16rpx; padding: 60rpx 32rpx 24rpx; background: #fff; border-bottom: 1rpx solid #f0f0f0; }
-.nav-back { font-size: 40rpx; color: #333; padding: 8rpx; }
-.nav-title { font-size: 30rpx; font-weight: 600; color: #1a1a2e; }
+.nav-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84rpx;
+  height: 52rpx;
+  padding: 0 18rpx;
+  border: 1rpx solid #dedacf;
+  border-radius: 999rpx;
+  background: #f8f7f2;
+  color: #1a2b48;
+  font-size: 24rpx;
+  font-weight: 800;
+  box-sizing: border-box;
+}
+.nav-title { font-size: 34rpx; font-weight: 800; color: #1a1a2e; }
 .body { padding: 48rpx 32rpx; }
 .card { background: #fff; border-radius: 20rpx; padding: 40rpx; margin-bottom: 32rpx; box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06); }
 .info-card { text-align: center; }

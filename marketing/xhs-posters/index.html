@@ -1,0 +1,868 @@
+<!-- File: marketing/xhs-posters/index.html -->
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MirrorMe Xiaohongshu Posters</title>
+  <style>
+    :root {
+      --navy: #004a77;
+      --ink: #1c1b1f;
+      --muted: #5d5965;
+      --paper: #fbf9f6;
+      --card: #ffffff;
+      --soft: #f2efe8;
+      --gold: #c4a052;
+      --gold-deep: #8a5e13;
+      --line: #dedacf;
+      --aqua: #dceff3;
+      --rose: #f7e3df;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      background: #e9e5dc;
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 32px;
+    }
+
+    .deck {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .poster {
+      position: relative;
+      width: 1080px;
+      height: 1440px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 86% 12%, rgba(220, 239, 243, 0.92), transparent 280px),
+        linear-gradient(180deg, #fffdf9 0%, var(--paper) 100%);
+      padding: 78px 78px 62px;
+      border: 1px solid rgba(0, 74, 119, 0.1);
+      box-shadow: 0 24px 70px rgba(26, 43, 72, 0.12);
+    }
+
+    .poster::before {
+      content: "";
+      position: absolute;
+      inset: 34px;
+      border: 2px solid rgba(0, 74, 119, 0.1);
+      border-radius: 40px;
+      pointer-events: none;
+    }
+
+    .poster > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand-row,
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      color: var(--navy);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 38px;
+      font-weight: 800;
+    }
+
+    .kicker,
+    .watermark,
+    .label {
+      font-family: "Courier New", monospace;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .kicker {
+      color: rgba(28, 27, 31, 0.48);
+      font-size: 22px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 52px;
+      padding: 0 22px;
+      border: 2px solid rgba(196, 160, 82, 0.35);
+      border-radius: 999px;
+      background: #fff8e8;
+      color: var(--gold-deep);
+      font-size: 24px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .hero-title {
+      margin: 96px 0 0;
+      color: var(--navy);
+      font-size: 100px;
+      line-height: 1.14;
+      font-weight: 900;
+    }
+
+    .hero-title .accent {
+      display: block;
+      color: var(--gold);
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+    }
+
+    .subtitle {
+      margin: 34px 0 0;
+      max-width: 800px;
+      color: rgba(28, 27, 31, 0.78);
+      font-size: 34px;
+      line-height: 1.5;
+      font-weight: 700;
+    }
+
+    .device {
+      margin-top: 50px;
+      width: 100%;
+      border-radius: 46px;
+      background: #ffffff;
+      border: 2px solid var(--line);
+      padding: 28px 32px 32px;
+      box-shadow: 0 18px 40px rgba(0, 74, 119, 0.08);
+    }
+
+    .device-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 24px;
+      border-bottom: 2px solid #ede8dc;
+    }
+
+    .mini-title {
+      color: var(--navy);
+      font-size: 34px;
+      font-weight: 900;
+    }
+
+    .pill {
+      padding: 11px 20px;
+      border-radius: 999px;
+      background: var(--navy);
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 900;
+      font-family: "Courier New", monospace;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 24px;
+    }
+
+    .metric {
+      min-height: 112px;
+      border-radius: 24px;
+      background: var(--soft);
+      padding: 20px 24px;
+    }
+
+    .metric span {
+      display: block;
+      color: rgba(28, 27, 31, 0.52);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      color: var(--navy);
+      font-size: 46px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .insight-strip {
+      margin-top: 18px;
+      border-radius: 28px;
+      background: var(--navy);
+      color: #ffffff;
+      padding: 24px 28px;
+    }
+
+    .insight-strip b {
+      display: block;
+      color: var(--gold);
+      font-size: 18px;
+      font-family: "Courier New", monospace;
+      letter-spacing: 2px;
+    }
+
+    .insight-strip p {
+      margin: 14px 0 0;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 23px;
+      line-height: 1.38;
+      font-weight: 700;
+    }
+
+    .footer {
+      position: absolute;
+      left: 78px;
+      right: 78px;
+      bottom: 58px;
+    }
+
+    .watermark {
+      color: rgba(28, 27, 31, 0.4);
+      font-size: 20px;
+    }
+
+    .page-no {
+      color: var(--navy);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 36px;
+      font-weight: 900;
+    }
+
+    .title {
+      margin: 78px 0 0;
+      color: var(--navy);
+      font-size: 72px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .lead {
+      margin: 28px 0 0;
+      color: rgba(28, 27, 31, 0.76);
+      font-size: 31px;
+      line-height: 1.48;
+      font-weight: 700;
+    }
+
+    .ancient-line {
+      display: block;
+      margin-top: 74px;
+      color: var(--navy);
+      font-size: 58px;
+      line-height: 1.34;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .ancient-line .gold {
+      color: var(--gold);
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      font-size: 68px;
+    }
+
+    .source-note {
+      margin-top: 46px;
+      color: rgba(28, 27, 31, 0.55);
+      font-size: 28px;
+      line-height: 1.5;
+      font-weight: 750;
+    }
+
+    .simple-note {
+      margin-top: 68px;
+      max-width: 760px;
+      color: rgba(28, 27, 31, 0.74);
+      font-size: 34px;
+      line-height: 1.55;
+      font-weight: 800;
+    }
+
+    .stack {
+      margin-top: 46px;
+      display: grid;
+      gap: 22px;
+    }
+
+    .point-card {
+      border-radius: 28px;
+      background: var(--card);
+      border: 2px solid var(--line);
+      padding: 28px;
+      box-shadow: 0 14px 32px rgba(0, 74, 119, 0.06);
+    }
+
+    .point-head {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background: var(--navy);
+      color: #ffffff;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 31px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .point-card h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 35px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .point-card p {
+      margin: 18px 0 0;
+      color: rgba(28, 27, 31, 0.68);
+      font-size: 26px;
+      line-height: 1.42;
+      font-weight: 650;
+    }
+
+    .quote {
+      margin-top: 48px;
+      border-left: 10px solid var(--gold);
+      padding: 10px 0 10px 28px;
+      color: var(--navy);
+      font-size: 38px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .flow {
+      margin-top: 48px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .flow-item {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 24px;
+      align-items: center;
+      min-height: 130px;
+      border-radius: 30px;
+      background: #ffffff;
+      border: 2px solid var(--line);
+      padding: 24px 28px;
+    }
+
+    .flow-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 82px;
+      height: 82px;
+      border-radius: 26px;
+      background: var(--aqua);
+      color: var(--navy);
+      font-size: 40px;
+      font-weight: 900;
+    }
+
+    .flow-item h2 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 34px;
+      font-weight: 900;
+    }
+
+    .flow-item p {
+      margin: 10px 0 0;
+      color: rgba(28, 27, 31, 0.68);
+      font-size: 24px;
+      line-height: 1.38;
+      font-weight: 700;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 44px;
+    }
+
+    .compare {
+      min-height: 470px;
+      border-radius: 34px;
+      padding: 34px;
+      border: 2px solid var(--line);
+      background: #ffffff;
+    }
+
+    .compare.alt {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #ffffff;
+    }
+
+    .compare h2 {
+      margin: 0;
+      font-size: 36px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .compare ul {
+      list-style: none;
+      margin: 34px 0 0;
+      padding: 0;
+      display: grid;
+      gap: 20px;
+    }
+
+    .compare li {
+      color: rgba(28, 27, 31, 0.7);
+      font-size: 26px;
+      line-height: 1.42;
+      font-weight: 750;
+    }
+
+    .compare.alt li {
+      color: rgba(255, 255, 255, 0.84);
+    }
+
+    .compare.alt h2,
+    .compare.alt .label {
+      color: var(--gold);
+    }
+
+    .label {
+      color: rgba(28, 27, 31, 0.42);
+      font-size: 18px;
+      margin-bottom: 16px;
+    }
+
+    .cta-box {
+      margin-top: 54px;
+      border-radius: 40px;
+      padding: 42px;
+      background:
+        linear-gradient(135deg, rgba(0, 74, 119, 0.96), rgba(15, 96, 121, 0.94)),
+        var(--navy);
+      color: #ffffff;
+    }
+
+    .cta-box h2 {
+      margin: 0;
+      color: #ffffff;
+      font-size: 50px;
+      line-height: 1.22;
+      font-weight: 900;
+    }
+
+    .cta-box p {
+      margin: 24px 0 0;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 30px;
+      line-height: 1.5;
+      font-weight: 700;
+    }
+
+    .tag-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 44px;
+    }
+
+    .tag {
+      padding: 16px 22px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+      font-size: 25px;
+      font-weight: 850;
+    }
+
+    .ui-panel {
+      margin-top: 46px;
+      border-radius: 38px;
+      background: #ffffff;
+      border: 2px solid var(--line);
+      padding: 32px;
+      box-shadow: 0 18px 44px rgba(0, 74, 119, 0.08);
+    }
+
+    .ui-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 22px;
+      border-bottom: 2px solid #ede8dc;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 24px;
+    }
+
+    .module-card {
+      min-height: 128px;
+      border-radius: 24px;
+      background: var(--soft);
+      padding: 22px;
+    }
+
+    .module-card.dark {
+      background: var(--navy);
+      color: #ffffff;
+    }
+
+    .module-card b {
+      display: block;
+      color: var(--navy);
+      font-size: 32px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .module-card.dark b {
+      color: #ffffff;
+    }
+
+    .module-card span {
+      display: block;
+      margin-top: 10px;
+      color: rgba(28, 27, 31, 0.58);
+      font-size: 21px;
+      line-height: 1.35;
+      font-weight: 800;
+    }
+
+    .module-card.dark span {
+      color: rgba(255, 255, 255, 0.76);
+    }
+
+    .insight-panel {
+      margin-top: 22px;
+      border-radius: 28px;
+      background: var(--navy);
+      padding: 28px;
+      color: #ffffff;
+    }
+
+    .insight-panel .label {
+      color: var(--gold);
+    }
+
+    .insight-panel p {
+      margin: 12px 0 0;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 25px;
+      line-height: 1.42;
+      font-weight: 800;
+    }
+
+    body[data-card] {
+      padding: 0;
+      background: transparent;
+    }
+
+    body[data-card] .deck {
+      gap: 0;
+    }
+
+    body[data-card] .poster {
+      display: none;
+      box-shadow: none;
+      border: 0;
+    }
+
+    body[data-card="1"] .poster:nth-child(1),
+    body[data-card="2"] .poster:nth-child(2),
+    body[data-card="3"] .poster:nth-child(3),
+    body[data-card="4"] .poster:nth-child(4),
+    body[data-card="5"] .poster:nth-child(5),
+    body[data-card="6"] .poster:nth-child(6),
+    body[data-card="7"] .poster:nth-child(7),
+    body[data-card="8"] .poster:nth-child(8) {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <section class="poster">
+      <div class="brand-row">
+        <div>
+          <div class="brand">MirrorMe</div>
+          <div class="kicker">Spark Vault</div>
+        </div>
+      </div>
+
+      <div class="ancient-line">
+        以铜为镜，<br>
+        <span class="gold">可以正衣冠；</span><br>
+        以古为镜，<br>
+        <span class="gold">可以知兴替；</span><br>
+        以人为镜，<br>
+        <span class="gold">可以明得失。</span>
+      </div>
+      <p class="source-note">《旧唐书 · 魏徵传》</p>
+
+      <div class="footer">
+        <div class="watermark">@MirrorMe · 2026.06.11</div>
+        <div class="page-no">01</div>
+      </div>
+    </section>
+
+    <section class="poster">
+      <div class="brand-row">
+        <div class="kicker">Knowledge input</div>
+        <div class="chip">知识库输入</div>
+      </div>
+
+      <h1 class="title">先把材料<br>放进来</h1>
+      <p class="lead">MirrorMe 先做一件事：接住你的原始输入。文字、图片、录音、网页，都可以成为之后回看的线索。</p>
+
+      <div class="ui-panel">
+        <div class="ui-panel-head">
+          <div class="mini-title">Library Capture</div>
+          <div class="pill">INPUTS</div>
+        </div>
+        <div class="module-grid">
+          <div class="module-card"><b>文字</b><span>灵感、日记、书摘</span></div>
+          <div class="module-card"><b>图片</b><span>截图、照片、OCR</span></div>
+          <div class="module-card"><b>录音</b><span>路上说出的想法</span></div>
+          <div class="module-card"><b>网页</b><span>链接、文章、资料</span></div>
+        </div>
+      </div>
+
+      <div class="quote">知识库的第一步，不是整理，而是让材料有地方落下。</div>
+
+      <div class="footer">
+        <div class="watermark">@MirrorMe · Spark Vault</div>
+        <div class="page-no">02</div>
+      </div>
+    </section>
+
+    <section class="poster">
+      <div class="brand-row">
+        <div class="kicker">Just throw it in</div>
+        <div class="chip">随手记录</div>
+      </div>
+
+      <h1 class="title">不用先想清楚<br>先丢给 TA</h1>
+      <p class="lead">很多想法不是没价值，而是出现得太快。你不需要当场整理成体系，先别让它消失。</p>
+
+      <div class="stack">
+        <article class="point-card">
+          <div class="point-head"><div class="num">1</div><h2>先记录，不评价</h2></div>
+          <p>不急着判断它有没有用。</p>
+        </article>
+        <article class="point-card">
+          <div class="point-head"><div class="num">2</div><h2>先保存，不分类</h2></div>
+          <p>标签和结构可以之后再补。</p>
+        </article>
+        <article class="point-card">
+          <div class="point-head"><div class="num">3</div><h2>先交给 MirrorMe</h2></div>
+          <p>让它陪你慢慢把混乱看清楚。</p>
+        </article>
+      </div>
+
+      <div class="quote">你只管丢进去，清晰感可以晚一点再来。</div>
+
+      <div class="footer">
+        <div class="watermark">@MirrorMe · Memory Mirror</div>
+        <div class="page-no">03</div>
+      </div>
+    </section>
+
+    <section class="poster">
+      <div class="brand-row">
+        <div class="kicker">Analysis</div>
+        <div class="chip">多个维度分析</div>
+      </div>
+
+      <h1 class="title">同一堆碎片<br>可以从很多面看</h1>
+      <p class="lead">统计、洞察、标签、报告，不是为了堆功能，而是为了帮你从不同角度回看自己。</p>
+
+      <div class="ui-panel">
+        <div class="ui-panel-head">
+          <div class="mini-title">Vault Metrics</div>
+          <div class="pill">AI INSIGHT</div>
+        </div>
+        <div class="module-grid">
+          <div class="module-card"><b>主题</b><span>最近总在想什么</span></div>
+          <div class="module-card"><b>情绪</b><span>哪里兴奋或卡住</span></div>
+          <div class="module-card"><b>模式</b><span>哪些判断反复出现</span></div>
+          <div class="module-card"><b>行动</b><span>下一步该追问什么</span></div>
+        </div>
+        <div class="insight-panel">
+          <div class="label">TODAY'S AI ADVICE</div>
+          <p>这些不是冷冰冰的数据，而是你最近状态的侧影。</p>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="watermark">@MirrorMe · Product Flow</div>
+        <div class="page-no">04</div>
+      </div>
+    </section>
+
+    <section class="poster">
+      <div class="brand-row">
+        <div class="kicker">Mirror not only vault</div>
+        <div class="chip">不只是知识库</div>
+      </div>
+
+      <h1 class="title">它是知识库<br>但不止是知识库</h1>
+      <p class="lead">普通知识库回答“我存了什么”。MirrorMe 更想回答：“这些内容为什么会反复出现在我的生活里？”</p>
+
+      <div class="stack">
+        <article class="point-card">
+          <div class="point-head">
+            <div class="num">A</div>
+            <h2>知识库像仓库</h2>
+          </div>
+          <p>它让资料不丢，适合查找、引用、归档。</p>
+        </article>
+        <article class="point-card">
+          <div class="point-head">
+            <div class="num">B</div>
+            <h2>MirrorMe 像镜子</h2>
+          </div>
+          <p>它让你看见自己的关注、边界、困惑和变化。</p>
+        </article>
+      </div>
+      <div class="quote">不是把世界越存越满，而是把自己越看越清楚。</div>
+
+      <div class="footer">
+        <div class="watermark">@MirrorMe · Mirror not notes</div>
+        <div class="page-no">05</div>
+      </div>
+    </section>
+    <section class="poster">
+      <div class="brand-row">
+        <div class="kicker">Your own skill</div>
+        <div class="chip">定制角度</div>
+      </div>
+
+      <h1 class="title">它可以用<br>你的方式看你</h1>
+      <p class="lead">不同模式、不同导师、不同 Skill，最后都是为了让 MirrorMe 用更贴近你的方式理解你。</p>
+
+      <div class="ui-panel">
+        <div class="ui-panel-head">
+          <div class="mini-title">Skills / Modes</div>
+          <div class="pill">CUSTOM</div>
+        </div>
+        <div class="module-grid">
+          <div class="module-card"><b>记忆纠偏</b><span>帮你检查理解偏差</span></div>
+          <div class="module-card"><b>大师导师</b><span>换一个思想角度</span></div>
+          <div class="module-card"><b>创意激发</b><span>把碎片变成选题</span></div>
+          <div class="module-card dark"><b>专属 Skill</b><span>沉淀你自己的口吻和规则</span></div>
+        </div>
+      </div>
+
+      <div class="quote">你不是在用一个公共模板，而是在训练一个懂你的人。</div>
+
+      <div class="footer">
+        <div class="watermark">@MirrorMe · Personal Skill</div>
+        <div class="page-no">06</div>
+      </div>
+    </section>
+
+    <section class="poster">
+      <div class="brand-row">
+        <div class="kicker">AI Confidant</div>
+        <div class="chip">你的知己</div>
+      </div>
+
+      <h1 class="title">陪你拆解问题<br>从混沌到清晰</h1>
+      <p class="lead">真正的知己，不急着给答案，而是陪你把问题拆开，把边界看清，把下一步照出来。</p>
+
+      <div class="split">
+        <div class="compare">
+          <div class="label">TOOL</div>
+          <h2>混沌时</h2>
+          <ul>
+            <li>想法很多</li>
+            <li>线索很散</li>
+            <li>情绪很满</li>
+            <li>不知道先问什么</li>
+          </ul>
+        </div>
+        <div class="compare alt">
+          <div class="label">CONFIDANT</div>
+          <h2>清晰后</h2>
+          <ul>
+            <li>先拆问题</li>
+            <li>再找线索</li>
+            <li>看见边界</li>
+            <li>决定下一步</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="watermark">@MirrorMe · Zhi Ji</div>
+        <div class="page-no">07</div>
+      </div>
+    </section>
+
+    <section class="poster">
+      <div class="brand-row">
+        <div class="kicker">Save and comment</div>
+        <div class="chip">最后一张</div>
+      </div>
+
+      <h1 class="title">把碎片交给 TA<br>把自己看清楚</h1>
+      <p class="lead">MirrorMe：一个会记录、会分析、会陪你把问题拆清楚的 AI 知己。</p>
+
+      <div class="cta-box">
+        <h2>不用先想清楚。</h2>
+        <p>先丢给 MirrorMe。以后你会从这些碎片里，看见更完整的自己。</p>
+        <div class="tag-grid">
+          <div class="tag">#AI工具</div>
+          <div class="tag">#个人知识库</div>
+          <div class="tag">#自我复盘</div>
+          <div class="tag">#产品设计</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="watermark">@MirrorMe · Save for later</div>
+        <div class="page-no">08</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const card = new URLSearchParams(window.location.search).get("card");
+    if (card) document.body.dataset.card = card;
+  </script>
+</body>
+</html>

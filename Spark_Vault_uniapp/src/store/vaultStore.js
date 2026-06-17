@@ -4,6 +4,7 @@ import {
   createChatSession,
   createFragment,
   filterFragments,
+  generateLocalWorkspaceReport,
   generateWeeklyDigest,
   normalizeText,
   parseTags
@@ -19,6 +20,7 @@ function createInitialState() {
     metrics: computeMetrics([], [], []),
     filteredFragments: [],
     weeklyDigest: '',
+    workspaceResult: null,
     error: ''
   }
 }
@@ -156,6 +158,28 @@ export function createVaultStore(options = {}) {
     })
   }
 
+  function generateWorkspaceReport(input = {}) {
+    return toResult(() => {
+      clearError()
+      const prompt = normalizeText(input.prompt)
+      const reportType = normalizeText(input.reportType) || 'Outline'
+      const localReport = generateLocalWorkspaceReport(prompt, state.fragments, reportType)
+      const report = repository.saveReport({
+        title: `${reportType} · ${prompt || 'Workspace'}`,
+        content: localReport.content,
+        relatedFragmentIds: localReport.relevantIds
+      })
+      state.workspaceResult = {
+        reportId: report.id,
+        prompt,
+        reportType,
+        relevantIds: localReport.relevantIds
+      }
+      refresh()
+      return { report, workspaceResult: state.workspaceResult }
+    })
+  }
+
   // --- Init ---
   refresh()
 
@@ -173,7 +197,8 @@ export function createVaultStore(options = {}) {
     getSessionById,
     getReportById,
     saveReport,
-    deleteReport
+    deleteReport,
+    generateWorkspaceReport
   }
 }
 
@@ -183,3 +208,5 @@ export function getVaultStore() {
   if (!_store) _store = createVaultStore()
   return _store
 }
+
+export const vaultStore = getVaultStore()

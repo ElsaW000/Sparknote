@@ -2,7 +2,7 @@
 <template>
   <view class="page">
     <view class="nav-bar">
-      <text class="nav-back" @click="goBack">←</text>
+      <text class="nav-back" @click="goBack">返回</text>
       <text class="nav-title">个性化 / Skills</text>
     </view>
 
@@ -39,22 +39,38 @@
 </template>
 
 <script>
+import { getSkills, toggleBuiltin } from '../../services/skillsService.js'
+
 export default {
   name: 'SkillsPage',
   data() {
     return {
-      skills: [
-        { id: 'memory', icon: '🧠', name: '记忆纠偏', desc: '发现误解与惯性记忆', enabled: true },
-        { id: 'mentor', icon: '👤', name: '大师导师', desc: '苏格拉底式提问引导', enabled: false },
-        { id: 'writing', icon: '✍', name: '创作辅助', desc: '基于碎片辅助写作输出', enabled: true },
-        { id: 'report', icon: '📋', name: '生成报告', desc: '整理对话与碎片生成报告', enabled: true }
-      ]
+      skills: []
     }
   },
+  onShow() {
+    this.loadSkills()
+  },
   methods: {
+    loadSkills() {
+      this.skills = getSkills().map((skill) => ({
+        id: skill.id,
+        icon: skill.emoji || skill.icon || '◇',
+        name: skill.name,
+        desc: skill.desc || '自定义思考框架',
+        enabled: Boolean(skill.is_enabled),
+        isBuiltin: Boolean(skill.is_builtin)
+      }))
+    },
     toggleSkill(id) {
       const skill = this.skills.find((s) => s.id === id)
-      if (skill) skill.enabled = !skill.enabled
+      if (!skill) return
+      if (!skill.isBuiltin) {
+        uni.showToast({ title: '自定义 Skill 默认启用', icon: 'none' })
+        return
+      }
+      toggleBuiltin(id)
+      this.loadSkills()
     },
     goBack() {
       uni.navigateBack()
@@ -76,8 +92,22 @@ export default {
   background: #fff;
   border-bottom: 1rpx solid #f0f0f0;
 }
-.nav-back { font-size: 40rpx; color: #333; padding: 8rpx; }
-.nav-title { font-size: 30rpx; font-weight: 600; color: #1a1a2e; }
+.nav-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84rpx;
+  height: 52rpx;
+  padding: 0 18rpx;
+  border: 1rpx solid #dedacf;
+  border-radius: 999rpx;
+  background: #f8f7f2;
+  color: #1a2b48;
+  font-size: 24rpx;
+  font-weight: 800;
+  box-sizing: border-box;
+}
+.nav-title { font-size: 34rpx; font-weight: 800; color: #1a1a2e; }
 .body { padding: 32rpx; }
 .section-title {
   display: block;

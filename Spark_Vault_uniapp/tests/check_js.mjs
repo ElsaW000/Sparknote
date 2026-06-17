@@ -9,8 +9,12 @@ const files = [
   'src/models/report.js',
   'src/services/vaultLogic.js',
   'src/services/vaultRepository.js',
+  'src/services/captureImport.js',
+  'src/services/iconifyIcons.js',
   'src/store/vaultStore.js',
   'tests/test_vault_logic.mjs',
+  'tests/test_home_surface.mjs',
+  'tests/test_workspace_surface.mjs',
   'vite.config.js'
 ]
 

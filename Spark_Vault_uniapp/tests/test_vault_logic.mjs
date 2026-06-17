@@ -8,10 +8,12 @@ import {
   filterFragments,
   generateLocalWorkspaceReport,
   generateWeeklyDigest,
-  mergeFragments
+  mergeFragments,
+  SOURCE_TYPES
 } from '../src/services/vaultLogic.js'
 import { createVaultRepository } from '../src/services/vaultRepository.js'
-import { createVaultStore } from '../src/store/vaultStore.js'
+import { createVaultStore, vaultStore } from '../src/store/vaultStore.js'
+import { analyzeImportText, extractLinks } from '../src/services/captureImport.js'
 
 function createMemoryStorage() {
   const data = new Map()
@@ -36,6 +38,34 @@ function assertIncludes(text, expected) {
 const longText = 'Systems compound when repeated with intention, context, and careful review across different sources.'
 
 {
+  assert.ok(SOURCE_TYPES.includes('Book'))
+  assert.ok(vaultStore?.state)
+}
+
+{
+  const links = extractLinks('Read https://example.com/a, then www.test.com/path. Again https://example.com/a')
+  assert.deepEqual(links, ['https://example.com/a', 'https://www.test.com/path'])
+  const analysis = analyzeImportText('one\nhttps://a.com\nwww.b.com')
+  assert.equal(analysis.lineCount, 3)
+  assert.equal(analysis.linkCount, 2)
+  assert.equal(analysis.hasContent, true)
+}
+
+{
+  const rich = createFragment({
+    title: 'Rich note',
+    content: 'Paragraph text',
+    blocks: [{ id: 'paragraph_1', type: 'paragraph', text: 'Paragraph text' }],
+    category: 'thought',
+    source: '我自己'
+  })
+  assert.equal(rich.title, 'Rich note')
+  assert.equal(rich.blocks.length, 1)
+  assert.equal(rich.category, 'thought')
+  assert.equal(rich.source, '我自己')
+}
+
+{
   const fragment = createFragment({
     originalText: longText,
     sourceType: 'Book',
@@ -47,6 +77,8 @@ const longText = 'Systems compound when repeated with intention, context, and ca
 
   assert.equal(fragment.originalText, longText)
   assert.equal(fragment.sourceType, 'Book')
+  assert.equal(fragment.form_kind, '想法')
+  assert.equal(fragment.acquisition_method, 'manual')
   assert.deepEqual(fragment.tags, ['Systems', 'Growth'])
   assert.equal(fragment.favoriteStatus, false)
   assert.ok(Number.isInteger(fragment.id))
@@ -59,6 +91,40 @@ const longText = 'Systems compound when repeated with intention, context, and ca
   assert.deepEqual(fallbackTags('AI systems connect creativity and research systems.'), ['Systems', 'Connect', 'Creativity'])
   assert.equal(fallbackSummary('short note'), 'short note')
   assert.equal(fallbackSummary(`${'a'.repeat(90)} trailing`).length, 83)
+}
+
+{
+  const voiceThought = createFragment({
+    originalText: 'Walking note transcribed from voice',
+    subtype: '录音',
+    tags: ['Voice']
+  })
+  assert.equal(voiceThought.form_kind, '想法')
+  assert.equal(voiceThought.subtype, '想法')
+  assert.equal(voiceThought.acquisition_method, 'voice')
+
+  const reference = createFragment({
+    originalText: 'Reference paragraph',
+    content_type: 'reference_content',
+    form_kind: '书摘'
+  })
+  const fileReference = createFragment({
+    originalText: 'Uploaded file note',
+    content_type: 'reference_content',
+    form_kind: '文件',
+    file_path: 'blob:http://localhost/file.pdf'
+  })
+  const thought = createFragment({
+    originalText: 'My reflection based on the reference',
+    content_type: 'personal_content',
+    form_kind: '想法',
+    acquisition_method: 'manual',
+    linked_fragment_ids: [reference.id, 'bad-id', 1.5]
+  })
+  assert.equal(reference.form_kind, '书摘')
+  assert.equal(fileReference.file_path, 'blob:http://localhost/file.pdf')
+  assert.equal(thought.form_kind, '想法')
+  assert.deepEqual(thought.linked_fragment_ids, [reference.id])
 }
 
 {
@@ -122,6 +188,10 @@ const longText = 'Systems compound when repeated with intention, context, and ca
   assert.equal(reportResult.ok, true)
   assert.equal(store.state.reports.length, 1)
   assert.equal(store.state.workspaceResult.reportId, reportResult.report.id)
+
+  const savedReport = store.saveReport({ title: 'Local report', content: 'Report content' })
+  assert.equal(savedReport.ok, true)
+  assert.equal(store.getReportById(savedReport.report.id).title, 'Local report')
 }
 
 console.log('vault logic tests passed')

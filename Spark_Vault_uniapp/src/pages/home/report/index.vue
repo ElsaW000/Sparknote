@@ -2,9 +2,9 @@
 <template>
   <view class="page">
     <view class="nav-bar">
-      <text class="nav-back" @click="goBack">←</text>
+      <text class="nav-back" @click="goBack">返回</text>
       <text class="nav-title">报告历史</text>
-      <text class="nav-action" @click="goGenerate">生成 ›</text>
+      <text class="nav-action" @click="goGenerate">生成</text>
     </view>
     <scroll-view scroll-y class="body">
       <view v-if="reports.length === 0" class="empty-state">
@@ -26,7 +26,7 @@
               <text class="r-title">{{ r.title }}</text>
               <text class="r-meta">{{ formatDate(r.created_at) }}</text>
             </view>
-            <text class="arrow">›</text>
+            <text class="arrow">查看</text>
           </view>
         </view>
       </view>
@@ -71,9 +71,24 @@ export default {
 <style scoped>
 .page { min-height: 100vh; background: #fbf9f6; }
 .nav-bar { display: flex; align-items: center; gap: 16rpx; padding: 60rpx 32rpx 24rpx; background: #fff; border-bottom: 1rpx solid #f0f0f0; }
-.nav-back { font-size: 40rpx; color: #333; padding: 8rpx; }
-.nav-title { flex: 1; font-size: 30rpx; font-weight: 600; color: #1a1a2e; }
-.nav-action { font-size: 28rpx; color: #004a77; }
+.nav-back,
+.nav-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84rpx;
+  height: 52rpx;
+  padding: 0 18rpx;
+  border: 1rpx solid #dedacf;
+  border-radius: 999rpx;
+  background: #f8f7f2;
+  color: #1a2b48;
+  font-size: 24rpx;
+  font-weight: 800;
+  box-sizing: border-box;
+}
+.nav-action { background: #1a2b48; border-color: #1a2b48; color: #c4a052; }
+.nav-title { flex: 1; font-size: 34rpx; font-weight: 800; color: #1a1a2e; }
 .body { padding: 32rpx; }
 .empty-state { text-align: center; padding: 80rpx 0; }
 .empty-icon { display: block; font-size: 80rpx; margin-bottom: 20rpx; }
@@ -86,5 +101,19 @@ export default {
 .r-info { flex: 1; }
 .r-title { display: block; font-size: 28rpx; font-weight: 500; color: #1a1a2e; }
 .r-meta { display: block; font-size: 22rpx; color: #aaa; margin-top: 4rpx; }
-.arrow { font-size: 32rpx; color: #ccc; }
+.arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72rpx;
+  height: 44rpx;
+  padding: 0 16rpx;
+  border: 1rpx solid #dedacf;
+  border-radius: 999rpx;
+  color: #1a2b48;
+  background: #f8f7f2;
+  font-size: 21rpx;
+  font-weight: 900;
+  box-sizing: border-box;
+}
 </style>

@@ -16,6 +16,36 @@
       </view>
     </view>
 
+    <view class="import-card">
+      <view class="iv-row import-head">
+        <text class="import-icon">↧</text>
+        <text class="import-title">批量文本 / Link 导入</text>
+      </view>
+      <textarea
+        class="iv-textarea import-input"
+        v-model="importText"
+        placeholder="粘贴一批文本、网页链接、Markdown、导出的书签内容..."
+        :maxlength="12000"
+        @input="analyzeImport"
+      />
+      <view class="import-stats">
+        <text class="import-stat">{{ importAnalysis.lineCount }} 行</text>
+        <text class="import-stat">{{ importAnalysis.linkCount }} 个链接</text>
+      </view>
+      <view v-if="importAnalysis.links.length" class="link-list">
+        <text
+          v-for="link in importAnalysis.links.slice(0, 5)"
+          :key="link"
+          class="link-chip"
+        >{{ link }}</text>
+        <text v-if="importAnalysis.links.length > 5" class="link-more">+{{ importAnalysis.links.length - 5 }}</text>
+      </view>
+      <view class="import-actions">
+        <button class="ocr-button" :disabled="!importAnalysis.hasContent" @click="useImportText">填入正文</button>
+        <button class="ocr-button primary-import" :disabled="!importAnalysis.linkCount" @click="saveDetectedLinks">保存链接</button>
+      </view>
+    </view>
+
     <view class="voice-card">
       <view class="iv-row">
         <text class="voice-icon">🎙</text>
@@ -68,13 +98,16 @@
 
 <script>
 import { SOURCE_TYPES, fallbackSummary, fallbackTags } from '../../services/vaultLogic.js'
-import { vaultStore } from '../../store/vaultStore.js'
+import { getVaultStore } from '../../store/vaultStore.js'
+import { analyzeImportText } from '../../services/captureImport.js'
 
 export default {
   data() {
     return {
       sourceTypes: SOURCE_TYPES.filter((item) => item !== 'All'),
       aiSummary: '',
+      importText: '',
+      importAnalysis: analyzeImportText(''),
       form: {
         originalText: '',
         sourceType: 'Book',
@@ -104,7 +137,58 @@ export default {
       this.form.sourceUrl = 'https://example.com/slow-thinking'
       this.generateHelpers()
     },
+    analyzeImport() {
+      this.importAnalysis = analyzeImportText(this.importText)
+    },
+    useImportText() {
+      this.analyzeImport()
+      if (!this.importAnalysis.hasContent) {
+        uni.showToast({ title: '请先粘贴内容', icon: 'none' })
+        return
+      }
+      this.form.originalText = this.importAnalysis.content
+      this.form.sourceType = this.importAnalysis.linkCount ? 'Browser' : 'Manual'
+      this.form.sourceUrl = this.importAnalysis.links[0] || ''
+      this.generateHelpers()
+    },
+    saveDetectedLinks() {
+      this.analyzeImport()
+      if (!this.importAnalysis.linkCount) {
+        uni.showToast({ title: '没有识别到链接', icon: 'none' })
+        return
+      }
+      const store = getVaultStore()
+      let saved = 0
+      for (const link of this.importAnalysis.links) {
+        const result = store.saveFragment({
+          originalText: link,
+          content: link,
+          content_type: 'reference_content',
+          form_kind: '网页',
+          subtype: '网页',
+          sourceType: 'Browser',
+          sourceTitle: link,
+          sourceUrl: link,
+          tags: ['link-import']
+        })
+        if (result.ok) saved += 1
+      }
+      uni.showToast({ title: `已保存 ${saved} 个链接`, icon: 'success' })
+      this.importText = ''
+      this.importAnalysis = analyzeImportText('')
+      setTimeout(() => {
+        uni.switchTab({ url: '/pages/home/index' })
+      }, 500)
+    },
     startVoiceRecord() {
+      if (typeof uni === 'undefined' || typeof uni.getRecorderManager !== 'function') {
+        uni.showModal({
+          title: '不支持录音',
+          content: '当前环境不支持录音功能，请手动输入文字。',
+          showCancel: false
+        })
+        return
+      }
       const recorderManager = uni.getRecorderManager()
       recorderManager.onStart(() => {
         uni.showToast({ title: '录音中...', icon: 'none', duration: 10000 })
@@ -148,7 +232,8 @@ export default {
       this.aiSummary = fallbackSummary(this.form.originalText)
     },
     save() {
-      const result = vaultStore.saveFragment({
+      const store = getVaultStore()
+      const result = store.saveFragment({
         ...this.form,
         aiSummary: this.aiSummary
       })
@@ -158,7 +243,7 @@ export default {
       }
       uni.showToast({ title: 'Fragment saved', icon: 'success' })
       this.resetForm()
-      uni.switchTab({ url: '/pages/library/index' })
+      uni.switchTab({ url: '/pages/home/index' })
     },
     resetForm() {
       const sourceType = this.form.sourceType || 'Book'
@@ -189,6 +274,82 @@ export default {
   padding: 24rpx;
   border-radius: 24rpx;
   background: rgba(215, 227, 255, 0.62);
+}
+
+.import-card {
+  margin-top: 24rpx;
+  margin-bottom: 30rpx;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  border: 1rpx solid rgba(0, 74, 119, 0.16);
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.import-head {
+  margin-bottom: 14rpx;
+}
+
+.import-icon {
+  color: #004a77;
+  font-size: 30rpx;
+}
+
+.import-title {
+  color: #004a77;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.import-input {
+  min-height: 170rpx;
+}
+
+.import-stats {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 14rpx;
+}
+
+.import-stat,
+.link-more {
+  padding: 5rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(0, 74, 119, 0.08);
+  color: #004a77;
+  font-size: 20rpx;
+  font-weight: 800;
+}
+
+.link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 12rpx;
+}
+
+.link-chip {
+  max-width: 100%;
+  padding: 6rpx 12rpx;
+  border-radius: 10rpx;
+  background: #f8f7f2;
+  color: #1a2b48;
+  font-size: 19rpx;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-actions {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
+.primary-import {
+  background: #004a77;
+  color: #ffffff;
 }
 
 .voice-card {

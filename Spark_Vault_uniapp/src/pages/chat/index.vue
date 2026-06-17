@@ -1,84 +1,87 @@
-<!-- pages/chat/index.vue -->
+<!-- Spark_Vault_uniapp/src/pages/chat/index.vue -->
 <template>
-  <view class="page">
-    <!-- Header -->
-    <view class="header">
+  <scroll-view scroll-y class="sv-page">
+    <view class="sv-header">
       <view>
-        <text class="title">Chat</text>
-        <text class="subtitle">对话会话</text>
+        <text class="sv-kicker">SELF REFLECTION & DIALOGUE</text>
+        <text class="sv-title">照见 <text class="sv-title-mark">. Salon</text></text>
       </view>
-      <button class="btn-new" @click="showModeSheet = true">＋ 新建会话</button>
+      <text class="sv-pill" @click="goSkills">{{ enabledMentors.length }} SKILLS</text>
     </view>
 
-    <!-- Mode Picker Card -->
-    <view class="card mode-card">
-      <text class="mode-prompt">选择一种对话方式开始 →</text>
-      <view class="mode-list">
-        <view
-          v-for="mode in modes"
-          :key="mode.id"
-          class="mode-item"
-          @click="startSession(mode.id)"
-        >
-          <text class="mode-icon">{{ mode.icon }}</text>
-          <view class="mode-info">
-            <text class="mode-name">{{ mode.name }}</text>
-            <text class="mode-desc">{{ mode.desc }}</text>
-          </view>
-          <text class="arrow">›</text>
+    <text class="intro-copy">
+      选择一个思考视角，通过对话或引用记录，重新看见你收集起来的想法。
+    </text>
+
+    <text class="sv-section">THINKING PERSONAS</text>
+    <view v-if="enabledMentors.length === 0" class="sv-card empty-card">
+      <text class="empty-title">没有启用的 AI 对话角色</text>
+      <text class="sv-body">去 Skills 页面打开一个内置导师，或创建自定义思考框架。</text>
+    </view>
+
+    <view
+      v-for="mentor in enabledMentors"
+      :key="mentor.id"
+      class="sv-card persona-card"
+      @click="startSession('mentor', mentor)"
+    >
+      <view class="persona-icon">{{ mentor.emoji || '◇' }}</view>
+      <view class="persona-copy">
+        <view class="sv-between">
+          <text class="persona-title">{{ mentor.name }}</text>
+          <text class="persona-start">开始 ＋</text>
         </view>
+        <text class="persona-desc">{{ mentor.desc || '使用这套思维框架展开对话。' }}</text>
       </view>
-      <text class="mode-hint">点击任意一项 → 进入全屏对话页</text>
     </view>
 
-    <!-- Session History -->
-    <text class="section-title">历史会话</text>
-
-    <view v-if="sessions.length === 0" class="empty-state">
-      <text class="empty-text">还没有对话记录。选择上方模式开始第一次对话。</text>
-    </view>
-
-    <view class="session-list">
+    <text class="sv-section">MODE SHORTCUTS</text>
+    <view class="mode-grid">
       <view
-        v-for="s in sessions"
-        :key="s.id"
-        class="session-item card"
-        @click="goSession(s.id)"
+        v-for="mode in modes"
+        :key="mode.id"
+        class="mode-card"
+        @click="startSession(mode.id)"
       >
-        <text class="session-icon">{{ getModeIcon(s.mode) }}</text>
-        <view class="session-info">
-          <text class="session-title">{{ s.title }}</text>
-          <text class="session-last">{{ lastMessage(s) }}</text>
-        </view>
-        <text class="session-date">{{ timeAgo(s.updated_at || s.created_at) }}</text>
+        <text class="mode-icon">{{ mode.icon }}</text>
+        <text class="mode-name">{{ mode.name }}</text>
+        <text class="mode-desc">{{ mode.desc }}</text>
       </view>
     </view>
 
-    <!-- Mode selection bottom sheet -->
-    <view v-if="showModeSheet" class="overlay" @click="showModeSheet = false">
-      <view class="sheet" @click.stop>
-        <text class="sheet-title">选择对话模式</text>
-        <view
-          v-for="mode in modes"
-          :key="mode.id"
-          class="sheet-item"
-          @click="startSession(mode.id)"
-        >
-          <text class="mode-icon">{{ mode.icon }}</text>
-          <view class="mode-info">
-            <text class="mode-name">{{ mode.name }}</text>
-            <text class="mode-desc">{{ mode.desc }}</text>
-          </view>
-        </view>
-        <button class="btn-cancel" @click="showModeSheet = false">取消</button>
-      </view>
+    <view class="sv-between history-head">
+      <text class="sv-section history-section">HISTORICAL DIALOGUES</text>
+      <text class="sv-caption">{{ sessions.length }} sessions</text>
     </view>
-  </view>
+
+    <view v-if="sessions.length === 0" class="sv-card empty-card">
+      <text class="empty-title">暂无历史对话</text>
+      <text class="sv-body">先选择上方的模式，开始一次自我照见。</text>
+    </view>
+
+    <view
+      v-for="session in sessions"
+      :key="session.id"
+      class="sv-card session-card"
+      @click="goSession(session.id)"
+    >
+      <view class="session-main">
+        <view class="sv-row">
+          <text class="mode-badge">{{ modeLabel(session.mode) }}</text>
+          <text class="sv-caption">{{ formatDate(session.updated_at || session.created_at) }}</text>
+        </view>
+        <text class="session-title">{{ session.title || '照见会话' }}</text>
+        <text class="session-last">{{ lastMessage(session) }}</text>
+      </view>
+      <text class="session-arrow">进入</text>
+    </view>
+  </scroll-view>
 </template>
 
 <script>
 import { getVaultStore } from '../../store/vaultStore.js'
 import { CHAT_MODES } from '../../services/vaultLogic.js'
+import { getEnabledMentors } from '../../services/skillsService.js'
 
 export default {
   name: 'ChatPage',
@@ -86,7 +89,7 @@ export default {
     return {
       sessions: [],
       modes: CHAT_MODES,
-      showModeSheet: false
+      enabledMentors: []
     }
   },
   onShow() {
@@ -97,217 +100,242 @@ export default {
       const store = getVaultStore()
       store.refresh()
       this.sessions = store.state.sessions
+      this.enabledMentors = getEnabledMentors()
     },
-    startSession(modeId) {
-      this.showModeSheet = false
+    startSession(modeId, mentor = null) {
       const store = getVaultStore()
-      const result = store.saveSession({ mode: modeId })
-      if (result.ok) {
-        uni.navigateTo({ url: `/pages/chat/session?id=${result.session.id}` })
+      const result = store.saveSession({
+        mode: modeId,
+        title: mentor ? `${mentor.name} · 新会话` : undefined
+      })
+      if (!result.ok) {
+        uni.showToast({ title: result.error || '创建会话失败', icon: 'none' })
+        return
       }
+      uni.navigateTo({ url: `/pages/chat/session?id=${result.session.id}` })
     },
     goSession(id) {
+      if (!Number.isInteger(Number(id))) return
       uni.navigateTo({ url: `/pages/chat/session?id=${id}` })
     },
-    getModeIcon(modeId) {
-      return CHAT_MODES.find((m) => m.id === modeId)?.icon || '💬'
+    goSkills() {
+      uni.navigateTo({ url: '/pages/me/skills' })
+    },
+    modeLabel(modeId) {
+      const found = CHAT_MODES.find((mode) => mode.id === modeId)
+      return found ? found.name : '对话'
     },
     lastMessage(session) {
-      const msgs = session.messages || []
-      const last = msgs[msgs.length - 1]
-      if (!last) return '新会话'
-      const prefix = last.role === 'user' ? '你: ' : 'AI: '
-      const text = last.content || ''
-      return prefix + (text.length > 30 ? text.slice(0, 30) + '...' : text)
+      const messages = Array.isArray(session.messages) ? session.messages : []
+      const last = messages[messages.length - 1]
+      if (!last) return '暂无谈论记录...'
+      const text = last.content || last.text || ''
+      return text.length > 34 ? `${text.slice(0, 34)}...` : text
     },
-    timeAgo(ts) {
+    formatDate(ts) {
       if (!ts) return ''
-      const diff = Date.now() - ts
-      const days = Math.floor(diff / 86400000)
-      if (days === 0) return '今天'
-      if (days === 1) return '昨天'
-      if (days < 7) return `${days}天前`
       const d = new Date(ts)
-      return `${d.getMonth() + 1}/${d.getDate()}`
+      return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
     }
   }
 }
 </script>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  background: #fbf9f6;
-  padding: 48rpx 32rpx 120rpx;
-  box-sizing: border-box;
+.intro-copy {
+  display: block;
+  margin: -8rpx 0 22rpx;
+  color: rgba(26, 26, 26, 0.68);
+  font-size: 23rpx;
+  line-height: 1.56;
 }
-.header {
+
+.persona-card {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 32rpx;
-  padding-top: 20rpx;
+  gap: 20rpx;
+  margin-bottom: 22rpx;
 }
-.title {
-  display: block;
-  font-size: 52rpx;
-  font-weight: 700;
-  color: #1a1a2e;
-}
-.subtitle {
-  display: block;
-  font-size: 26rpx;
-  color: #888;
-  margin-top: 4rpx;
-}
-.btn-new {
-  background: #004a77;
-  color: #fff;
-  border-radius: 40rpx;
-  font-size: 26rpx;
-  padding: 16rpx 32rpx;
-  border: none;
-  white-space: nowrap;
-  margin-top: 8rpx;
-}
-.card {
-  background: #fff;
+
+.persona-icon {
+  width: 72rpx;
+  height: 72rpx;
   border-radius: 20rpx;
-  padding: 32rpx;
-  margin-bottom: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
-}
-.mode-card {}
-.mode-prompt {
-  display: block;
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #004a77;
-  margin-bottom: 24rpx;
-}
-.mode-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.mode-item {
+  border: 1rpx solid #dedacf;
+  background: #f8f7f2;
   display: flex;
   align-items: center;
-  gap: 20rpx;
-  padding: 24rpx 0;
-  border-bottom: 1rpx solid #f0f0f0;
+  justify-content: center;
+  color: #c4a052;
+  font-size: 32rpx;
+  flex-shrink: 0;
 }
-.mode-item:last-child { border-bottom: none; }
+
+.persona-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.persona-title {
+  color: #1a2b48;
+  font-size: 24rpx;
+  line-height: 1.35;
+  font-weight: 900;
+}
+
+.persona-start {
+  color: #c4a052;
+  font-size: 18rpx;
+  font-weight: 900;
+}
+
+.persona-desc {
+  display: block;
+  margin-top: 8rpx;
+  color: rgba(26, 26, 26, 0.68);
+  font-size: 21rpx;
+  line-height: 1.45;
+}
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28rpx;
+}
+
+.mode-card {
+  min-height: 172rpx;
+  padding: 28rpx;
+  border-radius: 18rpx;
+  border: 1rpx solid #dedacf;
+  background: #ffffff;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
 .mode-icon {
-  font-size: 40rpx;
-  width: 56rpx;
-  text-align: center;
+  display: block;
+  color: #c4a052;
+  font-size: 34rpx;
 }
-.mode-info { flex: 1; }
+
 .mode-name {
   display: block;
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #1a1a2e;
+  margin-top: 12rpx;
+  color: #1a2b48;
+  font-size: 23rpx;
+  font-weight: 900;
 }
+
 .mode-desc {
   display: block;
-  font-size: 24rpx;
-  color: #888;
-  margin-top: 4rpx;
+  margin-top: 6rpx;
+  color: rgba(26, 26, 26, 0.55);
+  font-size: 19rpx;
+  line-height: 1.38;
 }
-.arrow {
-  font-size: 32rpx;
-  color: #ccc;
+
+.history-head {
+  align-items: flex-end;
+  margin-top: 8rpx;
 }
-.mode-hint {
-  display: block;
-  font-size: 22rpx;
-  color: #aaa;
-  margin-top: 20rpx;
-  text-align: center;
+
+.history-section {
+  margin-bottom: 0;
 }
-.section-title {
-  display: block;
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #1a1a2e;
+
+.empty-card {
   margin-bottom: 16rpx;
+  border-style: dashed;
 }
-.empty-state {
-  text-align: center;
-  padding: 48rpx 0;
+
+.empty-title {
+  display: block;
+  color: #1a2b48;
+  font-size: 24rpx;
+  font-weight: 900;
+  margin-bottom: 8rpx;
 }
-.empty-text {
-  font-size: 26rpx;
-  color: #aaa;
-}
-.session-item {
+
+.session-card {
   display: flex;
   align-items: center;
-  gap: 20rpx;
-  margin-bottom: 16rpx;
+  gap: 18rpx;
+  margin-top: 18rpx;
 }
-.session-icon {
-  font-size: 36rpx;
+
+.session-main {
+  flex: 1;
+  min-width: 0;
 }
-.session-info { flex: 1; }
+
+.mode-badge {
+  display: inline-flex;
+  padding: 5rpx 12rpx;
+  border-radius: 9rpx;
+  border: 1rpx solid #f1d9a8;
+  background: #fff8e8;
+  color: #8a5e13;
+  font-family: "Courier New", monospace;
+  font-size: 16rpx;
+  font-weight: 900;
+}
+
 .session-title {
   display: block;
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #1a1a2e;
-}
-.session-last {
-  display: block;
-  font-size: 22rpx;
-  color: #aaa;
-  margin-top: 4rpx;
-}
-.session-date {
-  font-size: 22rpx;
-  color: #aaa;
+  margin-top: 10rpx;
+  color: #1a2b48;
+  font-size: 24rpx;
+  line-height: 1.35;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Bottom sheet */
-.overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.4);
-  z-index: 100;
-  display: flex;
-  align-items: flex-end;
-}
-.sheet {
-  background: #fff;
-  border-radius: 24rpx 24rpx 0 0;
-  padding: 40rpx 32rpx 60rpx;
-  width: 100%;
-  box-sizing: border-box;
-}
-.sheet-title {
+
+.session-last {
   display: block;
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #1a1a2e;
-  margin-bottom: 24rpx;
-  text-align: center;
+  margin-top: 6rpx;
+  color: rgba(26, 26, 26, 0.55);
+  font-size: 20rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.sheet-item {
+
+.session-arrow {
   display: flex;
   align-items: center;
-  gap: 20rpx;
-  padding: 24rpx 0;
-  border-bottom: 1rpx solid #f0f0f0;
+  justify-content: center;
+  min-width: 72rpx;
+  height: 44rpx;
+  padding: 0 16rpx;
+  border: 1rpx solid #dedacf;
+  border-radius: 999rpx;
+  color: #1a2b48;
+  background: #f8f7f2;
+  font-size: 21rpx;
+  font-weight: 900;
+  box-sizing: border-box;
 }
-.btn-cancel {
-  width: 100%;
-  background: #f5f5f5;
-  color: #555;
-  border-radius: 12rpx;
-  font-size: 28rpx;
-  padding: 20rpx 0;
-  border: none;
-  margin-top: 24rpx;
+
+@media screen and (min-width: 960px) {
+  .intro-copy {
+    max-width: 760px;
+  }
+
+  .persona-card {
+    margin-bottom: 16px;
+    padding: 18px;
+  }
+
+  .mode-grid {
+    gap: 20px;
+  }
+
+  .mode-card {
+    min-height: 118px;
+    padding: 22px;
+    border-radius: 14px;
+  }
 }
 </style>
